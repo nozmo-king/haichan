@@ -1,0 +1,190 @@
+*** Begin Patch
+*** Update File: config/app.php
+@@
+-    'name' => env('APP_NAME', 'Anonymous Board'),
++    'name' => env('APP_NAME', 'Haichan'),
+*** End Patch
+
+*** Begin Patch
+*** Update File: .env.example
+@@
+-APP_NAME=Laravel
++APP_NAME=Haichan
++
++# skeleton key (optional bypass)
++SKELETON_ENABLED=true
++SKELETON_KEYS=skel_demo
++SKELETON_SCOPE=read-only
++SKELETON_SESSION_TTL=7200
+*** End Patch
+
+*** Begin Patch
+*** Update File: resources/views/layouts/app.blade.php
+@@
+-    <title>{{ config('app.name', 'Anonymous Board') }}</title>
++    <title>{{ config('app.name', 'Haichan') }}</title>
+@@
+-        <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+-            <div class="container">
+-                <a class="navbar-brand" href="{{ url('/') }}">
+-                    {{ config('app.name', 'Anonymous Board') }}
+-                </a>
+-                @yield('nav')
+-            </div>
+-        </nav>
+-        <main class="py-4">
+-            @yield('content')
+-        </main>
++        <header class="site">
++            <div class="brand"><a href="/">Haichan</a></div>
++            <nav>
++                <a href="/forum">forum</a>
++                <a href="/subscription/dashboard">account</a>
++                @auth <a href="/logout">logout</a> @else <a href="/login">login</a> @endauth
++            </nav>
++        </header>
++        <main class="py-4">
++            @yield('content')
++        </main>
+*** End Patch
+
+*** Begin Patch
+*** Update File: resources/css/app.css
+@@
++/* haichan palette & subtle grid */
++:root {
++  --hc-bg:#0e1210;
++  --hc-panel:#151a17;
++  --hc-ink:#e7dfb5;
++  --hc-muted:#9aa07a;
++  --hc-accent:#e24d4d;
++  --hc-grid:rgba(231,223,181,.06);
++}
++
++body {
++  margin:0;
++  background:var(--hc-bg);
++  color:var(--hc-ink);
++  font:16px/1.65 monospace;
++}
++
++body::before {
++  content:"";
++  position:fixed; inset:0; pointer-events:none;
++  background:
++    linear-gradient(var(--hc-grid) 1px, transparent 1px) 0 0/100% 24px,
++    linear-gradient(90deg, var(--hc-grid) 1px, transparent 1px) 0 0/24px 100%;
++}
+*** End Patch
+
+*** Begin Patch
+*** Add File: app/Http/Middleware/SkeletonKey.php
++<?php
++
++namespace App\Http\Middleware;
++
++use Closure;
++use Illuminate\Http\Request;
++use Illuminate\Support\Facades\Auth;
++
++class SkeletonKey
++{
++    public function handle(Request $request, Closure $next)
++    {
++        if (!filter_var(env('SKELETON_ENABLED', false), FILTER_VALIDATE_BOOL)) {
++            return $next($request);
++        }
++
++        $provided = $request->header('X-Skeleton-Key')
++            ?? $request->cookie('skeleton_key')
++            ?? $request->query('key')
++            ?? $request->input('key');
++
++        if (!$provided) return $next($request);
++
++        $allowed = collect(explode(',', (string) env('SKELETON_KEYS', '')))
++            ->map(fn($s) => trim($s))
++            ->filter();
++
++        if ($allowed->contains($provided)) {
++            session(['skeleton' => [
++                'granted_at' => now()->toIso8601String(),
++                'scope' => env('SKELETON_SCOPE', 'read-only'),
++            ]]);
++
++            if (!Auth::check()) {
++                $user = \App\Models\User::firstOrCreate(
++                    ['email' => 'skeleton@haichan.local'],
++                    ['name' => 'skeleton', 'role' => 'skeleton']
++                );
++                Auth::login($user, false);
++            }
++
++            cookie()->queue(cookie(
++                'skeleton_key', $provided,
++                env('SKELETON_SESSION_TTL',7200)/60,
++                null, null, true, true, false, 'Lax'
++            ));
++        }
++
++        return $next($request);
++    }
++}
++
+*** End Patch
+
+*** Begin Patch
+*** Update File: app/Http/Kernel.php
+@@
+-        \App\Http\Middleware\TrimStrings::class,
+-        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
++        \App\Http\Middleware\TrimStrings::class,
++        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
++        \App\Http\Middleware\SkeletonKey::class,
+*** End Patch
+
+*** Begin Patch
+*** Update File: routes/web.php
+@@
+ use Illuminate\Support\Facades\Route;
++use Illuminate\Http\Request;
+@@
++Route::post('/skeleton/enter', function(Request $r){
++    $key = $r->input('key');
++    abort_if(!$key, 400);
++    return redirect('/forum')->withCookie(cookie(
++        'skeleton_key', $key,
++        env('SKELETON_SESSION_TTL',7200)/60
++    ));
++})->middleware('throttle:10,1');
+*** End Patch
+
+*** Begin Patch
+*** Update File: resources/views/welcome.blade.php
+@@
+-<div class="jumbotron">
+-    <h1>Anonymous Board</h1>
+-    <p>Welcome to the forum.</p>
+-</div>
++  <section class="card">
++    <h1>Haichan</h1>
++    <p>private board. key-gated. if you have a friend code or subscription, use it. otherwise, bring a skeleton key.</p>
++    <form method="POST" action="/skeleton/enter" class="mt-3">
++      @csrf
++      <input class="input" type="password" name="key" placeholder="skeleton key" />
++      <button class="btn" type="submit">enter</button>
++    </form>
++  </section>
+*** End Patch
+
+*** Begin Patch
+*** Update File: app/Http/Middleware/RequireActiveSubscription.php
+@@
+     public function handle($request, Closure $next)
+     {
+-        // existing checks...
++        if (session('skeleton.scope') === 'full') {
++            return $next($request);
++        }
++        // existing checks...
+*** End Patch

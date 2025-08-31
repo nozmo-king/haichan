@@ -1,0 +1,51 @@
+# Nginx Configuration for Local Development
+# Save this as: /etc/nginx/sites-available/hai3-local
+# Then create symlink: sudo ln -s /etc/nginx/sites-available/hai3-local /etc/nginx/sites-enabled/
+
+server {
+    listen 80;
+    server_name hai3.local localhost;
+    
+    root /home/user/hai3/public;
+    index index.php index.html index.htm;
+    
+    # Laravel specific configurations
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    
+    # Handle PHP files
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;  # Adjust PHP version as needed
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+    
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+    }
+    
+    # Handle static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Logs
+    access_log /var/log/nginx/hai3_access.log;
+    error_log /var/log/nginx/hai3_error.log;
+}
+
+# Installation Steps:
+# 1. sudo cp nginx-local-dev.txt /etc/nginx/sites-available/hai3-local
+# 2. sudo ln -s /etc/nginx/sites-available/hai3-local /etc/nginx/sites-enabled/
+# 3. sudo nginx -t  # Test configuration
+# 4. sudo systemctl reload nginx
+# 5. Add "127.0.0.1 hai3.local" to /etc/hosts (optional, for custom domain)
+# 6. Ensure PHP-FPM is running: sudo systemctl start php8.2-fpm
+# 7. Set proper permissions: sudo chown -R www-data:www-data /home/user/hai3/storage /home/user/hai3/bootstrap/cache
+
+e03fcafabb8cd0665ec54a26b0c5729732c5e77d90a6defd360787e56c2f9b9d
+02772dc8a3334198640eef89ffdb88d9f67c5a3b8a395ef2f95c736ae294dee855

@@ -1,0 +1,19 @@
+{
+  "name": "forum-tui-client",
+  "version": "1.0.0",
+  "description": "Terminal UI client for Laravel Forum API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "axios": "^1.6.0",
+    "inquirer": "^9.2.0",
+    "chalk": "^4.1.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
