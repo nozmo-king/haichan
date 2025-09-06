@@ -1,0 +1,477 @@
+/* Windows 95/2095 Aesthetic Themes */
+/* Business (ビジネス) - Professional Windows 95 */
+/* Pleasure (楽しみ) - Cyberpunk Windows 2095 */
+
+/* Theme Variables */
+:root {
+  /* Business Theme - Traditional Windows 95 with Subtle Gradients */
+  --business-bg: linear-gradient(135deg, #c0c0c0 0%, #d4d4d4 50%, #b8b8b8 100%);
+  --business-panel: linear-gradient(135deg, #f0f0f0 0%, #fafafa 30%, #e8e8e8 70%, #f4f4f4 100%);
+  --business-border-raised: #ffffff #808080 #808080 #ffffff;
+  --business-border-sunken: #808080 #ffffff #ffffff #808080;
+  --business-text: #000000;
+  --business-active: linear-gradient(90deg, #0000ff 0%, #4169e1 50%, #0000cd 100%);
+  --business-highlight: linear-gradient(90deg, #316ac5 0%, #4682b4 50%, #2f4f4f 100%);
+  --business-shadow: #000000;
+  --business-accent: #008080;
+  --business-concrete-light: linear-gradient(45deg, #f8f8f8 0%, #e0e0e0 25%, #f0f0f0 50%, #d8d8d8 75%, #f4f4f4 100%);
+  --business-concrete-dark: linear-gradient(45deg, #a0a0a0 0%, #8c8c8c 25%, #949494 50%, #888888 75%, #9c9c9c 100%);
+  --business-secure-zone: linear-gradient(180deg, rgba(49, 106, 197, 0.1) 0%, rgba(49, 106, 197, 0.05) 50%, rgba(49, 106, 197, 0.08) 100%);
+  
+  /* Pleasure Theme - Neon Cyberpunk Windows 2095 with Concrete Zones */
+  --pleasure-bg: linear-gradient(135deg, #0a0015 0%, #150025 30%, #0f001a 70%, #1a0030 100%);
+  --pleasure-panel: linear-gradient(135deg, #1a0030 0%, #2a0050 25%, #200040 50%, #1f003f 75%, #250055 100%);
+  --pleasure-border-raised: #ff00ff #00ffff #00ffff #ff00ff;
+  --pleasure-border-sunken: #00ffff #ff00ff #ff00ff #00ffff;
+  --pleasure-text: #00ff41;
+  --pleasure-active: linear-gradient(90deg, #ff1493 0%, #ff69b4 50%, #dc143c 100%);
+  --pleasure-highlight: linear-gradient(90deg, #9400d3 0%, #8a2be2 50%, #4b0082 100%);
+  --pleasure-shadow: #ff00ff;
+  --pleasure-accent: #00ffff;
+  --pleasure-neon: #39ff14;
+  --pleasure-pink: #ff10f0;
+  --pleasure-cyan: #10f0ff;
+  --pleasure-concrete-neon: linear-gradient(45deg, rgba(57, 255, 20, 0.15) 0%, rgba(255, 16, 240, 0.1) 25%, rgba(16, 240, 255, 0.12) 50%, rgba(148, 0, 211, 0.08) 75%, rgba(57, 255, 20, 0.1) 100%);
+  --pleasure-secure-matrix: linear-gradient(180deg, rgba(0, 255, 65, 0.08) 0%, rgba(0, 0, 0, 0.3) 30%, rgba(57, 255, 20, 0.05) 60%, rgba(0, 0, 0, 0.4) 100%);
+  --pleasure-data-stream: linear-gradient(90deg, transparent 0%, rgba(0, 255, 65, 0.2) 20%, rgba(255, 16, 240, 0.15) 40%, rgba(16, 240, 255, 0.2) 60%, rgba(148, 0, 211, 0.1) 80%, transparent 100%);
+}
+
+/* Business Theme */
+.theme-business {
+  background: var(--business-bg);
+  color: var(--business-text);
+  font-family: 'MS Sans Serif', sans-serif;
+  min-height: 100vh;
+  position: relative;
+}
+
+.theme-business::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--business-concrete-light);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.theme-business .window {
+  background: var(--business-panel);
+  border: 2px solid;
+  border-color: var(--business-border-raised);
+  box-shadow: 
+    1px 1px 0px var(--business-shadow),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-business .window::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: var(--business-secure-zone);
+  pointer-events: none;
+}
+
+.theme-business .window-title {
+  background: linear-gradient(90deg, var(--business-highlight), var(--business-active));
+  color: white;
+  padding: 2px 4px;
+  font-weight: bold;
+  font-size: 11px;
+}
+
+.theme-business .btn {
+  background: var(--business-panel);
+  border: 1px solid;
+  border-color: var(--business-border-raised);
+  padding: 4px 16px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: none;
+}
+
+.theme-business .btn:hover {
+  border-color: var(--business-border-sunken);
+}
+
+.theme-business .btn:active {
+  border-color: var(--business-border-sunken);
+  background: var(--business-bg);
+}
+
+.theme-business .menu-bar {
+  background: var(--business-panel);
+  border-bottom: 1px solid var(--business-shadow);
+  padding: 2px;
+}
+
+.theme-business .status-bar {
+  background: var(--business-bg);
+  border-top: 1px solid var(--business-shadow);
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+/* Pleasure Theme */
+.theme-pleasure {
+  background: var(--pleasure-bg);
+  color: var(--pleasure-text);
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 3px currentColor;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.theme-pleasure::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--pleasure-concrete-neon);
+  pointer-events: none;
+  z-index: -1;
+  animation: dataFlow 20s linear infinite;
+}
+
+.theme-pleasure::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 200%;
+  height: 100%;
+  background: var(--pleasure-data-stream);
+  pointer-events: none;
+  z-index: -1;
+  animation: dataStreamMove 15s linear infinite;
+}
+
+@keyframes dataFlow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes dataStreamMove {
+  0% { transform: translateX(-50%); }
+  100% { transform: translateX(50%); }
+}
+
+.theme-pleasure .window {
+  background: var(--pleasure-panel);
+  border: 2px solid;
+  border-color: var(--pleasure-border-raised);
+  box-shadow: 
+    0 0 15px var(--pleasure-pink),
+    inset 0 0 20px rgba(255, 0, 255, 0.1),
+    0 0 30px rgba(16, 240, 255, 0.2);
+  backdrop-filter: blur(3px);
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-pleasure .window::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: var(--pleasure-secure-matrix);
+  pointer-events: none;
+  animation: matrixFlow 8s ease-in-out infinite;
+}
+
+@keyframes matrixFlow {
+  0%, 100% { opacity: 0.3; transform: translateY(0); }
+  50% { opacity: 0.6; transform: translateY(-5px); }
+}
+
+.theme-pleasure .window-title {
+  background: linear-gradient(90deg, var(--pleasure-highlight), var(--pleasure-active));
+  color: var(--pleasure-neon);
+  padding: 2px 4px;
+  font-weight: bold;
+  font-size: 11px;
+  text-shadow: 0 0 5px currentColor;
+  animation: neonPulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes neonPulse {
+  from { text-shadow: 0 0 5px currentColor, 0 0 10px currentColor; }
+  to { text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor; }
+}
+
+.theme-pleasure .btn {
+  background: var(--pleasure-panel);
+  border: 1px solid var(--pleasure-cyan);
+  color: var(--pleasure-neon);
+  padding: 4px 16px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-shadow: 0 0 3px currentColor;
+  box-shadow: 0 0 5px var(--pleasure-cyan);
+}
+
+.theme-pleasure .btn:hover {
+  border-color: var(--pleasure-pink);
+  box-shadow: 0 0 10px var(--pleasure-pink);
+  transform: translateY(-1px);
+}
+
+.theme-pleasure .btn:active {
+  background: var(--pleasure-bg);
+  transform: translateY(1px);
+  box-shadow: inset 0 0 5px var(--pleasure-pink);
+}
+
+.theme-pleasure .menu-bar {
+  background: var(--pleasure-panel);
+  border-bottom: 1px solid var(--pleasure-cyan);
+  padding: 2px;
+  box-shadow: 0 0 5px var(--pleasure-cyan);
+}
+
+.theme-pleasure .status-bar {
+  background: var(--pleasure-bg);
+  border-top: 1px solid var(--pleasure-cyan);
+  padding: 2px 4px;
+  font-size: 11px;
+  color: var(--pleasure-neon);
+  text-shadow: 0 0 3px currentColor;
+}
+
+/* Thread and Post Styling for Business Theme */
+.theme-business .thread-container {
+  background: var(--business-panel);
+  border: 1px solid;
+  border-color: var(--business-border-sunken);
+  margin: 4px 0;
+  padding: 8px;
+}
+
+.theme-business .post {
+  background: white;
+  border: 1px solid var(--business-shadow);
+  margin: 2px 0;
+  padding: 4px;
+}
+
+.theme-business .post-header {
+  background: var(--business-bg);
+  border-bottom: 1px solid var(--business-shadow);
+  padding: 2px 4px;
+  font-size: 10px;
+}
+
+/* Thread and Post Styling for Pleasure Theme */
+.theme-pleasure .thread-container {
+  background: var(--pleasure-panel);
+  border: 1px solid var(--pleasure-cyan);
+  margin: 4px 0;
+  padding: 8px;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.theme-pleasure .post {
+  background: rgba(26, 0, 48, 0.8);
+  border: 1px solid var(--pleasure-pink);
+  margin: 2px 0;
+  padding: 4px;
+  box-shadow: 0 0 5px rgba(255, 16, 240, 0.2);
+}
+
+.theme-pleasure .post-header {
+  background: var(--pleasure-bg);
+  border-bottom: 1px solid var(--pleasure-cyan);
+  padding: 2px 4px;
+  font-size: 10px;
+  color: var(--pleasure-cyan);
+}
+
+/* Mining UI Theme Integration */
+.theme-business #haichan-miner {
+  background: var(--business-panel);
+  border: 2px solid;
+  border-color: var(--business-border-raised);
+  color: var(--business-text);
+  font-family: 'MS Sans Serif', sans-serif;
+  box-shadow: 2px 2px 0px var(--business-shadow);
+}
+
+.theme-business #haichan-miner .miner-header {
+  background: linear-gradient(90deg, var(--business-highlight), var(--business-active));
+  color: white;
+}
+
+.theme-pleasure #haichan-miner {
+  background: var(--pleasure-panel);
+  border: 2px solid var(--pleasure-cyan);
+  color: var(--pleasure-neon);
+  font-family: 'Courier New', monospace;
+  box-shadow: 
+    0 0 15px var(--pleasure-cyan),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.theme-pleasure #haichan-miner .miner-header {
+  background: linear-gradient(90deg, var(--pleasure-highlight), var(--pleasure-active));
+  color: var(--pleasure-neon);
+  text-shadow: 0 0 5px currentColor;
+}
+
+/* Form Elements */
+.theme-business input, .theme-business textarea, .theme-business select {
+  background: white;
+  border: 1px solid;
+  border-color: var(--business-border-sunken);
+  padding: 2px 4px;
+  font-family: inherit;
+}
+
+.theme-pleasure input, .theme-pleasure textarea, .theme-pleasure select {
+  background: var(--pleasure-bg);
+  border: 1px solid var(--pleasure-cyan);
+  color: var(--pleasure-neon);
+  padding: 2px 4px;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 3px currentColor;
+  box-shadow: inset 0 0 5px rgba(0, 255, 255, 0.2);
+}
+
+.theme-pleasure input::placeholder, .theme-pleasure textarea::placeholder {
+  color: rgba(0, 255, 65, 0.5);
+}
+
+/* Navigation */
+.theme-business .nav-link {
+  color: var(--business-text);
+  text-decoration: none;
+  padding: 4px 8px;
+  display: inline-block;
+}
+
+.theme-business .nav-link:hover {
+  background: var(--business-highlight);
+  color: white;
+}
+
+.theme-pleasure .nav-link {
+  color: var(--pleasure-neon);
+  text-decoration: none;
+  padding: 4px 8px;
+  display: inline-block;
+  text-shadow: 0 0 3px currentColor;
+  transition: all 0.2s ease;
+}
+
+.theme-pleasure .nav-link:hover {
+  color: var(--pleasure-pink);
+  text-shadow: 0 0 8px currentColor;
+  transform: translateX(2px);
+}
+
+/* Table Elements */
+.theme-business table {
+  border-collapse: separate;
+  border-spacing: 1px;
+  background: var(--business-shadow);
+}
+
+.theme-business td, .theme-business th {
+  background: var(--business-panel);
+  border: 1px solid;
+  border-color: var(--business-border-raised);
+  padding: 2px 4px;
+}
+
+.theme-pleasure table {
+  border-collapse: separate;
+  border-spacing: 1px;
+  background: var(--pleasure-cyan);
+}
+
+.theme-pleasure td, .theme-pleasure th {
+  background: var(--pleasure-panel);
+  border: 1px solid var(--pleasure-cyan);
+  padding: 2px 4px;
+  color: var(--pleasure-neon);
+  text-shadow: 0 0 3px currentColor;
+}
+
+/* Special Effects for Pleasure Theme */
+.theme-pleasure .glitch-text {
+  position: relative;
+  animation: glitch 2s linear infinite;
+}
+
+@keyframes glitch {
+  2%, 64% {
+    transform: translate(2px,0) skew(0deg);
+  }
+  4%, 60% {
+    transform: translate(-2px,0) skew(0deg);
+  }
+  62% {
+    transform: translate(0,0) skew(5deg);
+  }
+}
+
+.theme-pleasure .scan-lines {
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-pleasure .scan-lines::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    transparent 0%,
+    rgba(0, 255, 0, 0.03) 50%,
+    transparent 100%
+  );
+  background-size: 100% 4px;
+  animation: scanLines 0.1s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes scanLines {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .theme-business, .theme-pleasure {
+    font-size: 10px;
+  }
+  
+  .theme-business .btn, .theme-pleasure .btn {
+    padding: 2px 8px;
+    font-size: 9px;
+  }
+}
+
+/* Dark Mode Compatibility */
+@media (prefers-color-scheme: dark) {
+  .theme-business {
+    --business-bg: #2d2d2d;
+    --business-panel: #3d3d3d;
+    --business-text: #ffffff;
+  }
+}

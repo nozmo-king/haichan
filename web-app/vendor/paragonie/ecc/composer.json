@@ -1,0 +1,87 @@
+{
+    "name": "paragonie/ecc",
+    "description": "PHP Elliptic Curve Cryptography library",
+    "type": "library",
+    "homepage": "https://github.com/phpecc/phpecc",
+    "keywords": ["secp256k1", "secp256r1", "nistp192", "nistp224", "nistp256", "nistp384", "nistp521", "ECDSA", "diffie", "hellman", "ECDH", "elliptic", "curve", "phpecc"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Paragon Initiative Enterprises",
+            "homepage": "https://paragonie.com",
+            "email": "security@paragonie.com",
+            "role": "New Maintainer"
+        },
+        {
+            "name": "Matyas Danter",
+            "homepage": "http://matejdanter.com/",
+            "role": "Previous Author"
+        },
+        {
+            "name": "Thibaud Fabre",
+            "email": "thibaud@aztech.io",
+            "homepage": "http://aztech.io",
+            "role": "Previous Maintainer"
+        },
+        {
+            "name": "Thomas Kerin",
+            "email": "afk11@users.noreply.github.com",
+            "role": "Previous Maintainer"
+        }
+    ],
+    "require": {
+        "php": "^7.1||^8.0",
+        "ext-gmp": "*",
+        "genkgo/php-asn1": "^2",
+        "paragonie/sodium_compat": "^1|^2"
+    },
+    "require-dev": {
+        "ext-json": "*",
+        "bitcoin/bips": "dev-master",
+        "c2sp/wycheproof": "dev-master",
+        "phpunit/phpunit": "^6|^7|^8|^9",
+        "squizlabs/php_codesniffer": "^2|^3",
+        "symfony/yaml": "^2.6|^3.0|^4|^5|^6|^7",
+        "vimeo/psalm": "^2|^3|^4|^5|^6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mdanter\\Ecc\\": "src/"
+        }
+    },
+    "suggest": {
+        "ext-openssl": "(PHP 8.1, OpenSSL 3+) Improved performance, less worries about side-channels"
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Mdanter\\Ecc\\Tests\\": "tests/unit",
+            "Mdanter\\Ecc\\WycheProof\\": "tests/wycheproof"
+        }
+    },
+    "repositories": [
+        {
+            "type": "package",
+            "package": {
+                "name": "bitcoin/bips",
+                "version": "dev-master",
+                "source": {
+                    "url": "https://github.com/bitcoin/bips",
+                    "type": "git",
+                    "reference": "master"
+                }
+            }
+        },
+        {
+            "type": "package",
+            "package": {
+                "name": "c2sp/wycheproof",
+                "version": "dev-master",
+                "source": {
+                    "url": "https://github.com/C2SP/wycheproof",
+                    "type": "git",
+                    "reference": "main"
+                }
+            }
+        }
+    ]
+}

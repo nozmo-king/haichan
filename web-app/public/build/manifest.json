@@ -1,0 +1,19 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-BRp9hPjV.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-fzlyrXoC.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/global-mining.js": {
+    "file": "assets/global-mining-4c3FSRxZ.js",
+    "name": "global-mining",
+    "src": "resources/js/global-mining.js",
+    "isEntry": true
+  }
+}

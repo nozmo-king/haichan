@@ -1,0 +1,311 @@
+/* Haichan - Local Development CSS (Yotsuba-style) */
+/* Color Scheme: #3D315B (purple bg), #444B6E (dark), #708B75 (medium), #9AB87A (light green) */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Times New Roman', serif;
+    background: #3D315B;
+    color: #000;
+    line-height: 1.4;
+    font-size: 10pt;
+}
+
+.container {
+    max-width: 1024px;
+    margin: 0 auto;
+    background: #FFFFEE;
+    min-height: 100vh;
+    border-left: 1px solid #444B6E;
+    border-right: 1px solid #444B6E;
+}
+
+/* Header */
+.header {
+    background: #708B75;
+    padding: 10px 20px;
+    border-bottom: 2px solid #444B6E;
+    text-align: center;
+}
+
+.header h1 {
+    font-size: 24pt;
+    font-weight: bold;
+    color: #FFFFEE;
+    text-shadow: 1px 1px 0 #444B6E;
+    margin-bottom: 5px;
+}
+
+.header h1 a {
+    color: #FFFFEE;
+    text-decoration: none;
+}
+
+.header h1 a:hover {
+    text-shadow: 2px 2px 0 #444B6E;
+}
+
+.header p {
+    color: #FFFFEE;
+    font-style: italic;
+    margin-bottom: 8px;
+}
+
+.header nav a {
+    color: #FFFFEE;
+    text-decoration: none;
+    margin: 0 10px;
+    padding: 4px 8px;
+    background: #444B6E;
+    border-radius: 3px;
+    font-size: 9pt;
+}
+
+.header nav a:hover {
+    background: #3D315B;
+}
+
+/* Board Header */
+.board-header {
+    background: #9AB87A;
+    padding: 15px 20px;
+    border-bottom: 1px solid #444B6E;
+    text-align: center;
+}
+
+.board-header h2 {
+    color: #444B6E;
+    font-size: 18pt;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* Forms */
+.post-form, .reply-form {
+    background: #F5F5DC;
+    border: 1px solid #708B75;
+    margin: 20px;
+    padding: 15px;
+}
+
+.post-form h3, .reply-form h3 {
+    color: #444B6E;
+    font-size: 12pt;
+    margin-bottom: 10px;
+}
+
+.post-form table, .reply-form table {
+    width: 100%;
+}
+
+.post-form td, .reply-form td {
+    padding: 5px;
+    vertical-align: top;
+}
+
+.post-form input, .post-form textarea, .post-form select,
+.reply-form input, .reply-form textarea, .reply-form select {
+    font-family: inherit;
+    font-size: 9pt;
+    border: 1px solid #708B75;
+    padding: 4px;
+}
+
+.post-form textarea, .reply-form textarea {
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+}
+
+.btn-primary, .btn-bump, .btn-stop {
+    background: #9AB87A;
+    color: #444B6E;
+    border: 1px solid #708B75;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 9pt;
+    font-weight: bold;
+}
+
+.btn-primary:hover, .btn-bump:hover {
+    background: #708B75;
+    color: #FFFFEE;
+}
+
+/* Thread Listing */
+.threads-list {
+    margin: 20px;
+}
+
+.thread-preview {
+    background: #F5F5DC;
+    border: 1px solid #708B75;
+    margin-bottom: 15px;
+    padding: 10px;
+}
+
+.subject {
+    font-weight: bold;
+    color: #0F0C5D;
+}
+
+.subject a {
+    color: #0F0C5D;
+    text-decoration: none;
+}
+
+.subject a:hover {
+    color: #DD0000;
+}
+
+.poster-info {
+    color: #117743;
+    font-size: 9pt;
+}
+
+.thread-content {
+    display: flex;
+    gap: 10px;
+    margin: 8px 0;
+}
+
+.thread-image {
+    flex-shrink: 0;
+}
+
+.thread-text {
+    flex-grow: 1;
+    font-size: 9pt;
+}
+
+.thumbnail {
+    max-width: 125px;
+    max-height: 125px;
+    border: 1px solid #708B75;
+}
+
+/* Posts */
+.post {
+    background: #F5F5DC;
+    border: 1px solid #708B75;
+    margin: 5px 20px;
+    padding: 10px;
+}
+
+.op-post {
+    border-color: #444B6E;
+    background: #FFFACD;
+    border-width: 2px;
+}
+
+.reply-post {
+    margin-left: 40px;
+}
+
+.post-header {
+    font-size: 10pt;
+    margin-bottom: 8px;
+}
+
+.post-content {
+    font-size: 10pt;
+    line-height: 1.4;
+}
+
+.post-content .greentext {
+    color: #789922;
+}
+
+.post-content .quote-link {
+    color: #DD0000;
+    text-decoration: none;
+}
+
+/* PoW Bumping */
+.pow-bump-section {
+    background: #F5F5DC;
+    border: 1px solid #708B75;
+    margin: 20px;
+    padding: 15px;
+}
+
+.pow-bump-section h3 {
+    color: #444B6E;
+    margin-bottom: 8px;
+}
+
+.bump-mining {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.mining-status {
+    font-size: 8pt;
+    color: #888;
+    margin-top: 8px;
+}
+
+/* Board listing */
+.board-listing {
+    padding: 20px;
+}
+
+.boards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.board-card {
+    background: #F5F5DC;
+    border: 1px solid #708B75;
+    padding: 15px;
+}
+
+.board-card:hover {
+    border-color: #444B6E;
+}
+
+.board-card h3 a {
+    color: #444B6E;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+/* Error alerts */
+.alert {
+    padding: 10px;
+    margin: 20px;
+}
+
+.alert-danger {
+    color: #8B0000;
+    background: #FFE4E1;
+    border: 1px solid #CD853F;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        border: none;
+    }
+    
+    .thread-content {
+        flex-direction: column;
+    }
+    
+    .reply-post {
+        margin-left: 20px;
+    }
+    
+    .bump-mining {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

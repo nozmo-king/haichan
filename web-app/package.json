@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "hai3-web-app",
+  "version": "1.0.0",
+  "description": "HAI3 Forum Web Application",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "generate-keypair": "tsx src/crypto/generate-keypair.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@noble/secp256k1": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "axios": "^1.8.2",
+    "concurrently": "^9.0.1",
+    "laravel-vite-plugin": "^1.0.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

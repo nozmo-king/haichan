@@ -1,0 +1,1076 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ForumController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\FriendCodeController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\StripeWebhookController;
+
+// Authentication routes
+Route::get('/login', [AuthController::class, 'showLogin'])->name('auth.login');
+Route::post('/challenge', [AuthController::class, 'getChallenge'])->middleware('throttle:25,1')->name('auth.challenge');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
+Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
+
+// Admin routes (protected by auth)
+Route::middleware('require.auth')->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('keys', AdminController::class)->names([
+        'index' => 'keys.index',
+        'create' => 'keys.create', 
+        'store' => 'keys.store',
+        'edit' => 'keys.edit',
+        'update' => 'keys.update',
+        'destroy' => 'keys.destroy'
+    ]);
+});
+
+// Subscription routes (public access for viewing plans)
+Route::get('/subscription/plans', [SubscriptionController::class, 'plans'])->name('subscription.plans');
+
+// Registration routes
+Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('auth.register.form');
+Route::get('/register/{friend_code}', [AuthController::class, 'showRegister'])
+    ->middleware('validate.friend.code')
+    ->name('auth.register');
+Route::post('/register', [AuthController::class, 'register'])->name('auth.register.submit');
+
+// Protected subscription and friend code routes
+Route::middleware('require.auth')->group(function () {
+    // Subscription management
+    Route::post('/subscription/subscribe/{plan}', [SubscriptionController::class, 'subscribe'])->name('subscription.subscribe');
+    Route::get('/subscription/dashboard', [SubscriptionController::class, 'dashboard'])->name('subscription.dashboard');
+    Route::post('/subscription/{subscription}/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    Route::get('/api/subscription/status', [SubscriptionController::class, 'status'])->name('api.subscription.status');
+    
+    // Friend code management
+    Route::get('/friend-codes', [FriendCodeController::class, 'index'])->name('friend-codes.index');
+    Route::post('/friend-codes/generate', [FriendCodeController::class, 'generate'])->name('friend-codes.generate');
+    Route::get('/api/friend-codes/stats', [FriendCodeController::class, 'stats'])->name('api.friend-codes.stats');
+    
+    // Payment management
+    Route::get('/payment/{payment}', [PaymentController::class, 'show'])->name('payment.show');
+    Route::post('/payment/{payment}/confirm', [PaymentController::class, 'confirm'])->name('payment.confirm');
+    Route::get('/payment/{payment}/success', [PaymentController::class, 'success'])->name('payment.success');
+    Route::get('/payment/{payment}/cancel', [PaymentController::class, 'cancel'])->name('payment.cancel');
+    Route::get('/api/payment/{payment}/status', [PaymentController::class, 'status'])->name('api.payment.status');
+});
+
+// Landing page for non-authenticated users
+Route::get('/', function () {
+    if (auth()->check()) {
+        if (auth()->user()->hasActiveSubscription()) {
+            return app(ForumController::class)->index();
+        } else {
+            return redirect()->route('subscription.plans')
+                ->with('info', 'Welcome! You need an active subscription to access the forum.');
+        }
+    } else {
+        return redirect()->route('subscription.plans')
+            ->with('info', 'Welcome to our exclusive forum community! Please register or login to continue.');
+    }
+})->name('home');
+
+// CSRF token refresh endpoint for long-running operations
+Route::middleware('require.auth')->get('/api/csrf-token', function () {
+    return response()->json(['csrf_token' => csrf_token()]);
+})->name('api.csrf-token');
+
+// Debug logs page (temporary for debugging)
+Route::middleware('require.auth')->get('/debug-logs', function () {
+    return view('debug-logs');
+})->name('debug.logs');
+
+// Session keep-alive endpoint for mining
+Route::middleware('require.auth')->post('/api/keep-alive', function (Illuminate\Http\Request $request) {
+    // Log client-side messages if provided
+    if ($request->has('client_log')) {
+        \Log::info('=== CLIENT LOG ===', [
+            'client_message' => $request->input('client_log'),
+            'client_data' => $request->input('client_data'),
+            'user_id' => auth()->id(),
+            'session_id' => session()->getId(),
+            'timestamp' => now()->toDateTimeString(),
+            'url' => $request->header('Referer')
+        ]);
+    }
+    
+    return response()->json([
+        'status' => 'alive',
+        'timestamp' => now()->toDateTimeString(),
+        'session_id' => session()->getId(),
+        'user_id' => auth()->id()
+    ]);
+})->name('api.keep-alive');
+
+
+// Protected forum routes (with subscription requirement)
+Route::middleware(['require.auth', 'require.subscription'])->group(function () {
+    Route::get('/forum', [ForumController::class, 'index'])->name('forum.index');
+    Route::get('/{code}', [ForumController::class, 'showBoard'])->name('forum.board');
+    Route::get('/{code}/create', [ForumController::class, 'createThread'])->name('forum.create');
+    Route::post('/{code}/create', [ForumController::class, 'storeThread'])->name('forum.store');
+    Route::get('/{code}/thread/{thread}', [ForumController::class, 'showThread'])->name('forum.thread');
+    Route::post('/{code}/thread/{thread}/reply', [ForumController::class, 'storeReply'])->name('forum.reply');
+});
+
+// Public API endpoints for friend code validation
+Route::post('/api/friend-codes/validate', [FriendCodeController::class, 'validate'])->name('api.friend-codes.validate');
+
+// Stripe webhook (public endpoint, no auth required)
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle'])->name('stripe.webhook');
+
+// PoW API routes
+Route::post('/api/submit-pow', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
+Route::get('/api/mining-stats', [App\Http\Controllers\ProofOfWorkController::class, 'getMiningStats']);
+
+// HAI3 Proof of Work Routes
+Route::get('/mining', function() {
+    return view('mining.dashboard');
+})->name('mining.dashboard');
+
+Route::prefix('api')->group(function() {
+    Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
+    Route::get('/mining-stats', [App\Http\Controllers\ProofOfWorkController::class, 'getStats']);
+    Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
+    Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
+});
+
+// HAI3 Proof of Work Routes
+Route::get('/mining', function() {
+    return view('mining.dashboard');
+})->name('mining.dashboard');
+
+Route::prefix('api')->group(function() {
+    Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
+    Route::get('/mining-stats', [App\Http\Controllers\ProofOfWorkController::class, 'getStats']);
+    Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
+    Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
+});
+Route::get('/mining', function() {
+    return view('mining.dashboard');
+})->name('mining.dashboard');
+
+Route::get('/leaderboard', [ProofOfWorkController::class, 'getLeaderboard'])->name('mining.leaderboard');
+
+// API routes for AJAX calls
+Route::prefix('api')->group(function() {
+    Route::post('/submit-proof', [ProofOfWorkController::class, 'submitProof'])->name('api.submit-proof');
+    Route::get('/mining-stats', [ProofOfWorkController::class, 'getStats'])->name('api.mining-stats');  
+    Route::get('/difficulty', [ProofOfWorkController::class, 'getDifficulty'])->name('api.difficulty');
+    Route::post('/threads/{thread}/bump', [ProofOfWorkController::class, 'bumpThread'])->name('api.bump-thread');
+    
+    // Session management
+    Route::post('/start-mining-session', [ProofOfWorkController::class, 'startMiningSession']);
+    Route::post('/end-mining-session', [ProofOfWorkController::class, 'endMiningSession']);
+    Route::post('/update-mining-activity', [ProofOfWorkController::class, 'updateMiningActivity']);
+});
+
+// routes/api.php - For external API access
+Route::middleware(['throttle:60,1'])->group(function() {
+    Route::post('/submit-proof', [ProofOfWorkController::class, 'submitProof']);
+    Route::get('/leaderboard', [ProofOfWorkController::class, 'getLeaderboard']);
+    Route::get('/stats', [ProofOfWorkController::class, 'getStats']);
+});
+
+// Create Laravel Blade view: resources/views/mining/dashboard.blade.php
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>HAI3 Mining Dashboard</title>
+    
+    <style>
+        body {
+            font-family: 'Monaco', 'Consolas', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .mining-dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #111;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00ff00;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #888;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+        
+        .mining-controls {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+            font-weight: bold;
+        }
+        
+        select, input, button {
+            background: #222;
+            color: #00ff00;
+            border: 1px solid #555;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        button {
+            background: #333;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #444;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: #006600;
+        }
+        
+        .btn-primary:hover {
+            background: #008800;
+        }
+        
+        .btn-danger {
+            background: #660000;
+        }
+        
+        .btn-danger:hover {
+            background: #880000;
+        }
+        
+        .mining-output {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .output-panel {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .hash-display {
+            word-break: break-all;
+            font-size: 0.85em;
+            margin: 10px 0;
+            padding: 10px;
+            background: #222;
+            border-radius: 4px;
+        }
+        
+        .mining-log {
+            height: 300px;
+            overflow-y: auto;
+            background: #000;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        
+        .log-success {
+            color: #ffff00;
+            font-weight: bold;
+        }
+        
+        .log-info {
+            color: #00ffff;
+        }
+        
+        .log-error {
+            color: #ff0000;
+        }
+        
+        .leaderboard {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .leaderboard table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .leaderboard th, .leaderboard td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        
+        .leaderboard th {
+            background: #222;
+            color: #00ff00;
+        }
+        
+        .rank-1 { color: #FFD700; }
+        .rank-2 { color: #C0C0C0; }
+        .rank-3 { color: #CD7F32; }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-mining {
+            background: #00ff00;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-idle {
+            background: #666;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .proof-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #006600;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border-left: 4px solid #00ff00;
+            max-width: 400px;
+            z-index: 1000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .proof-toast.show {
+            transform: translateX(0);
+        }
+        
+        @media (max-width: 768px) {
+            .mining-output {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mining-dashboard">
+        <div class="header">
+            <h1>Haichan</h1>
+            <p>A proof-of-work image board.</p>
+            <p>
+                <span class="status-indicator" id="miningStatus"></span>
+                <span id="miningStatusText">Ready to Mine</span>
+            </p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="hashrate">0</div>
+                <div class="stat-label">Hashes/sec</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalHashes">0</div>
+                <div class="stat-label">Total Hashes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="validProofs">0</div>
+                <div class="stat-label">Valid Proofs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalPoints">{{ auth()->user()->pow_points ?? 0 }}</div>
+                <div class="stat-label">Your Points</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="minerRank">{{ auth()->user()->mining_rank ?? 'N/A' }}</div>
+                <div class="stat-label">Your Rank</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="activeLiefers">0</div>
+                <div class="stat-label">Active Miners</div>
+            </div>
+        </div>
+
+        <div class="mining-controls">
+            <h3>Mining Controls</h3>
+            
+            <div class="control-group">
+                <label for="difficultySelect">Difficulty Pattern:</label>
+                <select id="difficultySelect">
+                    <option value="21e8">21e8 (Easy - 1 point)</option>
+                    <option value="21e80">21e80 (Medium - 5 points)</option>
+                    <option value="21e800">21e800 (Hard - 25 points)</option>
+                    <option value="21e8000">21e8000 (Extreme - 125 points)</option>
+                    <option value="000021e8">000021e8 (Insane - 625 points)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button id="startMining" class="btn-primary">Start Mining</button>
+                <button id="stopMining" class="btn-danger" disabled>Stop Mining</button>
+                <button id="clearLog">Clear Log</button>
+                <button id="refreshStats">Refresh Stats</button>
+            </div>
+        </div>
+
+        <div class="mining-output">
+            <div class="output-panel">
+                <h3>Current Hash</h3>
+                <div class="hash-display" id="currentHashDisplay">
+                    <strong>Latest:</strong><br>
+                    <span id="currentHash">No hashes generated yet</span>
+                </div>
+                
+                <h3>Mining Progress</h3>
+                <div>
+                    <strong>Target Pattern:</strong> <span id="targetPattern">21e8</span><br>
+                    <strong>Session Time:</strong> <span id="sessionTime">00:00:00</span><br>
+                    <strong>Avg. Hashrate:</strong> <span id="avgHashrate">0</span> H/s
+                </div>
+            </div>
+
+            <div class="output-panel">
+                <h3>Mining Log</h3>
+                <div class="mining-log" id="miningLog">
+                    <div class="log-entry log-info">[SYSTEM] Mining engine ready. Select difficulty and start mining.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="leaderboard">
+            <h3>Top Miners</h3>
+            <table id="leaderboardTable">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Miner</th>
+                        <th>Points</th>
+                        <th>Proofs</th>
+                        <th>Efficiency</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #666;">Loading leaderboard...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Toast notification for successful proofs -->
+    <div id="proofToast" class="proof-toast">
+        <strong>PROOF FOUND!</strong><br>
+        <span id="proofDetails"></span>
+    </div>
+
+    <script>
+        // Enhanced HAI3 Mining Dashboard
+        class HAI3MiningDashboard {
+            constructor() {
+                this.isMining = false;
+                this.totalHashes = 0;
+                this.validProofs = 0;
+                this.sessionStartTime = null;
+                this.nonce = 0;
+                this.targetPattern = '21e8';
+                this.currentHash = '';
+                
+                this.initializeUI();
+                this.loadLeaderboard();
+                this.startStatsUpdater();
+            }
+
+            initializeUI() {
+                document.getElementById('startMining').addEventListener('click', () => this.startMining());
+                document.getElementById('stopMining').addEventListener('click', () => this.stopMining());
+                document.getElementById('clearLog').addEventListener('click', () => this.clearLog());
+                document.getElementById('refreshStats').addEventListener('click', () => this.refreshStats());
+                
+                document.getElementById('difficultySelect').addEventListener('change', (e) => {
+                    this.targetPattern = e.target.value;
+                    document.getElementById('targetPattern').textContent = this.targetPattern;
+                });
+            }
+
+            async startMining() {
+                if (this.isMining) return;
+
+                this.isMining = true;
+                this.sessionStartTime = Date.now();
+                this.nonce = Math.floor(Math.random() * 1000000);
+                
+                document.getElementById('startMining').disabled = true;
+                document.getElementById('stopMining').disabled = false;
+                
+                const statusIndicator = document.getElementById('miningStatus');
+                statusIndicator.className = 'status-indicator status-mining';
+                document.getElementById('miningStatusText').textContent = 'Mining Active';
+
+                this.logInfo('Mining started with pattern: ' + this.targetPattern);
+                
+                // Start mining session on server
+                await this.startMiningSession();
+                
+                this.mine();
+            }
+
+            async mine() {
+                const baseData = `HAI3_${Date.now()}_${Math.random()}`;
+                
+                while (this.isMining) {
+                    const data = `${baseData}_${this.nonce}`;
+                    const hash = await this.sha256(data);
+                    
+                    this.totalHashes++;
+                    this.nonce++;
+                    this.currentHash = hash;
+                    
+                    // Update UI periodically for performance
+                    if (this.totalHashes % 50 === 0) {
+                        this.updateStats();
+                    }
+                    
+                    // Check if valid proof
+                    if (this.isValidProof(hash)) {
+                        this.validProofs++;
+                        this.logSuccess(`PROOF FOUND! Hash: ${hash}`);
+                        
+                        // Submit to server
+                        await this.submitProof({
+                            hash: hash,
+                            nonce: this.nonce - 1,
+                            data: data,
+                            pattern: this.targetPattern
+                        });
+                    }
+                    
+                    // Yield control to prevent UI freeze
+                    if (this.totalHashes % 500 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 1));
+                    }
+                }
+            }
+
+            async sha256(text) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+
+            isValidProof(hash) {
+                return hash.toLowerCase().includes(this.targetPattern.toLowerCase());
+            }
+
+            async submitProof(proof) {
+                try {
+                    const response = await fetch('/api/submit-proof', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify(proof)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        this.logSuccess(`Proof accepted! +${result.points} points (Total: ${result.total_points})`);
+                        this.showProofToast(result.points, proof.hash);
+                        
+                        // Update user stats
+                        document.getElementById('totalPoints').textContent = result.total_points;
+                    } else {
+                        this.logError(`Proof rejected: ${result.message}`);
+                    }
+                } catch (error) {
+                    this.logError(`Submit failed: ${error.message}`);
+                }
+            }
+
+            stopMining() {
+                this.isMining = false;
+                
+                document.getElementById('startMining').disabled = false;
+                document.getElementById('stopMining').disabled = true;
+                
+                const statusIndicator = document.getElementById('miningStatus');
+                statusIndicator.className = 'status-indicator status-idle';
+                document.getElementById('miningStatusText').textContent = 'Mining Stopped';
+                
+                this.logInfo('Mining stopped');
+                this.endMiningSession();
+            }
+
+            updateStats() {
+                // Update hash display
+                document.getElementById('currentHash').textContent = this.currentHash;
+                document.getElementById('totalHashes').textContent = this.totalHashes.toLocaleString();
+                document.getElementById('validProofs').textContent = this.validProofs;
+                
+                // Calculate hashrate
+                if (this.sessionStartTime) {
+                    const elapsed = (Date.now() - this.sessionStartTime) / 1000;
+                    const hashrate = Math.round(this.totalHashes / Math.max(elapsed, 1));
+                    document.getElementById('hashrate').textContent = hashrate.toLocaleString();
+                    document.getElementById('avgHashrate').textContent = hashrate.toLocaleString();
+                    
+                    // Update session time
+                    const hours = Math.floor(elapsed / 3600);
+                    const minutes = Math.floor((elapsed % 3600) / 60);
+                    const seconds = Math.floor(elapsed % 60);
+                    document.getElementById('sessionTime').textContent = 
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+
+            async loadLeaderboard() {
+                try {
+                    const response = await fetch('/api/mining-stats');
+                    const data = await response.json();
+                    
+                    const tbody = document.querySelector('#leaderboardTable tbody');
+                    tbody.innerHTML = '';
+                    
+                    data.top_miners.forEach((miner, index) => {
+                        const row = document.createElement('tr');
+                        const rankClass = index < 3 ? `rank-${index + 1}` : '';
+                        
+                        row.innerHTML = `
+                            <td class="${rankClass}">#${index + 1}</td>
+                            <td class="${rankClass}">${miner.username || 'Anonymous'}</td>
+                            <td class="${rankClass}">${miner.pow_points.toLocaleString()}</td>
+                            <td>${miner.total_proofs || 0}</td>
+                            <td>${miner.mining_efficiency || '0.00'}</td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Update active miners count
+                    document.getElementById('activeLiefers').textContent = data.top_miners.length;
+                    
+                } catch (error) {
+                    this.logError('Failed to load leaderboard');
+                }
+            }
+
+            showProofToast(points, hash) {
+                const toast = document.getElementById('proofToast');
+                const details = document.getElementById('proofDetails');
+                
+                details.innerHTML = `+${points} points<br>Hash: ${hash.substring(0, 16)}...`;
+                
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 4000);
+            }
+
+            async startMiningSession() {
+                try {
+                    await fetch('/api/start-mining-session', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+                } catch (error) {
+                    console.error('Failed to end mining session:', error);
+                }
+            }
+
+            async refreshStats() {
+                this.loadLeaderboard();
+                this.updateStats();
+                this.logInfo('Stats refreshed');
+            }
+
+            startStatsUpdater() {
+                setInterval(() => {
+                    if (this.isMining) {
+                        this.updateStats();
+                    }
+                }, 1000);
+                
+                // Update leaderboard every 30 seconds
+                setInterval(() => {
+                    this.loadLeaderboard();
+                }, 30000);
+            }
+
+            logInfo(message) {
+                this.addLogEntry(message, 'log-info');
+            }
+
+            logSuccess(message) {
+                this.addLogEntry(message, 'log-success');
+            }
+
+            logError(message) {
+                this.addLogEntry(message, 'log-error');
+            }
+
+            addLogEntry(message, className) {
+                const log = document.getElementById('miningLog');
+                const entry = document.createElement('div');
+                entry.className = `log-entry ${className}`;
+                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                log.appendChild(entry);
+                log.scrollTop = log.scrollHeight;
+
+                // Limit log entries to prevent memory issues
+                while (log.children.length > 100) {
+                    log.removeChild(log.firstChild);
+                }
+            }
+
+            clearLog() {
+                document.getElementById('miningLog').innerHTML = '';
+                this.logInfo('Mining log cleared');
+            }
+        }
+
+        // Initialize dashboard when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            window.hai3Dashboard = new HAI3MiningDashboard();
+        });
+    </script>
+</body>
+</html>
+
+<?php
+// Additional Controller Methods for Session Management
+
+// Add these methods to ProofOfWorkController
+
+/**
+ * Start a mining session
+ */
+public function startMiningSession(Request $request)
+{
+    if (auth()->check()) {
+        $session = auth()->user()->startMiningSession(
+            $request->ip(),
+            $request->header('User-Agent')
+        );
+        
+        return response()->json([
+            'success' => true,
+            'session_id' => $session->id
+        ]);
+    }
+    
+    return response()->json([
+        'success' => false,
+        'message' => 'Authentication required'
+    ], 401);
+}
+
+/**
+ * End mining session
+ */
+public function endMiningSession(Request $request)
+{
+    if (auth()->check()) {
+        $activeSession = auth()->user()->activeMiningSession();
+        if ($activeSession) {
+            $activeSession->endSession();
+        }
+        
+        return response()->json(['success' => true]);
+    }
+    
+    return response()->json([
+        'success' => false,
+        'message' => 'Authentication required'
+    ], 401);
+}
+
+/**
+ * Update mining activity
+ */
+public function updateMiningActivity(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'hashes_computed' => 'required|integer|min:0',
+        'valid_proofs' => 'integer|min:0',
+        'points_earned' => 'integer|min:0'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    if (auth()->check()) {
+        $activeSession = auth()->user()->activeMiningSession();
+        if ($activeSession) {
+            $activeSession->updateActivity(
+                $request->input('hashes_computed', 0),
+                $request->input('valid_proofs', 0),
+                $request->input('points_earned', 0)
+            );
+            
+            // Update user's last activity
+            auth()->user()->update(['last_mining_activity' => now()]);
+        }
+        
+        return response()->json(['success' => true]);
+    }
+    
+    return response()->json([
+        'success' => false,
+        'message' => 'Authentication required'
+    ], 401);
+}
+
+/**
+ * Get real-time mining statistics
+ */
+public function getRealTimeStats()
+{
+    $stats = [
+        'total_active_miners' => MiningSession::where('active', true)->count(),
+        'total_hashrate_estimate' => $this->estimateNetworkHashrate(),
+        'recent_proofs' => ProofOfWork::where('created_at', '>=', now()->subMinutes(5))
+            ->with('user:id,username')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get(),
+        'difficulty_stats' => ProofOfWork::select('pattern', DB::raw('count(*) as count'))
+            ->where('created_at', '>=', now()->subHour())
+            ->groupBy('pattern')
+            ->get(),
+        'top_current_session_miners' => MiningSession::where('active', true)
+            ->with('user:id,username')
+            ->orderBy('points_earned', 'desc')
+            ->limit(10)
+            ->get()
+    ];
+    
+    return response()->json($stats);
+}
+
+/**
+ * Estimate network hashrate based on recent submissions
+ */
+private function estimateNetworkHashrate()
+{
+    $recentProofs = ProofOfWork::where('created_at', '>=', now()->subMinutes(10))->get();
+    
+    if ($recentProofs->isEmpty()) {
+        return 0;
+    }
+    
+    $totalEstimatedHashes = 0;
+    foreach ($recentProofs as $proof) {
+        // Estimate hashes needed based on pattern difficulty
+        $difficulty = $this->getPatternDifficulty($proof->pattern);
+        $totalEstimatedHashes += $difficulty;
+    }
+    
+    // Hashrate = estimated hashes / time period (10 minutes = 600 seconds)
+    return round($totalEstimatedHashes / 600);
+}
+
+/**
+ * Get estimated hash difficulty for pattern matching
+ */
+private function getPatternDifficulty($pattern)
+{
+    $difficulties = [
+        '21e8' => 65536,      // ~2^16 hashes on average
+        '21e80' => 1048576,   // ~2^20 hashes
+        '21e800' => 16777216, // ~2^24 hashes
+        '21e8000' => 268435456, // ~2^28 hashes
+        '000021e8' => 4294967296 // ~2^32 hashes
+    ];
+    
+    return $difficulties[$pattern] ?? 65536;
+}
+
+// Create a WebSocket controller for real-time updates (optional enhancement)
+// app/Http/Controllers/WebSocketController.php
+
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Events\ProofSubmitted;
+use App\Events\MiningStatsUpdated;
+
+class WebSocketController extends Controller 
+{
+    /**
+     * Broadcast proof submission to all connected clients
+     */
+    public function broadcastProofSubmission(ProofOfWork $proof)
+    {
+        broadcast(new ProofSubmitted([
+            'user' => $proof->user->username ?? 'Anonymous',
+            'hash' => $proof->hash,
+            'pattern' => $proof->pattern,
+            'points' => $proof->points,
+            'timestamp' => $proof->created_at->toISOString()
+        ]));
+    }
+    
+    /**
+     * Broadcast updated mining statistics
+     */
+    public function broadcastMiningStats()
+    {
+        $stats = [
+            'active_miners' => MiningSession::where('active', true)->count(),
+            'total_proofs_last_hour' => ProofOfWork::where('created_at', '>=', now()->subHour())->count(),
+            'network_hashrate_estimate' => $this->estimateNetworkHashrate()
+        ];
+        
+        broadcast(new MiningStatsUpdated($stats));
+    }
+}
+
+// Create Laravel Events (optional for real-time features)
+// app/Events/ProofSubmitted.php
+
+<?php
+
+namespace App\Events;
+
+use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\SerializesModels;
+
+class ProofSubmitted implements ShouldBroadcast
+{
+    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public $proofData;
+
+    public function __construct($proofData)
+    {
+        $this->proofData = $proofData;
+    }
+
+    public function broadcastOn()
+    {
+        return new Channel('mining-activity');
+    }
+
+    public function broadcastAs()
+    {
+        return 'proof.submitted';
+    }
+}
+
+// Add to composer.json for WebSocket support (optional)
+/*
+{
+    "require": {
+        "pusher/pusher-php-server": "^7.0",
+        "laravel/broadcasting": "^10.0"
+    }
+}
+*/Failed to start mining session:', error);
+                }
+            }
+
+            async endMiningSession() {
+                try {
+                    await fetch('/api/end-mining-session', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+                } catch (error) {
+                    console.error('
