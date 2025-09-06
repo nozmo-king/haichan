@@ -1,290 +1,763 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>⛏️ HAICHAN MINING COMMAND CENTER</title>
-    <link rel="stylesheet" href="/css/haichan.css">
-    <style>
-        /* Additional mining-specific styles */
-        .mining-stats {
+@extends('layout')
+
+@section('title', '⛏️ HAICHAN MINING COMMAND CENTER')
+
+@section('content')
+<style>
+        * { box-sizing: border-box; }
+        
+        .mining-page {
+            background: #F5F5DC;
+            color: #444B6E;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            min-height: calc(100vh - 60px);
+        }
+        
+        .command-center {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-areas: 
+                "header header header header"
+                "stats stats network network"
+                "controls controls network network"
+                "terminal terminal leaderboard leaderboard"
+                "hashview hashview activity activity";
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            grid-template-rows: auto auto auto 1fr auto;
             gap: 15px;
-            margin: 20px;
-        }
-        
-        .stat-card {
-            background: #F5F5DC;
-            border: 1px solid #708B75;
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 18pt;
-            font-weight: bold;
-            color: #444B6E;
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            font-size: 8pt;
-            color: #888;
-            text-transform: uppercase;
-        }
-        
-        .mining-controls {
-            background: #F5F5DC;
-            border: 1px solid #708B75;
-            margin: 20px;
             padding: 20px;
+            min-height: 100vh;
         }
         
-        .mining-controls h3 {
-            color: #444B6E;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #708B75;
-            padding-bottom: 5px;
+        .panel {
+            background: #FFFACD;
+            border: 2px solid #708B75;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        .control-row {
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+        .panel::before {
+            display: none;
         }
         
-        .control-row label {
-            font-weight: bold;
-            color: #444B6E;
-            min-width: 100px;
+        @keyframes scan {
+            0% { transform: translateX(-100%); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100%); opacity: 0; }
         }
         
-        .mining-output {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin: 20px;
+        .header {
+            grid-area: header;
+            text-align: center;
+            background: #9AB87A;
+            border: 3px solid #708B75;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        .output-panel {
-            background: #F5F5DC;
-            border: 1px solid #708B75;
-            padding: 15px;
-        }
-        
-        .output-panel h4 {
+        .header h1 {
+            font-size: 2.5em;
             color: #444B6E;
             margin-bottom: 10px;
-            border-bottom: 1px solid #708B75;
-            padding-bottom: 5px;
         }
         
-        .hash-display {
-            background: #FFFFEE;
-            border: 1px solid #708B75;
-            padding: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 8pt;
-            word-break: break-all;
-            margin: 10px 0;
+        
+        .network-status {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 12px;
+            margin-top: 10px;
         }
         
-        .mining-log {
-            background: #FFFFEE;
-            border: 1px solid #708B75;
-            padding: 10px;
-            height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 8pt;
+        .network-stat {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         
-        .log-entry {
-            margin-bottom: 3px;
-            padding: 2px 0;
-        }
-        
-        .log-success {
-            color: #789922;
-            font-weight: bold;
-        }
-        
-        .log-info {
-            color: #444B6E;
-        }
-        
-        .log-error {
-            color: #8B0000;
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
+        .status-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .status-mining {
-            background: #9AB87A;
-            animation: pulse 2s infinite;
-        }
-        
-        .status-idle {
-            background: #888;
+            background: #708B75;
+            animation: pulse 1s infinite;
         }
         
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        
+        .stats-grid {
+            grid-area: stats;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 50, 0, 0.3));
+            border: 1px solid #708B75;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #708B75;
+            text-shadow: 0 0 10px #708B75;
+            margin-bottom: 5px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .stat-label {
+            font-size: 10px;
+            color: #66ff66;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .mining-controls {
+            grid-area: controls;
+        }
+        
+        .controls-inner {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: 100%;
+        }
+        
+        .control-section h3 {
+            color: #708B75;
+            text-shadow: 0 0 5px #708B75;
+            border-bottom: 1px solid #708B75;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .mining-mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #708B75;
+            color: #708B75;
+            font-family: inherit;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        .mode-btn.active {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+            text-shadow: 0 0 5px #708B75;
+        }
+        
+        .mode-btn:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+        
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            padding: 12px 16px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(0, 50, 0, 0.3));
+            border: 1px solid #708B75;
+            color: #708B75;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 1px;
+        }
+        
+        .btn:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn.danger {
+            border-color: #ff6b35;
+            color: #ff6b35;
+        }
+        
+        .network-viz {
+            grid-area: network;
+            position: relative;
+        }
+        
+        .viz-container {
+            width: 100%;
+            height: 300px;
+            background: radial-gradient(circle at center, rgba(0, 255, 0, 0.1), transparent);
+            position: relative;
+            overflow: hidden;
+            border-radius: 5px;
+        }
+        
+        .terminal {
+            grid-area: terminal;
+        }
+        
+        .terminal-screen {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #708B75;
+            border-radius: 5px;
+            height: 250px;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+        
+        .terminal-line {
+            margin-bottom: 2px;
+        }
+        
+        .terminal-prompt {
+            color: #ffff00;
+        }
+        
+        .terminal-success {
+            color: #708B75;
+            text-shadow: 0 0 3px #708B75;
+        }
+        
+        .terminal-error {
+            color: #ff6b35;
+        }
+        
+        .terminal-info {
+            color: #66ff66;
+        }
+        
+        .leaderboard {
+            grid-area: leaderboard;
+        }
+        
+        .leaderboard-list {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #708B75;
+            border-radius: 5px;
+            height: 250px;
+            overflow-y: auto;
+        }
+        
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+            font-size: 11px;
+        }
+        
+        .leaderboard-entry:first-child {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+        }
+        
+        .leaderboard-entry:nth-child(2) {
+            background: rgba(192, 192, 192, 0.1);
+            color: #c0c0c0;
+        }
+        
+        .leaderboard-entry:nth-child(3) {
+            background: rgba(205, 127, 50, 0.1);
+            color: #cd7f32;
+        }
+        
+        .hash-visualizer {
+            grid-area: hashview;
+        }
+        
+        .hash-display {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #708B75;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            word-break: break-all;
+            letter-spacing: 0.5px;
+            line-height: 1.4;
+        }
+        
+        .current-hash {
+            color: #708B75;
+            text-shadow: 0 0 5px #708B75;
+        }
+        
+        .target-pattern {
+            color: #ffff00;
+            background: rgba(255, 255, 0, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .activity-feed {
+            grid-area: activity;
+        }
+        
+        .activity-list {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #708B75;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0, 255, 0, 0.1);
+            font-size: 10px;
+        }
+        
+        .activity-time {
+            color: #888;
+            min-width: 50px;
+        }
+        
+        .activity-type {
+            min-width: 60px;
+            text-transform: uppercase;
+        }
+        
+        .activity-proof {
+            color: #708B75;
+            text-shadow: 0 0 3px #708B75;
+        }
+        
+        .activity-board {
+            color: #ffff00;
+        }
+        
+        .activity-thread {
+            color: #66ff66;
+        }
+        
+        @media (max-width: 1200px) {
+            .command-center {
+                grid-template-areas: 
+                    "header header"
+                    "stats stats"
+                    "controls controls"
+                    "network network"
+                    "terminal terminal"
+                    "leaderboard leaderboard"
+                    "hashview hashview"
+                    "activity activity";
+                grid-template-columns: 1fr 1fr;
+            }
         }
         
         @media (max-width: 768px) {
-            .mining-output {
+            .command-center {
+                grid-template-areas: 
+                    "header"
+                    "stats"
+                    "controls"
+                    "network"
+                    "terminal"
+                    "leaderboard"
+                    "hashview"
+                    "activity";
                 grid-template-columns: 1fr;
+                padding: 10px;
             }
             
-            .control-row {
-                flex-direction: column;
-                align-items: stretch;
+            .controls-inner {
+                grid-template-columns: 1fr;
             }
         }
     </style>
-</head>
-<body>
-    <div class="container">
-        @include('components.navigation')
 
-        <div class="board-header">
-            <h2>⛏️ Mining Dashboard</h2>
-            <p>Mine SHA256 hashes to earn points and bump threads</p>
-            <p style="font-size: 9pt; margin-top: 5px;">
-                <span class="status-indicator status-idle" id="miningStatus"></span>
-                <span id="miningStatusText">Ready to Mine</span>
-            </p>
+<div class="mining-page">
+    <div class="command-center">
+        <!-- HEADER -->
+        <div class="panel header">
+            <h1>⛏️ HAICHAN MINING COMMAND CENTER ⛏️</h1>
+            <div class="network-status">
+                <div class="network-stat">
+                    <div class="status-dot"></div>
+                    <span>NETWORK: <span id="network-status">ONLINE</span></span>
+                </div>
+                <div class="network-stat">
+                    <div class="status-dot"></div>
+                    <span>MINERS: <span id="active-miners">1</span></span>
+                </div>
+                <div class="network-stat">
+                    <div class="status-dot"></div>
+                    <span>DIFFICULTY: <span id="network-difficulty">21e8</span></span>
+                </div>
+                <div class="network-stat">
+                    <div class="status-dot"></div>
+                    <span>UPTIME: <span id="network-uptime">00:00:00</span></span>
+                </div>
+            </div>
         </div>
 
-        <div class="mining-stats">
+        <!-- STATS GRID -->
+        <div class="panel stats-grid">
             <div class="stat-card">
-                <div class="stat-value" id="hashrate">0</div>
-                <div class="stat-label">Hashes/sec</div>
+                <div class="stat-value" id="hash-rate">0</div>
+                <div class="stat-label">Hash Rate (H/s)</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="totalHashes">0</div>
+                <div class="stat-value" id="total-hashes">0</div>
                 <div class="stat-label">Total Hashes</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="validProofs">0</div>
+                <div class="stat-value" id="valid-proofs">0</div>
                 <div class="stat-label">Valid Proofs</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="sessionPoints">0</div>
+                <div class="stat-value" id="session-points">0</div>
                 <div class="stat-label">Session Points</div>
             </div>
-        </div>
-
-        <div class="mining-controls">
-            <h3>Mining Controls</h3>
-            
-            <div class="control-row">
-                <label for="difficultySelect">Difficulty Pattern:</label>
-                <select id="difficultySelect">
-                    <option value="21e8">21e8 (Easy - 1 point)</option>
-                    <option value="21e80">21e80 (Medium - 5 points)</option>
-                    <option value="21e800">21e800 (Hard - 25 points)</option>
-                    <option value="21e8000">21e8000 (Extreme - 125 points)</option>
-                    <option value="000021e8">000021e8 (Insane - 625 points)</option>
-                </select>
+            <div class="stat-card">
+                <div class="stat-value" id="success-rate">0.0%</div>
+                <div class="stat-label">Success Rate</div>
             </div>
-            
-            <div class="control-row">
-                <button id="startMining" class="btn-primary">🚀 Start Mining</button>
-                <button id="stopMining" class="btn-stop" disabled>⛔ Stop Mining</button>
-                <button id="clearLog">🧹 Clear Log</button>
-                <button id="refreshStats">📊 Refresh Stats</button>
+            <div class="stat-card">
+                <div class="stat-value" id="session-time">00:00</div>
+                <div class="stat-label">Session Time</div>
             </div>
         </div>
 
-        <div class="mining-output">
-            <div class="output-panel">
-                <h4>Current Hash</h4>
-                <div class="hash-display" id="currentHashDisplay">
-                    <strong>Latest Hash:</strong><br>
-                    <span id="currentHash">No hashes generated yet</span>
+        <!-- MINING CONTROLS -->
+        <div class="panel mining-controls">
+            <div class="controls-inner">
+                <div class="control-section">
+                    <h3>Mining Mode</h3>
+                    <div class="mining-mode-selector">
+                        <button class="mode-btn active" data-mode="idle">
+                            🟢 IDLE<br><span style="font-size:8px;">~100 H/s</span>
+                        </button>
+                        <button class="mode-btn" data-mode="active">
+                            🟡 ACTIVE<br><span style="font-size:8px;">~1K H/s</span>
+                        </button>
+                        <button class="mode-btn" data-mode="hyper">
+                            🔴 HYPER<br><span style="font-size:8px;">~3K+ H/s</span>
+                        </button>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display:block; margin-bottom:5px; font-size:10px;">TARGET PATTERN:</label>
+                        <select id="difficulty-select" style="width:100%; padding:5px; background:rgba(0,0,0,0.7); border:1px solid #708B75; color:#708B75; font-family:inherit;">
+                            <option value="21">21 (Idle - 0.1 pts)</option>
+                            <option value="21e8" selected>21e8 (Normal - 1 pt)</option>
+                            <option value="21e80">21e80 (Hard - 5 pts)</option>
+                            <option value="21e800">21e800 (Extreme - 25 pts)</option>
+                            <option value="21e8000">21e8000 (Insane - 125 pts)</option>
+                            <option value="000021e8">000021e8 (Godlike - 625 pts)</option>
+                        </select>
+                    </div>
                 </div>
                 
-                <div style="margin-top: 15px;">
-                    <strong>Target Pattern:</strong> <span id="targetPattern">21e8</span><br>
-                    <strong>Session Time:</strong> <span id="sessionTime">00:00:00</span><br>
-                    <strong>Average Rate:</strong> <span id="avgHashrate">0</span> H/s
-                </div>
-            </div>
-
-            <div class="output-panel">
-                <h4>Mining Log</h4>
-                <div class="mining-log" id="miningLog">
-                    <div class="log-entry log-info">[SYSTEM] Haichan mining engine ready. Select difficulty and start mining.</div>
+                <div class="control-section">
+                    <h3>Operations</h3>
+                    <div class="control-buttons">
+                        <button class="btn" id="start-mining">🚀 START</button>
+                        <button class="btn danger" id="stop-mining" disabled>⛔ STOP</button>
+                    </div>
+                    <div class="control-buttons">
+                        <button class="btn" id="clear-terminal">🧹 CLEAR</button>
+                        <button class="btn" id="refresh-stats">📊 STATS</button>
+                        <button class="btn" id="export-data">💾 EXPORT</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="mining-controls">
-            <h3>How It Works</h3>
-            <p style="font-size: 9pt; margin-bottom: 8px;">
-                • Your browser mines SHA256 hashes looking for specific patterns
-            </p>
-            <p style="font-size: 9pt; margin-bottom: 8px;">
-                • When found, you earn points based on difficulty
-            </p>
-            <p style="font-size: 9pt; margin-bottom: 8px;">
-                • Use these proofs to bump threads on boards for visibility
-            </p>
-            <p style="font-size: 9pt; margin-bottom: 8px;">
-                • Higher difficulty = exponentially more points but much harder to find
-            </p>
-            <p style="font-size: 9pt;">
-                • Start with "21e8" pattern - it's the easiest to find
-            </p>
+        <!-- NETWORK VISUALIZATION -->
+        <div class="panel network-viz">
+            <h3 style="margin-bottom:15px;">Network Visualization</h3>
+            <div class="viz-container" id="network-canvas">
+                <canvas id="network-viz-canvas" width="400" height="280" style="width:100%; height:100%;"></canvas>
+            </div>
         </div>
 
-        <div style="text-align: center; padding: 20px; color: #444B6E; font-size: 8pt; background: #F5F5DC; border: 1px solid #708B75; margin: 20px;">
-            <p style="margin-bottom: 8px;">Mining is performed locally in your browser using WebCrypto API</p>
-            <p><a href="/boards" style="color: #444B6E; text-decoration: underline;">Return to Boards</a> | <a href="/rules" style="color: #444B6E; text-decoration: underline;">Read Rules</a></p>
+        <!-- TERMINAL -->
+        <div class="panel terminal">
+            <h3 style="margin-bottom:15px;">Mining Terminal</h3>
+            <div class="terminal-screen" id="terminal-output">
+                <div class="terminal-line terminal-success">[SYSTEM] Haichan Mining Command Center initialized</div>
+                <div class="terminal-line terminal-info">[INFO] WebCrypto API detected and ready</div>
+                <div class="terminal-line terminal-info">[INFO] Select mining mode and click START to begin</div>
+                <div class="terminal-line terminal-prompt">mining@haichan:~$ <span class="terminal-cursor">_</span></div>
+            </div>
+        </div>
+
+        <!-- LEADERBOARD -->
+        <div class="panel leaderboard">
+            <h3 style="margin-bottom:15px;">Network Leaderboard</h3>
+            <div class="leaderboard-list" id="leaderboard-list">
+                <div class="leaderboard-entry">
+                    <span>🥇 Anonymous#a1b2c3d4</span>
+                    <span>15,847 pts</span>
+                </div>
+                <div class="leaderboard-entry">
+                    <span>🥈 Anonymous#f5e6d7c8</span>
+                    <span>12,356 pts</span>
+                </div>
+                <div class="leaderboard-entry">
+                    <span>🥉 Anonymous#9k8j7h6g</span>
+                    <span>8,901 pts</span>
+                </div>
+                <div class="leaderboard-entry">
+                    <span>4. Anonymous#x7y8z9a0</span>
+                    <span>6,543 pts</span>
+                </div>
+                <div class="leaderboard-entry">
+                    <span>5. Anonymous#p3q4r5s6</span>
+                    <span>4,201 pts</span>
+                </div>
+                <div class="leaderboard-entry">
+                    <span>6. You</span>
+                    <span id="your-rank-points">0 pts</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- HASH VISUALIZER -->
+        <div class="panel hash-visualizer">
+            <h3 style="margin-bottom:15px;">Current Hash Analysis</h3>
+            <div class="hash-display">
+                <div style="margin-bottom:10px;">
+                    <strong>MINING TARGET:</strong> <span class="target-pattern" id="current-target">21e8</span>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <strong>LATEST HASH:</strong>
+                </div>
+                <div class="current-hash" id="current-hash-display">
+                    No hashes generated yet - start mining to see live hash data
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVITY FEED -->
+        <div class="panel activity-feed">
+            <h3 style="margin-bottom:15px;">Network Activity</h3>
+            <div class="activity-list" id="activity-feed">
+                <div class="activity-item">
+                    <span class="activity-time">15:42</span>
+                    <span class="activity-type activity-proof">PROOF</span>
+                    <span>Pattern 21e8 found on /g/</span>
+                </div>
+                <div class="activity-item">
+                    <span class="activity-time">15:41</span>
+                    <span class="activity-type activity-board">BUMP</span>
+                    <span class="activity-thread">Thread #1234 bumped</span>
+                </div>
+                <div class="activity-item">
+                    <span class="activity-time">15:40</span>
+                    <span class="activity-type activity-proof">PROOF</span>
+                    <span>Pattern 21e80 found on /tech/</span>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        class HaichanMiner {
+        class HaichanCommandCenter {
             constructor() {
                 this.isMining = false;
+                this.miningMode = 'idle';
+                this.targetPattern = '21e8';
+                this.hashRate = 0;
                 this.totalHashes = 0;
                 this.validProofs = 0;
                 this.sessionPoints = 0;
-                this.sessionStartTime = null;
-                this.nonce = Math.floor(Math.random() * 1000000);
-                this.targetPattern = '21e8';
+                this.sessionStart = Date.now();
                 this.currentHash = '';
-                this.lastHashCount = 0;
+                this.nonce = Math.floor(Math.random() * 1000000);
                 
                 this.initializeUI();
-                this.startStatsUpdater();
+                this.initializeNetworkViz();
+                this.startUpdateLoop();
             }
 
             initializeUI() {
-                document.getElementById('startMining').addEventListener('click', () => this.startMining());
-                document.getElementById('stopMining').addEventListener('click', () => this.stopMining());
-                document.getElementById('clearLog').addEventListener('click', () => this.clearLog());
-                document.getElementById('refreshStats').addEventListener('click', () => this.refreshStats());
-                
-                document.getElementById('difficultySelect').addEventListener('change', (e) => {
-                    this.targetPattern = e.target.value;
-                    document.getElementById('targetPattern').textContent = this.targetPattern;
+                // Mining mode buttons
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.miningMode = btn.dataset.mode;
+                        this.updateMiningSpeed();
+                    });
                 });
+
+                // Control buttons
+                document.getElementById('start-mining').addEventListener('click', () => this.startMining());
+                document.getElementById('stop-mining').addEventListener('click', () => this.stopMining());
+                document.getElementById('clear-terminal').addEventListener('click', () => this.clearTerminal());
+                document.getElementById('refresh-stats').addEventListener('click', () => this.refreshStats());
+                document.getElementById('export-data').addEventListener('click', () => this.exportData());
+
+                // Difficulty selector
+                document.getElementById('difficulty-select').addEventListener('change', (e) => {
+                    this.targetPattern = e.target.value;
+                    document.getElementById('current-target').textContent = this.targetPattern;
+                    document.getElementById('network-difficulty').textContent = this.targetPattern;
+                });
+            }
+
+            initializeNetworkViz() {
+                const canvas = document.getElementById('network-viz-canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Draw network nodes and connections
+                setInterval(() => {
+                    if (!this.isMining) return;
+                    
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.strokeStyle = '#708B75';
+                    ctx.fillStyle = '#708B75';
+                    
+                    // Draw central node
+                    ctx.beginPath();
+                    ctx.arc(canvas.width/2, canvas.height/2, 8, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // Draw connecting nodes
+                    for (let i = 0; i < 6; i++) {
+                        const angle = (i / 6) * 2 * Math.PI;
+                        const x = canvas.width/2 + Math.cos(angle) * 80;
+                        const y = canvas.height/2 + Math.sin(angle) * 80;
+                        
+                        ctx.beginPath();
+                        ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                        ctx.fill();
+                        
+                        // Draw connection
+                        ctx.beginPath();
+                        ctx.moveTo(canvas.width/2, canvas.height/2);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                    }
+                }, 100);
+            }
+
+            async startMining() {
+                if (this.isMining) return;
+                
+                this.isMining = true;
+                this.sessionStart = Date.now();
+                
+                document.getElementById('start-mining').disabled = true;
+                document.getElementById('stop-mining').disabled = false;
+                document.getElementById('network-status').textContent = 'MINING';
+                
+                this.terminalLog('🚀 Mining operation commenced', 'success');
+                this.terminalLog(`Target pattern: ${this.targetPattern}`, 'info');
+                this.terminalLog(`Mining mode: ${this.miningMode.toUpperCase()}`, 'info');
+                
+                this.mine();
+            }
+
+            stopMining() {
+                this.isMining = false;
+                
+                document.getElementById('start-mining').disabled = false;
+                document.getElementById('stop-mining').disabled = true;
+                document.getElementById('network-status').textContent = 'STANDBY';
+                
+                this.terminalLog('⛔ Mining operation terminated', 'error');
+                this.terminalLog(`Session stats: ${this.totalHashes} hashes, ${this.validProofs} proofs, ${this.sessionPoints} points`, 'info');
+            }
+
+            async mine() {
+                const batchSize = this.getBatchSize();
+                
+                while (this.isMining) {
+                    const startTime = Date.now();
+                    
+                    for (let i = 0; i < batchSize && this.isMining; i++) {
+                        const timestamp = Date.now();
+                        const baseData = `global:haichan:${timestamp}`;
+                        const fullData = `${baseData}:${this.nonce}`;
+                        const hash = await this.sha256(fullData);
+                        
+                        this.totalHashes++;
+                        this.nonce++;
+                        this.currentHash = hash;
+                        
+                        if (this.isValidProof(hash)) {
+                            this.validProofs++;
+                            const points = this.getPoints(this.targetPattern);
+                            this.sessionPoints += points;
+                            
+                            this.terminalLog(`🎯 PROOF FOUND! ${hash.substring(0, 16)}... (+${points} pts)`, 'success');
+                            this.addActivity('PROOF', `Pattern ${this.targetPattern} found (+${points} pts)`);
+                            
+                            // Submit proof - send baseData without nonce, PHP will add it
+                            await this.submitProof({
+                                hash: hash,
+                                nonce: this.nonce - 1,
+                                data: baseData,
+                                pattern: this.targetPattern
+                            });
+                        }
+                    }
+                    
+                    // Calculate hash rate
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    this.hashRate = Math.floor(batchSize / elapsed);
+                    
+                    // Small delay to prevent browser freeze
+                    await new Promise(resolve => setTimeout(resolve, 1));
+                }
+            }
+
+            getBatchSize() {
+                switch (this.miningMode) {
+                    case 'idle': return 100;
+                    case 'active': return 500;
+                    case 'hyper': return 1000;
+                    default: return 100;
+                }
+            }
+
+            getPoints(pattern) {
+                const points = {
+                    '21': 0.1,
+                    '21e8': 1,
+                    '21e80': 5,
+                    '21e800': 25,
+                    '21e8000': 125,
+                    '000021e8': 625
+                };
+                return points[pattern] || 1;
             }
 
             async sha256(text) {
@@ -295,42 +768,8 @@
                 return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             }
 
-            async mine() {
-                const timestamp = Date.now();
-                const baseData = `global:haichan:${timestamp}`;
-                
-                while (this.isMining) {
-                    const data = `${baseData}:${this.nonce}`;
-                    const hash = await this.sha256(data);
-                    
-                    this.totalHashes++;
-                    this.nonce++;
-                    this.currentHash = hash;
-                    
-                    if (this.totalHashes % 100 === 0) {
-                        this.updateDisplay();
-                    }
-                    
-                    if (this.isValidProof(hash)) {
-                        this.validProofs++;
-                        this.logSuccess(`🎯 PROOF FOUND! Pattern "${this.targetPattern}" in hash: ${hash.substring(0, 32)}...`);
-                        
-                        await this.submitProof({
-                            hash: hash,
-                            nonce: this.nonce - 1,
-                            data: data,
-                            pattern: this.targetPattern
-                        });
-                    }
-                    
-                    if (this.totalHashes % 1000 === 0) {
-                        await new Promise(resolve => setTimeout(resolve, 1));
-                    }
-                }
-            }
-
             isValidProof(hash) {
-                return hash.toLowerCase().includes(this.targetPattern.toLowerCase());
+                return hash.toLowerCase().startsWith(this.targetPattern.toLowerCase());
             }
 
             async submitProof(proof) {
@@ -347,102 +786,125 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        this.sessionPoints += result.points;
-                        this.logSuccess(`✅ Proof accepted! +${result.points} points. Session total: ${this.sessionPoints}`);
-                        document.getElementById('sessionPoints').textContent = this.sessionPoints;
+                        this.terminalLog(`✅ Proof accepted by network (+${result.points} pts)`, 'success');
                     } else {
-                        this.logError(`❌ Proof rejected: ${result.message}`);
+                        this.terminalLog(`❌ Proof rejected: ${result.message}`, 'error');
                     }
                 } catch (error) {
-                    this.logError(`🔥 Network error: ${error.message}`);
+                    this.terminalLog(`🔥 Network error: ${error.message}`, 'error');
                 }
             }
 
-            startMining() {
-                if (this.isMining) return;
+            updateStats() {
+                document.getElementById('hash-rate').textContent = this.hashRate.toLocaleString();
+                document.getElementById('total-hashes').textContent = this.totalHashes.toLocaleString();
+                document.getElementById('valid-proofs').textContent = this.validProofs.toLocaleString();
+                document.getElementById('session-points').textContent = this.sessionPoints.toLocaleString();
+                document.getElementById('your-rank-points').textContent = this.sessionPoints + ' pts';
                 
-                this.isMining = true;
-                this.sessionStartTime = Date.now();
-                this.lastHashCount = this.totalHashes;
+                // Success rate
+                const successRate = this.totalHashes > 0 ? ((this.validProofs / this.totalHashes) * 100).toFixed(3) : 0;
+                document.getElementById('success-rate').textContent = successRate + '%';
                 
-                document.getElementById('startMining').disabled = true;
-                document.getElementById('stopMining').disabled = false;
-                document.getElementById('miningStatus').className = 'status-indicator status-mining';
-                document.getElementById('miningStatusText').textContent = 'Mining Active';
+                // Session time
+                const elapsed = Math.floor((Date.now() - this.sessionStart) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('session-time').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 
-                this.logInfo(`🚀 Started mining pattern: ${this.targetPattern}`);
-                this.mine();
-            }
-
-            stopMining() {
-                this.isMining = false;
+                // Network uptime
+                document.getElementById('network-uptime').textContent = document.getElementById('session-time').textContent;
                 
-                document.getElementById('startMining').disabled = false;
-                document.getElementById('stopMining').disabled = true;
-                document.getElementById('miningStatus').className = 'status-indicator status-idle';
-                document.getElementById('miningStatusText').textContent = 'Mining Stopped';
-                
-                this.logInfo(`⛔ Mining stopped. Session stats: ${this.totalHashes} hashes, ${this.validProofs} proofs, ${this.sessionPoints} points`);
-            }
-
-            updateDisplay() {
-                document.getElementById('currentHash').textContent = this.currentHash;
-                document.getElementById('totalHashes').textContent = this.totalHashes.toLocaleString();
-                document.getElementById('validProofs').textContent = this.validProofs;
-                
-                if (this.sessionStartTime) {
-                    const elapsed = (Date.now() - this.sessionStartTime) / 1000;
-                    const hashrate = Math.round((this.totalHashes - this.lastHashCount) / Math.max(elapsed, 1));
-                    document.getElementById('hashrate').textContent = hashrate.toLocaleString();
-                    document.getElementById('avgHashrate').textContent = hashrate.toLocaleString();
-                    
-                    const hours = Math.floor(elapsed / 3600);
-                    const minutes = Math.floor((elapsed % 3600) / 60);
-                    const seconds = Math.floor(elapsed % 60);
-                    document.getElementById('sessionTime').textContent = 
-                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                // Current hash display
+                if (this.currentHash) {
+                    document.getElementById('current-hash-display').textContent = this.currentHash;
                 }
             }
 
-            startStatsUpdater() {
-                setInterval(() => {
-                    if (this.isMining) {
-                        this.updateDisplay();
-                    }
-                }, 1000);
+            updateMiningSpeed() {
+                this.terminalLog(`Mining mode changed to ${this.miningMode.toUpperCase()}`, 'info');
+            }
+
+            terminalLog(message, type = 'info') {
+                const terminal = document.getElementById('terminal-output');
+                const line = document.createElement('div');
+                line.className = `terminal-line terminal-${type}`;
+                line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                terminal.appendChild(line);
+                terminal.scrollTop = terminal.scrollHeight;
+                
+                // Keep only last 50 lines
+                while (terminal.children.length > 50) {
+                    terminal.removeChild(terminal.firstChild);
+                }
+            }
+
+            addActivity(type, message) {
+                const feed = document.getElementById('activity-feed');
+                const activity = document.createElement('div');
+                activity.className = 'activity-item';
+                activity.innerHTML = `
+                    <span class="activity-time">${new Date().toLocaleTimeString().substring(0,5)}</span>
+                    <span class="activity-type activity-${type.toLowerCase()}">${type}</span>
+                    <span>${message}</span>
+                `;
+                feed.insertBefore(activity, feed.firstChild);
+                
+                // Keep only last 20 activities
+                while (feed.children.length > 20) {
+                    feed.removeChild(feed.lastChild);
+                }
+            }
+
+            clearTerminal() {
+                document.getElementById('terminal-output').innerHTML = `
+                    <div class="terminal-line terminal-success">[SYSTEM] Terminal cleared</div>
+                    <div class="terminal-line terminal-prompt">mining@haichan:~$ <span class="terminal-cursor">_</span></div>
+                `;
             }
 
             refreshStats() {
-                this.updateDisplay();
-                this.logInfo('📊 Stats refreshed');
+                this.updateStats();
+                this.terminalLog('📊 Statistics refreshed', 'info');
             }
 
-            logInfo(message) { this.addLogEntry(message, 'log-info'); }
-            logSuccess(message) { this.addLogEntry(message, 'log-success'); }
-            logError(message) { this.addLogEntry(message, 'log-error'); }
-
-            addLogEntry(message, className) {
-                const log = document.getElementById('miningLog');
-                const entry = document.createElement('div');
-                entry.className = `log-entry ${className}`;
-                entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-                log.appendChild(entry);
-                log.scrollTop = log.scrollHeight;
-
-                while (log.children.length > 50) {
-                    log.removeChild(log.firstChild);
-                }
+            exportData() {
+                const data = {
+                    session_stats: {
+                        total_hashes: this.totalHashes,
+                        valid_proofs: this.validProofs,
+                        session_points: this.sessionPoints,
+                        hash_rate: this.hashRate,
+                        mining_mode: this.miningMode,
+                        target_pattern: this.targetPattern,
+                        session_duration: Date.now() - this.sessionStart
+                    },
+                    timestamp: new Date().toISOString()
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `haichan_mining_session_${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                this.terminalLog('💾 Session data exported', 'success');
             }
 
-            clearLog() {
-                document.getElementById('miningLog').innerHTML = '';
-                this.logInfo('🧹 Mining log cleared');
+            startUpdateLoop() {
+                setInterval(() => {
+                    this.updateStats();
+                }, 1000);
             }
         }
 
+        // Initialize when page loads
         window.addEventListener('DOMContentLoaded', () => {
-            window.haichanMiner = new HaichanMiner();
+            window.haichanCommandCenter = new HaichanCommandCenter();
         });
     </script>
-</body>
-</html>
+</div>
+@endsection

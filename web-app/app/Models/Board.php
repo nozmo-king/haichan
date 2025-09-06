@@ -25,7 +25,7 @@ class Board extends Model
 
     public function getUrlAttribute()
     {
-        return "/{$this->name}";
+        return "/{$this->code}";
     }
 
     public function getTitleAttribute()
@@ -36,10 +36,12 @@ class Board extends Model
             'biz' => '/biz/ - Business',
             'film' => '/film/ - Film & TV',
             'x' => '/x/ - Paranormal',
-            'lit' => '/lit/ - Literature'
+            'lit' => '/lit/ - Literature',
+            'meta' => '/meta/ - Meta',
+            'mu' => '/mu/ - Music'
         ];
         
-        return $titles[$this->name] ?? "/{$this->name}/";
+        return $titles[$this->code] ?? "/{$this->code}/";
     }
 
     public function getPostCountAttribute()

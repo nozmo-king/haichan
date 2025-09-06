@@ -19,21 +19,39 @@ class BoardSeeder extends Seeder
         ]);
 
         \App\Models\Board::create([
-            'code' => 'mov',
-            'name' => 'Movies & TV',
-            'description' => 'Movies, television shows, and entertainment'
-        ]);
-
-        \App\Models\Board::create([
-            'code' => 'etc',
-            'name' => 'Et Cetera',
-            'description' => 'Everything else that doesn\'t fit elsewhere'
+            'code' => 'film',
+            'name' => 'Film & Television',
+            'description' => 'Movies, TV shows, and cinematic discussion'
         ]);
 
         \App\Models\Board::create([
             'code' => 'biz',
             'name' => 'Business & Finance',
             'description' => 'Business, economics, and financial discussion'
+        ]);
+
+        \App\Models\Board::create([
+            'code' => 'lit',
+            'name' => 'Literature',
+            'description' => 'Books, writing, and literary discussion'
+        ]);
+
+        \App\Models\Board::create([
+            'code' => 'x',
+            'name' => 'Paranormal',
+            'description' => 'Paranormal, conspiracy theories, and unexplained phenomena'
+        ]);
+
+        \App\Models\Board::create([
+            'code' => 'meta',
+            'name' => 'Meta',
+            'description' => 'Site discussion, feedback, and meta topics'
+        ]);
+
+        \App\Models\Board::create([
+            'code' => 'mu',
+            'name' => 'Music',
+            'description' => 'Music discussion, sharing, and reviews'
         ]);
     }
 }

@@ -7,7 +7,7 @@ class HaichanMiner {
         this.startTime = 0;
         this.nonce = 0;
         this.hashCount = 0;
-        this.pattern = '21'; // Start with easy pattern for idle mining
+        this.pattern = '21e8'; // Start with 21e8 vanity marker
         this.ui = null;
         this.miningInterval = null;
         this.hashRateInterval = null;
@@ -16,6 +16,24 @@ class HaichanMiner {
         this.sessionProofs = 0;
         this.isMinimized = localStorage.getItem('haichan-miner-minimized') === 'true';
         this.buzzingEnabled = true; // Enable buzzing animation by default
+        this.emojiIndex = 0; // For cycling through emojis
+        this.miningEmojis = ['⛏️', '🔨', '⚒️', '🛠️', '🔧', '💎', '🌟', '⚡', '🔥']; // Mining-related emojis to cycle through
+        
+        // Global emoji categories for site-wide cycling
+        this.emojiCategories = {
+            mining: ['⛏️', '🔨', '⚒️', '🛠️', '🔧', '💎', '🌟', '⚡', '🔥', '💰', '🏆', '🎯'],
+            numbers: ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'],
+            faces: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊'],
+            tech: ['💻', '🖥️', '⌨️', '🖱️', '🖨️', '💾', '💿', '📀', '🧮', '📱', '📟', '☎️'],
+            arrows: ['⬆️', '↗️', '➡️', '↘️', '⬇️', '↙️', '⬅️', '↖️', '↕️', '↔️', '↩️', '↪️'],
+            symbols: ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '🔶', '🔷', '🔸'],
+            boards: ['📋', '📊', '📈', '📉', '📝', '📄', '📃', '📑', '📜', '📰', '🗞️', '📓'],
+            browse: ['👀', '🔍', '🔎', '👁️', '👁️‍🗨️', '🕵️', '🔬', '🔭', '📡', '🛰️'],
+            access: ['🔐', '🔒', '🔓', '🗝️', '🔑', '🚪', '🚧', '⛔', '🚫', '✅', '❌', '⭐'],
+            random: ['🎲', '🎰', '🎪', '🎨', '🎭', '🎪', '🎡', '🎢', '🎠', '🎯', '🎱', '🎮']
+        };
+        
+        this.activeEmojiCycles = new Map(); // Track active cycling elements
         
         this.init();
     }
@@ -23,6 +41,8 @@ class HaichanMiner {
     init() {
         this.createUI();
         this.attachEventListeners();
+        this.setupMiniDashboard();
+        this.initGlobalEmojiCycling();
         // Set initial target to global mining
         this.switchTarget('global', 'haichan', 'Global Network');
         // Force start mining immediately in IDLE mode
@@ -43,8 +63,8 @@ class HaichanMiner {
             <div class="miner-header">
                 <span class="miner-title">⛏️ HAICHAN MINING DASHBOARD</span>
                 <div class="miner-controls">
-                    <button class="miner-minimize" onclick="window.haichanMiner.toggleMinimize()" title="Minimize/Maximize">📊</button>
-                    <button class="miner-toggle" onclick="window.haichanMiner.toggle()" title="Start/Stop Mining">⏸️</button>
+                    <button id="miner-minimize-btn" class="miner-minimize" onclick="window.haichanMiner.toggleMinimize()" title="Minimize/Maximize" style="background: #708B75; border: 1px solid #444B6E; color: #FFFFEE; padding: 4px 8px; font-size: 12px; cursor: pointer; border-radius: 2px; font-weight: bold;">−</button>
+                    <button id="miner-close-btn" class="miner-close" onclick="window.haichanMiner.closeAndStop()" title="Close Dashboard & Stop Mining" style="background: #8B0000; border: 1px solid #444B6E; color: #FFFFEE; padding: 4px 8px; font-size: 12px; cursor: pointer; border-radius: 2px; font-weight: bold;">×</button>
                 </div>
             </div>
             <div class="miner-content">
@@ -123,36 +143,29 @@ class HaichanMiner {
                 top: 70px;
                 right: 20px;
                 width: 320px;
-                background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-                border: 2px solid #00ff00;
-                border-radius: 10px;
-                color: #00ff00;
+                background: #F5F5DC;
+                border: 2px solid #708B75;
+                border-radius: 5px;
+                color: #444B6E;
                 font-family: 'Courier New', monospace;
                 font-size: 11px;
-                box-shadow: 
-                    0 0 20px rgba(0, 255, 0, 0.3),
-                    0 8px 32px rgba(0, 0, 0, 0.6),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 z-index: 9998;
                 transition: all 0.3s ease;
-                backdrop-filter: blur(15px);
             }
             .miner-header {
-                background: linear-gradient(135deg, #00ff00, #008800);
+                background: #9AB87A;
                 padding: 12px 15px;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                border-radius: 8px 8px 0 0;
-                border-bottom: 1px solid #00ff00;
-                box-shadow: 0 2px 10px rgba(0, 255, 0, 0.2);
+                border-radius: 3px 3px 0 0;
+                border-bottom: 1px solid #708B75;
             }
             .miner-title {
                 font-weight: bold;
-                color: #000;
-                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+                color: #444B6E;
                 font-size: 10px;
-                letter-spacing: 0.5px;
             }
             .miner-controls {
                 display: flex;
@@ -160,19 +173,18 @@ class HaichanMiner {
                 align-items: center;
             }
             .miner-minimize, .miner-toggle {
-                background: rgba(0, 0, 0, 0.3);
-                border: 1px solid rgba(0, 255, 0, 0.5);
-                border-radius: 4px;
+                background: #F5F5DC;
+                border: 1px solid #708B75;
+                border-radius: 3px;
                 padding: 4px 8px;
-                color: #00ff00;
+                color: #444B6E;
                 cursor: pointer;
                 font-size: 12px;
                 transition: all 0.2s ease;
             }
             .miner-minimize:hover, .miner-toggle:hover {
-                background: rgba(0, 255, 0, 0.2);
+                background: #FFFACD;
                 transform: scale(1.05);
-                box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
             }
             
             /* Strobing buzz animation for active mining */
@@ -286,19 +298,18 @@ class HaichanMiner {
                 align-items: center;
                 margin-bottom: 12px;
                 padding: 8px 12px;
-                background: linear-gradient(135deg, rgba(0, 255, 0, 0.1), rgba(0, 255, 0, 0.05));
-                border: 1px solid rgba(0, 255, 0, 0.3);
-                border-radius: 6px;
+                background: #FFFACD;
+                border: 1px solid #708B75;
+                border-radius: 3px;
             }
             .target-label {
-                color: #888;
+                color: #666;
                 font-weight: 500;
                 font-size: 9px;
             }
             .target-value {
                 font-weight: bold;
-                color: #00ff00;
-                text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+                color: #006400;
             }
             .miner-stats-grid {
                 display: grid;
@@ -313,21 +324,19 @@ class HaichanMiner {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                background: rgba(0, 0, 0, 0.2);
-                border: 1px solid rgba(0, 255, 0, 0.2);
-                border-radius: 4px;
+                background: #FFFACD;
+                border: 1px solid #708B75;
+                border-radius: 3px;
                 padding: 6px 4px;
             }
             .stat-label {
                 font-size: 8px;
-                opacity: 0.8;
-                color: #888;
+                color: #666;
                 margin-bottom: 2px;
             }
             .stat-value {
                 font-weight: bold;
-                color: #00ff00;
-                text-shadow: 0 0 3px rgba(0, 255, 0, 0.5);
+                color: #006400;
                 font-size: 10px;
             }
             .miner-progress {
@@ -416,15 +425,15 @@ class HaichanMiner {
         switch(mode) {
             case 'idle':
                 this.setIntensity(0.1); // Very low intensity
-                this.pattern = '21'; // Easy pattern for idle mining
+                this.pattern = '21e8'; // Always use 21e8 vanity marker
                 break;
             case 'active':
                 this.setIntensity(1.0); // Normal intensity
-                this.pattern = '21e8'; // Standard difficulty
+                this.pattern = '21e8'; // Always use 21e8 vanity marker
                 break;
             case 'hyperactive':
                 this.setIntensity(3.0); // High intensity
-                this.pattern = '21e8'; // Standard difficulty but faster
+                this.pattern = '21e8'; // Always use 21e8 vanity marker
                 break;
         }
         
@@ -593,12 +602,13 @@ class HaichanMiner {
     mineStep() {
         if (!this.isActive || !this.currentTargetType) return;
         
-        const data = this.generateMiningData();
-        const testData = `${data}:${this.nonce}`;
+        const baseData = this.generateMiningData();
+        const testData = `${baseData}:${this.nonce}`;
         
         // Use Web Crypto API for hashing
         this.sha256(testData).then(hash => {
             this.hashCount++;
+            this.currentHash = hash; // Store current hash for display
             
             // Only accept hashes that start with the exact pattern
             const pattern = this.pattern.toLowerCase();
@@ -606,7 +616,7 @@ class HaichanMiner {
             
             // Validate hash matches pattern
             if (hashLower.startsWith(pattern)) {
-                this.foundProof(hash, this.nonce, data);
+                this.foundProof(hash, this.nonce, baseData);
             }
             
             this.nonce++;
@@ -1160,6 +1170,12 @@ class HaichanMiner {
         
         // UPDATE PROMINENT STATUS BAR
         this.updateProminentStatusBar(hashRate);
+        
+        // Update mini dashboard if visible
+        const miniOverlay = document.getElementById('mini-dashboard-overlay');
+        if (miniOverlay && miniOverlay.style.display === 'block') {
+            this.updateMiniDashboard();
+        }
     }
     
     updateProminentStatusBar(hashRate) {
@@ -1260,11 +1276,33 @@ class HaichanMiner {
         this.isMinimized = !this.isMinimized;
         localStorage.setItem('haichan-miner-minimized', this.isMinimized.toString());
         
+        const minimizeBtn = document.getElementById('miner-minimize-btn');
+        
         if (this.isMinimized) {
             this.ui.classList.add('miner-minimized');
+            if (minimizeBtn) {
+                minimizeBtn.textContent = '+';
+                minimizeBtn.title = 'Maximize';
+            }
         } else {
             this.ui.classList.remove('miner-minimized');
+            if (minimizeBtn) {
+                minimizeBtn.textContent = '−';
+                minimizeBtn.title = 'Minimize';
+            }
         }
+    }
+    
+    closeAndStop() {
+        // Stop all mining first
+        this.stopMining();
+        this.stopGlobalMining();
+        
+        // Hide the dashboard
+        this.ui.style.display = 'none';
+        
+        // Update the toolbar button to show it can restart mining
+        this.updateMiningIndicator();
     }
     
     setIntensity(newIntensity) {
@@ -1314,6 +1352,355 @@ class HaichanMiner {
         document.querySelector('.miner-toggle').textContent = '▶️';
         
         this.log('⏸️ Mining stopped');
+    }
+    
+    setupMiniDashboard() {
+        // Set up mini dashboard toggle functionality
+        const toggleBtn = document.getElementById('mini-dash-toggle');
+        const closeBtn = document.getElementById('mini-dash-close');
+        const overlay = document.getElementById('mini-dashboard-overlay');
+        
+        if (toggleBtn && overlay) {
+            // Toggle button click
+            toggleBtn.addEventListener('click', () => {
+                this.toggleMiniDashboard();
+            });
+            
+            // Close button click
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    this.hideMiniDashboard();
+                });
+            }
+            
+            // Minimize button click
+            const minimizeBtn = document.getElementById('mini-dash-minimize');
+            if (minimizeBtn) {
+                minimizeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.minimizeMiniDashboard();
+                });
+            }
+            
+            // Make dashboard draggable
+            const header = document.getElementById('mini-dash-header');
+            if (header) {
+                this.makeDraggable(overlay, header);
+            }
+            
+            // Ctrl+D keyboard shortcut
+            document.addEventListener('keydown', (e) => {
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault(); // Prevent browser bookmark shortcut
+                    this.toggleMiniDashboard();
+                }
+            });
+            
+            // Mini dashboard mining controls
+            this.setupMiniControls();
+            
+            // Start emoji cycling for toggle button
+            this.startEmojiCycling(toggleBtn);
+        }
+    }
+    
+    startEmojiCycling(button) {
+        // Cycle through mining emojis every 2 seconds
+        setInterval(() => {
+            this.emojiIndex = (this.emojiIndex + 1) % this.miningEmojis.length;
+            if (button) {
+                button.textContent = this.miningEmojis[this.emojiIndex];
+            }
+        }, 2000);
+    }
+    
+    setupMiniControls() {
+        // Connect mini dashboard controls to main mining functions
+        const miniIdleBtn = document.getElementById('mini-idle-btn');
+        const miniActiveBtn = document.getElementById('mini-active-btn');
+        const miniHyperBtn = document.getElementById('mini-hyper-btn');
+        const miniStopBtn = document.getElementById('mini-stop-btn');
+        
+        if (miniIdleBtn) miniIdleBtn.addEventListener('click', () => this.setMiningMode('idle'));
+        if (miniActiveBtn) miniActiveBtn.addEventListener('click', () => this.setMiningMode('active'));
+        if (miniHyperBtn) miniHyperBtn.addEventListener('click', () => this.setMiningMode('hyperactive'));
+        if (miniStopBtn) miniStopBtn.addEventListener('click', () => this.stop());
+    }
+    
+    toggleMiniDashboard() {
+        const overlay = document.getElementById('mini-dashboard-overlay');
+        if (overlay) {
+            if (overlay.style.display === 'none' || !overlay.style.display) {
+                this.showMiniDashboard();
+            } else {
+                this.hideMiniDashboard();
+            }
+        }
+    }
+    
+    showMiniDashboard() {
+        const overlay = document.getElementById('mini-dashboard-overlay');
+        if (overlay) {
+            overlay.style.display = 'block';
+            // Update mini dashboard with current stats
+            this.updateMiniDashboard();
+        }
+    }
+    
+    hideMiniDashboard() {
+        const overlay = document.getElementById('mini-dashboard-overlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
+    
+    minimizeMiniDashboard() {
+        const overlay = document.getElementById('mini-dashboard-overlay');
+        if (overlay) {
+            // Store current height
+            if (!overlay.dataset.originalHeight) {
+                overlay.dataset.originalHeight = overlay.style.height || '250px';
+            }
+            
+            // Toggle between minimized and normal state
+            if (overlay.classList.contains('minimized')) {
+                // Restore
+                overlay.classList.remove('minimized');
+                overlay.style.height = overlay.dataset.originalHeight;
+                const contentSections = overlay.querySelectorAll('.mini-dash-content');
+                contentSections.forEach(section => section.style.display = 'block');
+                const minimizeBtn = document.getElementById('mini-dash-minimize');
+                if (minimizeBtn) minimizeBtn.textContent = '−';
+            } else {
+                // Minimize
+                overlay.classList.add('minimized');
+                overlay.style.height = '40px';
+                const contentSections = overlay.querySelectorAll('.mini-dash-content');
+                contentSections.forEach(section => section.style.display = 'none');
+                const minimizeBtn = document.getElementById('mini-dash-minimize');
+                if (minimizeBtn) minimizeBtn.textContent = '+';
+            }
+        }
+    }
+    
+    makeDraggable(element, handle) {
+        let isDragging = false;
+        let startX, startY, initialX, initialY;
+        
+        handle.addEventListener('mousedown', (e) => {
+            if (e.target.tagName === 'BUTTON') return; // Don't drag when clicking buttons
+            
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            
+            const rect = element.getBoundingClientRect();
+            initialX = rect.left;
+            initialY = rect.top;
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            e.preventDefault();
+        });
+        
+        function drag(e) {
+            if (!isDragging) return;
+            
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            
+            element.style.left = (initialX + dx) + 'px';
+            element.style.top = (initialY + dy) + 'px';
+            element.style.right = 'auto'; // Remove right positioning
+        }
+        
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+        }
+    }
+    
+    updateMiniDashboard() {
+        if (!this.isActive) return;
+        
+        const elapsed = (Date.now() - this.startTime) / 1000;
+        const hashRate = Math.floor(this.hashCount / elapsed);
+        
+        // Update mini dashboard elements
+        const miniModeEl = document.getElementById('mini-mining-mode');
+        const miniRateEl = document.getElementById('mini-personal-rate');
+        const miniHashEl = document.getElementById('mini-hash-preview');
+        
+        // Determine current mode based on intensity
+        let currentMode = 'IDLE';
+        if (this.intensity >= 3.0) currentMode = 'HYPER';
+        else if (this.intensity >= 1.0) currentMode = 'ACTIVE';
+        
+        if (miniModeEl) miniModeEl.textContent = currentMode;
+        if (miniRateEl) miniRateEl.textContent = `${hashRate.toLocaleString()} H/s`;
+        if (miniHashEl && this.currentHash) {
+            miniHashEl.textContent = this.currentHash.substring(0, 24) + '...';
+        }
+        
+        // Update button states
+        document.querySelectorAll('#mini-dashboard-overlay button').forEach(btn => {
+            btn.style.background = '#FFFACD';
+        });
+        
+        if (currentMode === 'IDLE') {
+            const idleBtn = document.getElementById('mini-idle-btn');
+            if (idleBtn) idleBtn.style.background = '#d4edda';
+        } else if (currentMode === 'ACTIVE') {
+            const activeBtn = document.getElementById('mini-active-btn');
+            if (activeBtn) activeBtn.style.background = '#fff3cd';
+        } else if (currentMode === 'HYPER') {
+            const hyperBtn = document.getElementById('mini-hyper-btn');
+            if (hyperBtn) hyperBtn.style.background = '#f8d7da';
+        }
+    }
+    
+    // Global Emoji Cycling System (Temporarily Disabled)
+    initGlobalEmojiCycling() {
+        // Temporarily disable global emoji cycling to fix performance issue
+        console.log('Global emoji cycling disabled for now');
+        // Only cycle the mini dashboard toggle button
+        const toggleBtn = document.getElementById('mini-dash-toggle');
+        if (toggleBtn) {
+            this.startSpecificEmojiCycling(toggleBtn);
+        }
+    }
+    
+    scanAndCycleEmojis() {
+        // Find all text nodes that contain emojis
+        const walker = document.createTreeWalker(
+            document.body,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        
+        const emojiNodes = [];
+        let node;
+        while (node = walker.nextNode()) {
+            if (this.containsEmoji(node.textContent)) {
+                emojiNodes.push(node);
+            }
+        }
+        
+        // Also check button and span elements that might contain emojis
+        document.querySelectorAll('button, span, div, a, p, h1, h2, h3, h4, h5, h6').forEach(el => {
+            if (this.containsEmoji(el.textContent) && !this.activeEmojiCycles.has(el)) {
+                this.startEmojiCycling(el);
+            }
+        });
+    }
+    
+    containsEmoji(text) {
+        // Regex to detect emojis (basic detection)
+        const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u;
+        return emojiRegex.test(text);
+    }
+    
+    startEmojiCycling(element) {
+        if (this.activeEmojiCycles.has(element)) return; // Already cycling
+        
+        const originalText = element.textContent;
+        const emojis = this.extractEmojis(originalText);
+        
+        if (emojis.length === 0) return;
+        
+        // For each emoji, determine its category and cycle through similar ones
+        let cycleIndex = 0;
+        const cycleData = {
+            originalText: originalText,
+            emojis: emojis.map(emoji => ({
+                original: emoji,
+                category: this.detectEmojiCategory(emoji),
+                currentIndex: 0
+            })),
+            element: element
+        };
+        
+        this.activeEmojiCycles.set(element, cycleData);
+        
+        // Start cycling with varied intervals (2-4 seconds)
+        const baseInterval = 2000 + Math.random() * 2000;
+        const intervalId = setInterval(() => {
+            this.cycleElementEmojis(cycleData);
+        }, baseInterval);
+        
+        // Store interval ID for cleanup
+        cycleData.intervalId = intervalId;
+    }
+    
+    extractEmojis(text) {
+        // Extract all emojis from text
+        const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
+        return text.match(emojiRegex) || [];
+    }
+    
+    detectEmojiCategory(emoji) {
+        // Try to categorize the emoji
+        for (const [category, emojis] of Object.entries(this.emojiCategories)) {
+            if (emojis.includes(emoji)) {
+                return category;
+            }
+        }
+        
+        // If no category found, try to guess based on unicode ranges
+        const code = emoji.codePointAt(0);
+        if (code >= 0x1F600 && code <= 0x1F64F) return 'faces';
+        if (code >= 0x1F680 && code <= 0x1F6FF) return 'tech';
+        if (code >= 0x2600 && code <= 0x26FF) return 'symbols';
+        
+        return 'random'; // Default to random category
+    }
+    
+    cycleElementEmojis(cycleData) {
+        let newText = cycleData.originalText;
+        
+        cycleData.emojis.forEach(emojiData => {
+            let newEmoji;
+            
+            // 15% chance of completely random emoji
+            if (Math.random() < 0.15) {
+                const randomCategory = Object.keys(this.emojiCategories)[Math.floor(Math.random() * Object.keys(this.emojiCategories).length)];
+                const randomEmojis = this.emojiCategories[randomCategory];
+                newEmoji = randomEmojis[Math.floor(Math.random() * randomEmojis.length)];
+            } else {
+                // Use similar emojis from same category
+                const categoryEmojis = this.emojiCategories[emojiData.category] || this.emojiCategories.random;
+                emojiData.currentIndex = (emojiData.currentIndex + 1) % categoryEmojis.length;
+                newEmoji = categoryEmojis[emojiData.currentIndex];
+            }
+            
+            // Replace the emoji in the text
+            newText = newText.replace(emojiData.original, newEmoji);
+            emojiData.original = newEmoji; // Update for next cycle
+        });
+        
+        // Update element text content
+        if (cycleData.element && cycleData.element.textContent !== undefined) {
+            cycleData.element.textContent = newText;
+        }
+    }
+    
+    // Safe emoji cycling for specific elements only
+    startSpecificEmojiCycling(element) {
+        if (!element) return;
+        
+        let index = 0;
+        
+        // Simple cycling through mining emojis every 3 seconds
+        const cycleInterval = setInterval(() => {
+            index = (index + 1) % this.miningEmojis.length;
+            element.textContent = this.miningEmojis[index];
+        }, 3000); // 3 second intervals
+        
+        // Store interval for potential cleanup
+        element._emojiCycleInterval = cycleInterval;
     }
 }
 

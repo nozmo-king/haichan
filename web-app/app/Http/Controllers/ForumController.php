@@ -18,14 +18,11 @@ class ForumController extends Controller
         return view('boards.index', compact('boards'));
     }
 
-    public function showBoard($code = null)
+    public function showBoard($board)
     {
-        // Get board code from route parameter or use the request URI
-        if (!$code) {
-            $code = request()->segment(1); // Get first segment of URL path
-        }
-        $board = Board::where('code', $code)->firstOrFail();
+        $board = Board::where('code', $board)->firstOrFail();
         $threads = Thread::where('board_id', $board->id)
+            ->with(['proofOfWork']) // Eager load to prevent N+1 queries
             ->withCount('posts')
             ->withSum('proofOfWork', 'points') // Sum PoW points for sorting
             ->orderByDesc('proof_of_work_sum_points') // Sort by total PoW descending
@@ -35,23 +32,26 @@ class ForumController extends Controller
         return view('boards.show', compact('board', 'threads'));
     }
     
-    public function showCatalog($boardCode)
+    public function showCatalog($board)
     {
-        $board = Board::where('code', $boardCode)->firstOrFail();
-        $threads = Thread::where('board_id', $board->id)
+        $boardModel = Board::where('code', $board)->firstOrFail();
+        $threads = Thread::where('board_id', $boardModel->id)
+            ->with(['proofOfWork']) // Eager load
             ->withCount('posts')
             ->withSum('proofOfWork', 'points')
             ->orderByDesc('proof_of_work_sum_points')
             ->orderByDesc('created_at')
             ->paginate(100);
         
-        return view('boards.catalog', compact('board', 'threads'));
+        return view('boards.catalog', ['board' => $boardModel, 'threads' => $threads]);
     }
 
-    public function showThread($boardCode, $threadId)
+    public function showThread($board, $threadId)
     {
-        $board = Board::where('code', $boardCode)->firstOrFail();
-        $thread = Thread::withSum('proofOfWork', 'points')->findOrFail($threadId);
+        $boardModel = Board::where('code', $board)->firstOrFail();
+        $thread = Thread::with(['proofOfWork'])
+                       ->withSum('proofOfWork', 'points')
+                       ->findOrFail($threadId);
         
         // Return just PoW score for AJAX requests
         if (request()->get('pow_only')) {
@@ -59,11 +59,11 @@ class ForumController extends Controller
         }
         
         $posts = Post::where('thread_id', $threadId)
-                    ->with(['parent'])
+                    ->with(['parent']) // Eager load parent posts only
                     ->orderBy('created_at', 'asc')
                     ->get();
         
-        return view('boards.thread', compact('board', 'thread', 'posts'));
+        return view('boards.thread', ['board' => $boardModel, 'thread' => $thread, 'posts' => $posts]);
     }
 
     public function createThread($boardCode)
@@ -72,64 +72,33 @@ class ForumController extends Controller
         return view('forum.create-thread', compact('board'));
     }
 
-    public function storeThread(Request $request, $boardCode)
+    public function storeThread(Request $request, $board)
     {
-        // Debug: Log all incoming request data
-        Log::info('=== THREAD CREATION DEBUG ===', [
-            'all_request_data' => $request->all(),
-            'board_code' => $boardCode,
-            'method' => $request->method(),
-            'has_title' => $request->has('title'),
-            'title_value' => $request->input('title'),
-            'has_content' => $request->has('content'),
-            'content_value' => $request->input('content'),
-        ]);
-
         // Skip authentication for now - create anonymous posts
         $anonymousUser = 'Anonymous#' . substr(hash('sha256', $request->ip() . time()), 0, 8);
-
-
-        Log::info('=== THREAD CREATION VALIDATION START ===', [
-            'anonymous_user' => $anonymousUser,
-            'board_code' => $boardCode,
-            'timestamp' => now()->toDateTimeString()
-        ]);
         
         // Simple validation - accept either title or subject
         $title = $request->input('title') ?: $request->input('subject');
         if (!$title) {
-            Log::error('TITLE/SUBJECT MISSING', ['title' => $request->input('title'), 'subject' => $request->input('subject'), 'all_data' => $request->all()]);
             return back()->withErrors(['title' => 'Title is required'])->withInput();
         }
         
         if (!$request->filled('content')) {
-            Log::error('CONTENT MISSING', ['content' => $request->input('content')]);
             return back()->withErrors(['content' => 'Content is required'])->withInput();
         }
 
-        Log::info('=== VALIDATION PASSED ===', [
-            'title' => $title,
-            'content_length' => strlen($request->input('content'))
-        ]);
-
-        Log::info('Thread creation validation passed', [
-            'anonymous_user' => $anonymousUser,
-            'board_code' => $boardCode,
-            'title' => $title,
-            'content_length' => strlen($request->content)
-        ]);
-
-        // Validate Proof of Work
+        // Validate Proof of Work and image
         $request->validate([
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
-            'pow_challenge_id' => 'required|string|size:32'
+            'pow_challenge_id' => 'required|string|size:32',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:8192'
         ]);
 
-        $board = Board::where('code', $boardCode)->firstOrFail();
+        $boardModel = Board::where('code', $board)->firstOrFail();
         
         // Generate challenge data and verify PoW
-        $challengeData = "thread:{$board->code}:{$title}:{$request->pow_challenge_id}";
+        $challengeData = "thread:{$boardModel->code}:{$title}:{$request->pow_challenge_id}";
         $verification = Thread::verifyProofOfWork(
             $challengeData, 
             $request->pow_nonce, 
@@ -140,21 +109,14 @@ class ForumController extends Controller
         if (!$verification['valid']) {
             Log::error('PoW verification failed', [
                 'error' => $verification['error'],
-                'challenge_data' => $challengeData,
-                'nonce' => $request->pow_nonce,
-                'hash' => $request->pow_hash
+                'board' => $board,
+                'title' => $title
             ]);
             return back()->withErrors(['pow' => 'Proof of work verification failed: ' . $verification['error']])->withInput();
         }
 
-        Log::info('=== BOARD RETRIEVED SUCCESSFULLY ===', [
-            'board_id' => $board->id,
-            'board_code' => $board->code,
-            'anonymous_user' => $anonymousUser
-        ]);
-
         $threadData = [
-            'board_id' => $board->id,
+            'board_id' => $boardModel->id,
             'title' => $title,
             'content' => $request->content,
             'user_id' => null, // No auth for now
@@ -167,11 +129,6 @@ class ForumController extends Controller
             'pow_verified_at' => now()
         ];
 
-        Log::info('=== THREAD DATA PREPARED ===', [
-            'thread_data' => $threadData,
-            'anonymous_user' => $anonymousUser
-        ]);
-
         // Handle image upload
         if ($request->hasFile('image')) {
             $image = $request->file('image');
@@ -183,48 +140,33 @@ class ForumController extends Controller
         }
 
         try {
-            Log::info('=== ATTEMPTING THREAD CREATION ===', [
-                'anonymous_user' => $anonymousUser,
-                'thread_data' => $threadData
-            ]);
-
             $thread = Thread::create($threadData);
-            
-            Log::info('=== THREAD CREATED SUCCESSFULLY ===', [
-                'thread_id' => $thread->id,
-                'board_code' => $boardCode,
-                'title' => $thread->title,
-                'author' => $anonymousUser
-            ]);
-
-            return redirect("/$boardCode/{$thread->id}");
+            return redirect("/$board/{$thread->id}");
             
         } catch (\Exception $e) {
-            Log::error('=== THREAD CREATION DATABASE ERROR ===', [
-                'anonymous_user' => $anonymousUser,
-                'board_code' => $boardCode,
-                'error' => $e->getMessage(),
-                'thread_data' => $threadData
+            Log::error('Thread creation failed', [
+                'board' => $board,
+                'error' => $e->getMessage()
             ]);
             
-            return redirect("/$boardCode")
+            return redirect("/$board")
                 ->withErrors(['database' => 'Failed to save thread: ' . $e->getMessage()])
                 ->withInput();
         }
     }
 
-    public function storeReply(Request $request, $boardCode, $threadId)
+    public function storeReply(Request $request, $board, $threadId)
     {
         $request->validate([
             'content' => 'required|max:2000',
             'parent_id' => 'nullable|exists:posts,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:8192',
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
             'pow_challenge_id' => 'required|string|size:32'
         ]);
 
-        $board = Board::where('code', $boardCode)->firstOrFail();
+        $boardModel = Board::where('code', $board)->firstOrFail();
         $thread = Thread::findOrFail($threadId);
         
         // Validate Proof of Work for reply
@@ -273,7 +215,41 @@ class ForumController extends Controller
 
         Post::create($postData);
 
-        return redirect("/$boardCode/$threadId");
+        return redirect("/$board/$threadId");
+    }
+
+    public function serveThreadImage($id)
+    {
+        $thread = Thread::findOrFail($id);
+        
+        if (!$thread->image_path) {
+            abort(404);
+        }
+        
+        $fullPath = storage_path('app/public/' . $thread->image_path);
+        
+        if (!file_exists($fullPath)) {
+            abort(404);
+        }
+        
+        return response()->file($fullPath);
+    }
+    
+    public function servePostImage($id)
+    {
+        $post = Post::findOrFail($id);
+        
+        if (!$post->image_filename) {
+            abort(404);
+        }
+        
+        $fullPath = storage_path('app/public/forum/images/' . $post->image_filename);
+        
+        if (!file_exists($fullPath)) {
+            abort(404);
+        }
+        
+        return response()->file($fullPath);
     }
 
 }

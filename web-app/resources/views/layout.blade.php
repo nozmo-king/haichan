@@ -5,23 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Haichan - PoW Forum')</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/haichan.css">
+    @vite('resources/js/global-mining.js')
     <style>
-        body {
-            font-family: 'Courier New', monospace;
-            background-color: #f0e0d6;
-            margin: 0;
-            padding: 20px;
-            color: #000;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            padding: 30px;
-            min-height: 100vh;
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
         }
         
         .header {
@@ -356,14 +346,13 @@
         top: 0;
         left: 0;
         width: 100%;
-        background: linear-gradient(90deg, #1a1a1a, #333);
-        color: #00ff00;
+        background: #9AB87A;
+        color: #444B6E;
         font-family: 'Courier New', monospace;
         font-size: 11px;
         padding: 8px 0;
         z-index: 9999;
-        border-bottom: 2px solid #00ff00;
-        box-shadow: 0 2px 10px rgba(0,255,0,0.3);
+        border-bottom: 1px solid #708B75;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -375,27 +364,27 @@
                     display: inline-block;
                     width: 8px;
                     height: 8px;
-                    background: #00ff00;
+                    background: #708B75;
                     border-radius: 50%;
                     animation: pulse 1s infinite;
                 "></span>
-                <span style="color: #00ff00; font-weight: bold;">HAICHAN MINING NETWORK</span>
+                <span style="color: #444B6E; font-weight: bold;">HAICHAN MINING NETWORK</span>
             </div>
-            <div style="color: #fff;">
-                <span style="color: #888;">HASH RATE:</span>
-                <span id="network-hashrate" style="color: #00ff00; font-weight: bold;">0 H/s</span>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">HASH RATE:</span>
+                <span id="network-hashrate" style="color: #006400; font-weight: bold;">0 H/s</span>
             </div>
-            <div style="color: #fff;">
-                <span style="color: #888;">TOTAL HASHES:</span>
-                <span id="network-total-hashes" style="color: #00ff00; font-weight: bold;">0</span>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">TOTAL HASHES:</span>
+                <span id="network-total-hashes" style="color: #006400; font-weight: bold;">0</span>
             </div>
-            <div style="color: #fff;">
-                <span style="color: #888;">VALID PROOFS:</span>
-                <span id="network-valid-proofs" style="color: #ffd700; font-weight: bold;">0</span>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">VALID PROOFS:</span>
+                <span id="network-valid-proofs" style="color: #708B75; font-weight: bold;">0</span>
             </div>
-            <div style="color: #fff;">
-                <span style="color: #888;">ACTIVE MINERS:</span>
-                <span id="network-active-miners" style="color: #ff6b35; font-weight: bold;">1</span>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">ACTIVE MINERS:</span>
+                <span id="network-active-miners" style="color: #8B0000; font-weight: bold;">1</span>
             </div>
         </div>
         
@@ -403,31 +392,127 @@
             <div id="current-mining-hash" style="
                 font-family: 'Courier New', monospace;
                 font-size: 9px;
-                color: #888;
+                color: #666;
                 max-width: 150px;
                 overflow: hidden;
                 text-overflow: ellipsis;
             ">21e8000abc123def...</div>
-            <div style="color: #fff;">
-                <span style="color: #888;">DIFFICULTY:</span>
-                <span id="current-difficulty" style="color: #ff6b35; font-weight: bold;">21e8</span>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">DIFFICULTY:</span>
+                <span id="current-difficulty" style="color: #8B0000; font-weight: bold;">21e8</span>
             </div>
+            <select style="
+                background: #708B75;
+                color: #FFFFEE;
+                border: 1px solid #444B6E;
+                padding: 4px 6px;
+                border-radius: 3px;
+                font-size: 9px;
+                margin-left: 10px;
+                cursor: pointer;
+            " onchange="if(this.value) window.location.href=this.value">
+                <option value="">📋 Boards</option>
+                <option value="/gen">💬 /gen/</option>
+                <option value="/film">🎬 /film/</option>
+                <option value="/biz">💼 /biz/</option>
+                <option value="/lit">📚 /lit/</option>
+                <option value="/x">👽 /x/</option>
+                <option value="/meta">⚙️ /meta/</option>
+                <option value="/mu">🎵 /mu/</option>
+            </select>
+            @unless(request()->is('/'))
+            <button id="mini-dash-toggle" style="
+                background: #708B75;
+                border: none;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 12px;
+                margin-left: 5px;
+            " title="Toggle Mini Dashboard (Ctrl+D)">⛏️</button>
+            @endunless
         </div>
     </div>
+
+    <!-- Mini Dashboard Overlay (Hidden by default, on mining page, and homepage) -->
+    @unless(request()->is('mining') || request()->is('/') || request()->is(''))
+    <div id="mini-dashboard-overlay" style="
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        width: 350px;
+        height: 250px;
+        background: #F5F5DC;
+        border: 2px solid #708B75;
+        border-radius: 5px;
+        padding: 15px;
+        z-index: 9998;
+        display: none;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        color: #444B6E;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: height 0.3s ease;
+        overflow: hidden;
+    ">
+        <div id="mini-dash-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #708B75; padding-bottom: 8px; cursor: move;">
+            <span style="font-weight: bold; color: #444B6E;">⛏️ HAICHAN MINING DASHBOARD</span>
+            <div style="display: flex; gap: 5px;">
+                <button id="mini-dash-minimize" style="background: #708B75; border: 1px solid #444B6E; color: #FFFFEE; padding: 2px 6px; font-size: 12px; cursor: pointer; border-radius: 2px; font-weight: bold;" title="Minimize">−</button>
+                <button id="mini-dash-close" style="background: #8B0000; border: 1px solid #444B6E; color: #FFFFEE; padding: 2px 6px; font-size: 12px; cursor: pointer; border-radius: 2px; font-weight: bold;" title="Close">×</button>
+            </div>
+        </div>
+        
+        <div class="mini-dash-content" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+            <div>
+                <div style="color: #666; font-size: 9px;">Current Mode</div>
+                <div id="mini-mining-mode" style="color: #006400; font-weight: bold;">IDLE</div>
+            </div>
+            <div>
+                <div style="color: #666; font-size: 9px;">Personal Rate</div>
+                <div id="mini-personal-rate" style="color: #006400; font-weight: bold;">0 H/s</div>
+            </div>
+        </div>
+        
+        <div class="mini-dash-content" style="margin-bottom: 15px;">
+            <div style="color: #666; font-size: 9px; margin-bottom: 5px;">Mining Controls</div>
+            <div style="display: flex; gap: 5px;">
+                <button id="mini-idle-btn" style="background: #FFFACD; border: 1px solid #708B75; padding: 3px 6px; font-size: 9px; cursor: pointer; border-radius: 2px;">IDLE</button>
+                <button id="mini-active-btn" style="background: #FFFACD; border: 1px solid #708B75; padding: 3px 6px; font-size: 9px; cursor: pointer; border-radius: 2px;">ACTIVE</button>
+                <button id="mini-hyper-btn" style="background: #FFFACD; border: 1px solid #708B75; padding: 3px 6px; font-size: 9px; cursor: pointer; border-radius: 2px;">HYPER</button>
+                <button id="mini-stop-btn" style="background: #F8D7DA; border: 1px solid #8B0000; padding: 3px 6px; font-size: 9px; cursor: pointer; border-radius: 2px;">STOP</button>
+            </div>
+        </div>
+        
+        <div class="mini-dash-content" style="margin-bottom: 10px;">
+            <div style="color: #666; font-size: 9px; margin-bottom: 3px;">Current Hash Target</div>
+            <div id="mini-hash-preview" style="
+                font-family: 'Courier New', monospace;
+                font-size: 8px;
+                color: #666;
+                background: #FFFACD;
+                padding: 3px;
+                border: 1px solid #DDD;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            ">21e8000abc123def...</div>
+        </div>
+        
+        <div class="mini-dash-content" style="border-top: 1px solid #708B75; padding-top: 8px; text-align: center;">
+            <a href="/mining" style="color: #708B75; text-decoration: none; font-size: 10px;">
+                🎯 Open Full Dashboard
+            </a>
+        </div>
+    </div>
+    @endunless
     
     <div class="container" style="margin-top: 50px;">
         <div class="header">
             <h1><a href="/" style="text-decoration: none; color: inherit;">HAICHAN</a></h1>
             
-            <!-- Navigation Menu -->
-            <div style="margin: 15px 0; text-align: center;">
-                <a href="/" style="margin: 0 10px; padding: 5px 10px; background-color: #f0f0f0; text-decoration: none; border-radius: 3px;">Forum</a>
-                <a href="/mining" style="margin: 0 10px; padding: 5px 10px; background-color: #ffd700; color: #000; text-decoration: none; border-radius: 3px;">⛏️ Mining</a>
-            </div>
             
-            <div style="text-align: center; font-size: 12px; color: #666; margin-top: 10px;">
-                Welcome to Haichan - Proof of Work Forum
-            </div>
         </div>
         
         @yield('content')

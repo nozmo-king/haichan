@@ -1,12 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Haichan - Boards</title>
-    <link rel="stylesheet" href="/css/haichan.css">
-</head>
-<body>
-    <div class="container">
-        @include('components.navigation')
+@extends('layout')
+
+@section('title', 'Haichan - Boards')
+
+@section('content')
 
         <div class="board-listing">
             <h2>Boards</h2>
@@ -23,6 +19,4 @@
                 @endforeach
             </div>
         </div>
-    </div>
-</body>
-</html>
+@endsection

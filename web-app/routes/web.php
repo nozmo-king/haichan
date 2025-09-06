@@ -56,62 +56,31 @@ Route::post('/forum/board/{code}/create', [App\Http\Controllers\ForumController:
 // Skip login for now - redirect to forum
 Route::get('/login', function() { return redirect('/'); })->name('login');
 
-// Individual board routes
-Route::get('/gen', function () {
-    try {
-        $board = \App\Models\Board::where('code', 'gen')->first();
-        if (!$board) {
-            throw new Exception('Board "gen" not found');
-        }
-        $threads = $board->threads()->orderBy('created_at', 'desc')->paginate(20);
-        return view('boards.show', compact('board', 'threads'));
-    } catch (Exception $e) {
-        return response()->json(['error' => $e->getMessage()]);
-    }
+// Dynamic board routes - supports all boards: gen, tech, biz, film, x, lit, meta, mu
+Route::group(['where' => ['board' => 'gen|tech|biz|film|x|lit|meta|mu']], function () {
+    // Board main page
+    Route::get('/{board}', [App\Http\Controllers\ForumController::class, 'showBoard'])->name('board.show');
+    
+    // Thread creation
+    Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])->name('board.store');
+    
+    // Board catalog
+    Route::get('/{board}/catalog', [App\Http\Controllers\ForumController::class, 'showCatalog'])->name('board.catalog');
+    
+    // Thread view
+    Route::get('/{board}/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])
+         ->name('forum.thread')
+         ->where('threadId', '[0-9]+');
+    
+    // Reply to thread
+    Route::post('/{board}/{threadId}/reply', [App\Http\Controllers\ForumController::class, 'storeReply'])
+         ->name('forum.reply')
+         ->where('threadId', '[0-9]+');
 });
 
-// Board routes with POST support for thread creation and replies
-Route::get('/gen', function() { 
-    try {
-        return app(\App\Http\Controllers\ForumController::class)->showBoard('gen'); 
-    } catch (Exception $e) {
-        return response('<h1>Error</h1><p>' . $e->getMessage() . '</p><pre>' . $e->getTraceAsString() . '</pre>', 500);
-    }
-});
-Route::get('/gen/catalog', function() { return app(\App\Http\Controllers\ForumController::class)->showCatalog('gen'); });
-Route::post('/gen', function() { return app(\App\Http\Controllers\ForumController::class)->storeThread(request(), 'gen'); });
-Route::get('/gen/{threadId}', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->showThread('gen', $threadId); })->name('forum.thread');
-Route::post('/gen/{threadId}/reply', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->storeReply(request(), 'gen', $threadId); });
-
-Route::get('/tech', function() { return app(\App\Http\Controllers\ForumController::class)->showBoard('tech'); });
-Route::get('/tech/catalog', function() { return app(\App\Http\Controllers\ForumController::class)->showCatalog('tech'); });
-Route::post('/tech', function() { return app(\App\Http\Controllers\ForumController::class)->storeThread(request(), 'tech'); });
-Route::get('/tech/{threadId}', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->showThread('tech', $threadId); });
-Route::post('/tech/{threadId}/reply', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->storeReply(request(), 'tech', $threadId); });
-
-Route::get('/biz', function() { return app(\App\Http\Controllers\ForumController::class)->showBoard('biz'); });
-Route::get('/biz/catalog', function() { return app(\App\Http\Controllers\ForumController::class)->showCatalog('biz'); });
-Route::post('/biz', function() { return app(\App\Http\Controllers\ForumController::class)->storeThread(request(), 'biz'); });
-Route::get('/biz/{threadId}', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->showThread('biz', $threadId); });
-Route::post('/biz/{threadId}/reply', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->storeReply(request(), 'biz', $threadId); });
-
-Route::get('/film', function() { return app(\App\Http\Controllers\ForumController::class)->showBoard('film'); });
-Route::get('/film/catalog', function() { return app(\App\Http\Controllers\ForumController::class)->showCatalog('film'); });
-Route::post('/film', function() { return app(\App\Http\Controllers\ForumController::class)->storeThread(request(), 'film'); });
-Route::get('/film/{threadId}', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->showThread('film', $threadId); });
-Route::post('/film/{threadId}/reply', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->storeReply(request(), 'film', $threadId); });
-
-Route::get('/x', function() { return app(\App\Http\Controllers\ForumController::class)->showBoard('x'); });
-Route::get('/x/catalog', function() { return app(\App\Http\Controllers\ForumController::class)->showCatalog('x'); });
-Route::post('/x', function() { return app(\App\Http\Controllers\ForumController::class)->storeThread(request(), 'x'); });
-Route::get('/x/{threadId}', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->showThread('x', $threadId); });
-Route::post('/x/{threadId}/reply', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->storeReply(request(), 'x', $threadId); });
-
-Route::get('/lit', function() { return app(\App\Http\Controllers\ForumController::class)->showBoard('lit'); });
-Route::get('/lit/catalog', function() { return app(\App\Http\Controllers\ForumController::class)->showCatalog('lit'); });
-Route::post('/lit', function() { return app(\App\Http\Controllers\ForumController::class)->storeThread(request(), 'lit'); });
-Route::get('/lit/{threadId}', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->showThread('lit', $threadId); });
-Route::post('/lit/{threadId}/reply', function($threadId) { return app(\App\Http\Controllers\ForumController::class)->storeReply(request(), 'lit', $threadId); });
+// Image serving routes
+Route::get('/image/thread/{id}', [App\Http\Controllers\ForumController::class, 'serveThreadImage'])->name('thread.image');
+Route::get('/image/post/{id}', [App\Http\Controllers\ForumController::class, 'servePostImage'])->name('post.image');
 
 Route::get('/mining', function() {
     return view('mining.dashboard');

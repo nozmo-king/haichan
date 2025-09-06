@@ -117,7 +117,100 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Mining Status Bar -->
+    <div id="mining-status-bar" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background: #9AB87A;
+        color: #444B6E;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        padding: 8px 0;
+        z-index: 9999;
+        border-bottom: 1px solid #708B75;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 20px;
+    ">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <span id="mining-indicator" style="
+                    display: inline-block;
+                    width: 8px;
+                    height: 8px;
+                    background: #708B75;
+                    border-radius: 50%;
+                    animation: pulse 1s infinite;
+                "></span>
+                <span style="color: #444B6E; font-weight: bold;">HAICHAN MINING NETWORK</span>
+            </div>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">HASH RATE:</span>
+                <span id="network-hashrate" style="color: #006400; font-weight: bold;">0 H/s</span>
+            </div>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">TOTAL HASHES:</span>
+                <span id="network-total-hashes" style="color: #006400; font-weight: bold;">0</span>
+            </div>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">VALID PROOFS:</span>
+                <span id="network-valid-proofs" style="color: #708B75; font-weight: bold;">0</span>
+            </div>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">ACTIVE MINERS:</span>
+                <span id="network-active-miners" style="color: #8B0000; font-weight: bold;">1</span>
+            </div>
+        </div>
+        
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div id="current-mining-hash" style="
+                font-family: 'Courier New', monospace;
+                font-size: 9px;
+                color: #666;
+                max-width: 150px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            ">21e8000abc123def...</div>
+            <div style="color: #444B6E;">
+                <span style="color: #666;">DIFFICULTY:</span>
+                <span id="current-difficulty" style="color: #8B0000; font-weight: bold;">21e8</span>
+            </div>
+            <select style="
+                background: #708B75;
+                color: #FFFFEE;
+                border: 1px solid #444B6E;
+                padding: 4px 6px;
+                border-radius: 3px;
+                font-size: 9px;
+                margin-left: 10px;
+                cursor: pointer;
+            " onchange="if(this.value) window.location.href=this.value">
+                <option value="">📋 Boards</option>
+                <option value="/gen">💬 /gen/</option>
+                <option value="/film">🎬 /film/</option>
+                <option value="/biz">💼 /biz/</option>
+                <option value="/lit">📚 /lit/</option>
+                <option value="/x">👽 /x/</option>
+                <option value="/meta">⚙️ /meta/</option>
+                <option value="/mu">🎵 /mu/</option>
+            </select>
+            <button id="mini-dash-toggle" style="
+                background: #708B75;
+                border: none;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 3px;
+                cursor: pointer;
+                font-size: 12px;
+                margin-left: 5px;
+            " title="Toggle Mini Dashboard (Ctrl+D)">⛏️</button>
+        </div>
+    </div>
+    
+    <div class="container" style="margin-top: 50px;">
         <div class="header">
             <h1><a href="/">Haichan</a></h1>
             <nav>
@@ -159,7 +252,7 @@
                 <div style="font-size: 8pt; margin-bottom: 3px;">
                     File: {{ $thread->image_filename ?: 'image' }}
                 </div>
-                <img src="/storage/{{ $thread->image_path }}" style="max-width: 200px; max-height: 200px;">
+                <img src="{{ route('thread.image', $thread->id) }}" style="max-width: 200px; max-height: 200px;">
             </div>
             @endif
             
@@ -196,7 +289,7 @@
                 <div style="font-size: 8pt; margin-bottom: 3px;">
                     File: {{ $post->image_original_name }}
                 </div>
-                <img src="/storage/images/{{ $post->image_filename }}" style="max-width: 200px; max-height: 200px;">
+                <img src="{{ route('post.image', $post->id) }}" style="max-width: 200px; max-height: 200px;">
             </div>
             @endif
             
@@ -218,12 +311,17 @@
         @if(!$thread->locked)
         <div class="reply-form">
             <h3>[Post a Reply]</h3>
-            <form method="POST" action="/{{ $board->code }}/{{ $thread->id }}/reply" enctype="multipart/form-data">
+            <form method="POST" action="/{{ $board->code }}/{{ $thread->id }}/reply" enctype="multipart/form-data" id="reply-form">
                 @csrf
+                <!-- Hidden PoW fields -->
+                <input type="hidden" name="pow_nonce" id="reply-pow-nonce" value="">
+                <input type="hidden" name="pow_hash" id="reply-pow-hash" value="">
+                <input type="hidden" name="pow_challenge_id" id="reply-pow-challenge-id" value="">
+                
                 <table>
                     <tr>
                         <td>Comment</td>
-                        <td><textarea name="content" rows="5" cols="50" required></textarea></td>
+                        <td><textarea name="content" id="reply-content" rows="5" cols="50" required></textarea></td>
                     </tr>
                     <tr>
                         <td>File</td>
@@ -231,7 +329,18 @@
                     </tr>
                     <tr>
                         <td></td>
-                        <td><button type="submit" class="btn-primary">Submit</button></td>
+                        <td>
+                            <button type="button" id="mine-reply-btn" class="btn-primary">Mine & Submit Reply</button>
+                            <div id="reply-mining-status" style="margin-top: 10px; font-size: 10px; color: #666; display: none;">
+                                <div>Mining proof of work...</div>
+                                <div>Pattern: <span style="color: #8B0000; font-weight: bold;">21e8</span></div>
+                                <div>Hashes: <span id="reply-hash-count">0</span></div>
+                                <div>Rate: <span id="reply-hash-rate">0</span> H/s</div>
+                                <div style="margin-top: 5px;">
+                                    <button type="button" id="stop-reply-mining" class="btn-stop">Stop Mining</button>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                 </table>
             </form>
@@ -545,6 +654,94 @@
             activeTheme.style.transform = 'scale(1.2)';
             activeTheme.style.boxShadow = '0 0 8px rgba(255,255,255,0.5)';
         }
+
+        // Reply Mining System
+        let replyMiningInProgress = false;
+        let replyMiningWorker = null;
+
+        function generateChallengeId() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < 32; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
+        async function mineReplyProof(threadId, content, pattern) {
+            const challengeId = generateChallengeId();
+            const challengeData = `post:${threadId}:${content}:${challengeId}`;
+            let nonce = 0;
+            let startTime = Date.now();
+            let hashCount = 0;
+
+            document.getElementById('reply-pow-challenge-id').value = challengeId;
+
+            const hashCountEl = document.getElementById('reply-hash-count');
+            const hashRateEl = document.getElementById('reply-hash-rate');
+            const statusEl = document.getElementById('reply-mining-status');
+            statusEl.style.display = 'block';
+
+            async function mineStep() {
+                if (!replyMiningInProgress) return;
+
+                const batchSize = 500;
+                for (let i = 0; i < batchSize && replyMiningInProgress; i++) {
+                    const testData = challengeData + ':' + nonce;
+                    const encoder = new TextEncoder();
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(testData));
+                    const hashHex = Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, '0')).join('');
+                    
+                    hashCount++;
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    const rate = Math.round(hashCount / elapsed);
+                    
+                    hashCountEl.textContent = hashCount.toLocaleString();
+                    hashRateEl.textContent = rate.toLocaleString();
+                    
+                    if (hashHex.startsWith(pattern.toLowerCase())) {
+                        document.getElementById('reply-pow-nonce').value = nonce;
+                        document.getElementById('reply-pow-hash').value = hashHex;
+                        replyMiningInProgress = false;
+                        statusEl.style.display = 'none';
+                        
+                        // Auto-submit the form
+                        document.getElementById('reply-form').submit();
+                        return;
+                    }
+                    nonce++;
+                }
+                
+                if (replyMiningInProgress) {
+                    setTimeout(mineStep, 1);
+                }
+            }
+            
+            await mineStep();
+        }
+
+        // Reply mining button event
+        document.getElementById('mine-reply-btn').addEventListener('click', async () => {
+            const content = document.getElementById('reply-content').value.trim();
+            if (!content) {
+                alert('Please enter a reply first!');
+                return;
+            }
+            
+            replyMiningInProgress = true;
+            document.getElementById('mine-reply-btn').disabled = true;
+            document.getElementById('mine-reply-btn').textContent = 'Mining...';
+            
+            await mineReplyProof({{ $thread->id }}, content, '21e8');
+        });
+
+        // Stop reply mining button
+        document.getElementById('stop-reply-mining').addEventListener('click', () => {
+            replyMiningInProgress = false;
+            document.getElementById('reply-mining-status').style.display = 'none';
+            document.getElementById('mine-reply-btn').disabled = false;
+            document.getElementById('mine-reply-btn').textContent = 'Mine & Submit Reply';
+        });
     </script>
 </body>
 </html>
