@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ $board->title }} Catalog - Haichan</title>
-    <link rel="stylesheet" href="/css/haichan.css">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    @vite('resources/js/global-mining.js')
+@extends('layout')
+
+@section('title', $board->title . ' Catalog - Haichan')
+
+@section('content')
     <style>
         .catalog-grid {
             display: grid;
@@ -65,14 +63,11 @@
             font-weight: bold;
         }
     </style>
-</head>
-<body>
-    <div class="container">
         <div class="header">
             <h1><a href="/">Haichan</a></h1>
             <nav>
                 <a href="/boards">📋 Boards</a>
-                <a href="/{{ $board->name }}">{{ $board->name }}/</a>
+                <a href="/{{ $board->code }}">{{ $board->code }}/</a>
                 <a href="/mining">⛏️ Mining</a>
             </nav>
         </div>
@@ -92,7 +87,7 @@
 
         <div class="catalog-grid">
             @forelse($threads as $thread)
-            <div class="catalog-thread" onclick="window.location.href='/{{ $board->name }}/{{ $thread->id }}'"
+            <div class="catalog-thread" onclick="window.location.href='/{{ $board->code }}/{{ $thread->id }}'"
                  data-thread-id="{{ $thread->id }}" 
                  data-thread-title="{{ $thread->title }}">
                 
@@ -127,7 +122,4 @@
         <div style="text-align: center; padding: 20px;">
             {{ $threads->links() }}
         </div>
-    </div>
-
-</body>
-</html>
+@endsection

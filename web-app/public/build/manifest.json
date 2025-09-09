@@ -10,10 +10,10 @@
     "src": "resources/js/app.js",
     "isEntry": true
   },
-  "resources/js/global-mining.js": {
-    "file": "assets/global-mining-4c3FSRxZ.js",
-    "name": "global-mining",
-    "src": "resources/js/global-mining.js",
+  "resources/js/simple-mining.js": {
+    "file": "assets/simple-mining-B1u-qaa2.js",
+    "name": "simple-mining",
+    "src": "resources/js/simple-mining.js",
     "isEntry": true
   }
 }
