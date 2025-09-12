@@ -41,4 +41,9 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'apple' => [
+        'shared_secret' => env('APPLE_SHARED_SECRET'),
+        'bundle_id' => env('IOS_BUNDLE_ID', 'com.haichan.app'),
+    ],
+
 ];

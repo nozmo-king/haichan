@@ -42,7 +42,7 @@ class Post extends Model
 
     public function allReplies()
     {
-        return $this->replies()->with('allReplies');
+        return $this->replies()->with('allReplies')->orderBy('created_at', 'asc');
     }
 
     public function getImageUrlAttribute()

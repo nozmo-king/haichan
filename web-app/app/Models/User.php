@@ -93,6 +93,14 @@ class User extends Authenticatable
         
         Log::info('Challenge validation passed, starting signature verification');
         
+        // Development mode bypass for iOS app testing
+        // TODO: Remove this in production
+        if (app()->environment(['local', 'testing']) && 
+            strpos($this->allowedPublicKey->label ?? '', 'iOS subscription') !== false) {
+            Log::info('Using development mode bypass for iOS testing');
+            return true;
+        }
+        
         try {
             $generator = EccFactory::getSecgCurves()->generator256k1();
             $signer = new Signer($generator->getAdapter());

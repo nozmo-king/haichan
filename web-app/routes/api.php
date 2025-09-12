@@ -17,9 +17,17 @@ Route::get('/mining-stats', [App\Http\Controllers\ProofOfWorkController::class, 
 Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
 Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
 
+// Public subscription routes (requires public key but not auth token)
+Route::post('/subscription/activate-for-key', [App\Http\Controllers\Api\SubscriptionApiController::class, 'activateForPublicKey'])->middleware('throttle:25,1');
+
 // Protected API routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthApiController::class, 'logout']);
+    
+    // Subscription API endpoints
+    Route::get('/subscription/status', [App\Http\Controllers\Api\SubscriptionApiController::class, 'getStatus']);
+    Route::post('/subscription/activate', [App\Http\Controllers\Api\SubscriptionApiController::class, 'activate']);
+    Route::post('/subscription/cancel', [App\Http\Controllers\Api\SubscriptionApiController::class, 'cancel']);
     
     // Forum API endpoints
     Route::get('/boards', [ForumApiController::class, 'getBoards']);
