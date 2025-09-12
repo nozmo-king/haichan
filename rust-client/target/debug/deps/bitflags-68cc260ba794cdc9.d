@@ -1,0 +1,11 @@
+/Users/maxverstappen/haichan/rust-client/target/debug/deps/bitflags-68cc260ba794cdc9.d: /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/lib.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/iter.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/parser.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/traits.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/public.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/internal.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/external.rs
+
+/Users/maxverstappen/haichan/rust-client/target/debug/deps/libbitflags-68cc260ba794cdc9.rmeta: /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/lib.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/iter.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/parser.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/traits.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/public.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/internal.rs /Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/external.rs
+
+/Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/lib.rs:
+/Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/iter.rs:
+/Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/parser.rs:
+/Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/traits.rs:
+/Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/public.rs:
+/Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/internal.rs:
+/Users/maxverstappen/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/bitflags-2.9.1/src/external.rs:

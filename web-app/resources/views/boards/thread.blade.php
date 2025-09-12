@@ -171,42 +171,7 @@
 
         <!-- Replies -->
         @foreach($posts as $post)
-        <div class="post reply-post" id="post{{ $post->id }}" 
-             data-mine-type="reply" 
-             data-mine-target="reply-{{ $post->id }}"
-             data-mine-weight="40"
-             data-thread-id="{{ $thread->id }}"
-             data-thread-title="{{ $thread->title ?: 'Thread #' . $thread->id }}"
-             data-post-id="{{ $post->id }}">
-            <div class="post-header">
-                <span class="poster-info">
-                    Anonymous {{ $post->created_at->format('m/d/y H:i:s') }} No.{{ $post->id }}
-                    <a href="javascript:void(0)" class="reply-link" onclick="showReplyForm({{ $post->id }}, '{{ addslashes($post->content) }}')">[Reply]</a>
-                    <a href="javascript:void(0)" class="quote-link" onclick="quotePost({{ $post->id }}, '{{ addslashes($post->content) }}')">[Quote]</a>
-                </span>
-            </div>
-            
-            @if($post->image_filename)
-            <div style="float: left; margin: 5px 15px 10px 0;">
-                <div style="font-size: 8pt; margin-bottom: 3px;">
-                    File: {{ $post->image_original_name }}
-                </div>
-                <img src="{{ route('post.image', $post->id) }}" style="max-width: 200px; max-height: 200px;">
-            </div>
-            @endif
-            
-            <div class="post-content">
-                {!! preg_replace('/&gt;&gt;(\d+)/', '<a href="#post$1" class="quote-link">&gt;&gt;$1</a>', 
-                     preg_replace('/^&gt;(.+)/m', '<span class="greentext">&gt;$1</span>', 
-                     nl2br(e($post->content)))) !!}
-            </div>
-            <div class="post-hash-preview" id="hash-{{ $post->id }}" style="font-family: monospace; font-size: 8pt; color: #888; margin-top: 5px; opacity: 0.6;">
-                <span class="hash-label">sha256:</span>
-                <span class="hash-value">calculating...</span>
-                <span class="hash-bump-indicator" style="display: none; color: #ff6b35; font-weight: bold; margin-left: 10px;">🔥 21e8 BUMP!</span>
-            </div>
-            <div style="clear: both;"></div>
-        </div>
+            @include('forum.post-recursive', ['post' => $post, 'level' => 0, 'thread' => $thread, 'board' => $board])
         @endforeach
 
         <!-- Reply form -->
@@ -373,8 +338,21 @@
                 const threadContent = `{!! addslashes($thread->content) !!}`;
                 await this.calculatePostHash({{ $thread->id }}, threadContent);
                 
-                // Process all replies
-                @foreach($posts as $post)
+                // Process all posts recursively (including nested replies)
+                @php
+                function flattenPosts($posts, $flattened = []) {
+                    foreach ($posts as $post) {
+                        $flattened[] = $post;
+                        if ($post->allReplies && $post->allReplies->count() > 0) {
+                            $flattened = flattenPosts($post->allReplies, $flattened);
+                        }
+                    }
+                    return $flattened;
+                }
+                $allPosts = flattenPosts($posts);
+                @endphp
+                
+                @foreach($allPosts as $post)
                 const post{{ $post->id }}Content = `{!! addslashes($post->content) !!}`;
                 await this.calculatePostHash({{ $post->id }}, post{{ $post->id }}Content);
                 @endforeach
@@ -469,19 +447,32 @@
                         <h3>Reply to Post #${postId}</h3>
                         <button onclick="closeReplyForm()" class="close-btn">✕</button>
                     </div>
-                    <form method="POST" action="/{{ $board->name }}/{{ $thread->id }}/reply" enctype="multipart/form-data">
+                    <form method="POST" action="/{{ $board->name }}/{{ $thread->id }}/reply" enctype="multipart/form-data" id="popout-reply-form">
                         @csrf
+                        <input type="hidden" name="parent_id" value="${postId}">
+                        <input type="hidden" name="pow_nonce" id="popout-pow-nonce" value="">
+                        <input type="hidden" name="pow_hash" id="popout-pow-hash" value="">
+                        <input type="hidden" name="pow_challenge_id" id="popout-pow-challenge-id" value="">
                         <div class="reply-form-field">
                             <label>Comment</label>
-                            <textarea name="content" rows="5" placeholder="Enter your reply..." required></textarea>
+                            <textarea name="content" id="popout-reply-content" rows="5" placeholder="Enter your reply..." required></textarea>
                         </div>
                         <div class="reply-form-field">
                             <label>File</label>
                             <input type="file" name="image" accept="image/*">
                         </div>
                         <div class="reply-form-actions">
-                            <button type="submit" class="btn-primary">Submit Reply</button>
+                            <button type="button" id="popout-mine-reply-btn" class="btn-primary">Mine & Submit Reply</button>
                             <button type="button" onclick="closeReplyForm()" class="btn-secondary">Cancel</button>
+                        </div>
+                        <div id="popout-reply-mining-status" style="margin-top: 10px; font-size: 10px; color: #666; display: none;">
+                            <div>Mining proof of work...</div>
+                            <div>Pattern: <span style="color: #8B0000; font-weight: bold;">21e8</span></div>
+                            <div>Hashes: <span id="popout-reply-hash-count">0</span></div>
+                            <div>Rate: <span id="popout-reply-hash-rate">0</span> H/s</div>
+                            <div style="margin-top: 5px;">
+                                <button type="button" id="popout-stop-reply-mining" class="btn-stop">Stop Mining</button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -489,6 +480,9 @@
             
             document.body.appendChild(popout);
             popout.querySelector('textarea').focus();
+            
+            // Add event listeners for the popout mining
+            setupPopoutMining();
         }
 
         function closeReplyForm() {
@@ -644,5 +638,90 @@
             document.getElementById('mine-reply-btn').disabled = false;
             document.getElementById('mine-reply-btn').textContent = 'Mine & Submit Reply';
         });
+
+        // Popout mining functions
+        let popoutMiningInProgress = false;
+
+        function setupPopoutMining() {
+            const mineBtn = document.getElementById('popout-mine-reply-btn');
+            const stopBtn = document.getElementById('popout-stop-reply-mining');
+            
+            if (mineBtn) {
+                mineBtn.addEventListener('click', async () => {
+                    const content = document.getElementById('popout-reply-content').value.trim();
+                    if (!content) {
+                        alert('Please enter a reply first!');
+                        return;
+                    }
+                    
+                    popoutMiningInProgress = true;
+                    mineBtn.disabled = true;
+                    mineBtn.textContent = 'Mining...';
+                    
+                    await minePopoutReplyProof({{ $thread->id }}, content, '21e8');
+                });
+            }
+            
+            if (stopBtn) {
+                stopBtn.addEventListener('click', () => {
+                    popoutMiningInProgress = false;
+                    document.getElementById('popout-reply-mining-status').style.display = 'none';
+                    document.getElementById('popout-mine-reply-btn').disabled = false;
+                    document.getElementById('popout-mine-reply-btn').textContent = 'Mine & Submit Reply';
+                });
+            }
+        }
+
+        async function minePopoutReplyProof(threadId, content, pattern) {
+            const challengeId = generateChallengeId();
+            const challengeData = `post:${threadId}:${content}:${challengeId}`;
+            let nonce = 0;
+            let startTime = Date.now();
+            let hashCount = 0;
+
+            document.getElementById('popout-pow-challenge-id').value = challengeId;
+
+            const hashCountEl = document.getElementById('popout-reply-hash-count');
+            const hashRateEl = document.getElementById('popout-reply-hash-rate');
+            const statusEl = document.getElementById('popout-reply-mining-status');
+            statusEl.style.display = 'block';
+
+            async function mineStep() {
+                if (!popoutMiningInProgress) return;
+
+                const batchSize = 500;
+                for (let i = 0; i < batchSize && popoutMiningInProgress; i++) {
+                    const testData = challengeData + ':' + nonce;
+                    const encoder = new TextEncoder();
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(testData));
+                    const hashHex = Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, '0')).join('');
+                    
+                    hashCount++;
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    const rate = Math.round(hashCount / elapsed);
+                    
+                    hashCountEl.textContent = hashCount.toLocaleString();
+                    hashRateEl.textContent = rate.toLocaleString();
+                    
+                    if (hashHex.startsWith(pattern.toLowerCase())) {
+                        document.getElementById('popout-pow-nonce').value = nonce;
+                        document.getElementById('popout-pow-hash').value = hashHex;
+                        popoutMiningInProgress = false;
+                        statusEl.style.display = 'none';
+                        
+                        // Auto-submit the form
+                        document.getElementById('popout-reply-form').submit();
+                        return;
+                    }
+                    nonce++;
+                }
+                
+                if (popoutMiningInProgress) {
+                    setTimeout(mineStep, 1);
+                }
+            }
+            
+            await mineStep();
+        }
     </script>
 @endsection

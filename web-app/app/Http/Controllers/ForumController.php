@@ -58,8 +58,12 @@ class ForumController extends Controller
             return response()->json(['pow_score' => $thread->proof_of_work_sum_points ?? 0]);
         }
         
+        // Load top-level posts (no parent) with their nested replies
         $posts = Post::where('thread_id', $threadId)
-                    ->with(['parent']) // Eager load parent posts only
+                    ->whereNull('parent_id')
+                    ->with(['allReplies' => function($query) {
+                        $query->orderBy('created_at', 'asc');
+                    }])
                     ->orderBy('created_at', 'asc')
                     ->get();
         
@@ -157,6 +161,13 @@ class ForumController extends Controller
 
     public function storeReply(Request $request, $board, $threadId)
     {
+        // Debug logging for form submission
+        Log::info('Reply form submission received', [
+            'parent_id' => $request->input('parent_id'),
+            'content_preview' => substr($request->input('content', ''), 0, 30) . '...',
+            'form_data_keys' => array_keys($request->all())
+        ]);
+
         $request->validate([
             'content' => 'required|max:2000',
             'parent_id' => 'nullable|exists:posts,id',
@@ -213,9 +224,25 @@ class ForumController extends Controller
             $postData['image_filename'] = $image->getClientOriginalName();
         }
 
-        Post::create($postData);
+        // Use database transaction to ensure data is committed before redirect
+        $post = \DB::transaction(function() use ($postData) {
+            $post = Post::create($postData);
+            
+            // Force immediate save and ensure relationships are fresh
+            $post->refresh();
+            
+            return $post;
+        });
+        
+        // Log the created post data for debugging
+        Log::info('Reply created', [
+            'id' => $post->id,
+            'parent_id' => $post->parent_id,
+            'thread_id' => $post->thread_id,
+            'content' => substr($post->content, 0, 50) . '...'
+        ]);
 
-        return redirect("/$board/$threadId");
+        return redirect("/$board/$threadId")->with('reply_created', $post->id);
     }
 
     public function serveThreadImage($id)

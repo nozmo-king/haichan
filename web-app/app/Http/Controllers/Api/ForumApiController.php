@@ -122,13 +122,24 @@ class ForumApiController extends Controller
                 'title' => $thread->title,
                 'content' => $thread->content,
                 'author_name' => $thread->author_name,
-                'created_at' => $thread->created_at
+                'posts_count' => 0,
+                'created_at' => $thread->created_at,
+                'image_path' => $thread->image_path,
+                'image_filename' => $thread->image_filename
             ]
         ], 201);
     }
 
     public function createReply(Request $request, $code, $threadId)
     {
+        // Debug logging for API reply submission
+        \Log::info('API Reply submission received', [
+            'parent_id' => $request->input('parent_id'),
+            'content_preview' => substr($request->input('content', ''), 0, 30) . '...',
+            'thread_id' => $threadId,
+            'board_code' => $code
+        ]);
+
         $request->validate([
             'content' => 'required|max:2000',
             'parent_id' => 'nullable|exists:posts,id'
