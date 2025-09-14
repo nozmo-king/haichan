@@ -13,51 +13,6 @@
     <script>
         // Force complete cache refresh
         console.log('🔄 LAYOUT LOADED - New mining system should initialize');
-
-        // AGGRESSIVE text sanitizer - KILL ALL PROBLEMATIC TEXT ON EVERY PAGE
-        function sanitizeAllText() {
-            const walker = document.createTreeWalker(
-                document.body,
-                NodeFilter.SHOW_TEXT,
-                null,
-                false
-            );
-
-            let node;
-            const badPatterns = [
-                /join the computational resistance/gi,
-                /computational resistance/gi,
-                /decentralized discourse/gi,
-                /every hash you mine is a vote/gi,
-                /vote for decentralized/gi
-            ];
-
-            while (node = walker.nextNode()) {
-                let changed = false;
-                for (let pattern of badPatterns) {
-                    if (pattern.test(node.nodeValue)) {
-                        node.nodeValue = node.nodeValue.replace(pattern, '');
-                        changed = true;
-                    }
-                }
-                if (changed && node.nodeValue.trim() === '') {
-                    node.nodeValue = '';
-                }
-            }
-
-            // Also check all elements for innerHTML
-            document.querySelectorAll('*').forEach(el => {
-                for (let pattern of badPatterns) {
-                    if (el.innerHTML && pattern.test(el.innerHTML)) {
-                        el.innerHTML = el.innerHTML.replace(pattern, '');
-                    }
-                }
-            });
-        }
-
-        // Run sanitizer immediately and set up continuous monitoring
-        document.addEventListener('DOMContentLoaded', sanitizeAllText);
-        setInterval(sanitizeAllText, 1000); // Run every second
     </script>
     <script>
     // Force cache refresh and clear old mining system
@@ -229,6 +184,19 @@
             <div style="color: rgba(255,255,238,0.9);">Rate: <span id="toolbar-hashrate" style="color: #E8FFE8; font-weight: bold;">0 H/s</span></div>
             <div style="color: rgba(255,255,238,0.9);">Total: <span id="toolbar-total-hashes" style="color: #E8FFE8; font-weight: bold;">0</span></div>
             <div style="color: rgba(255,255,238,0.9);">Target: <span id="toolbar-target" style="color: #FFD8D8; font-weight: bold;">None</span></div>
+
+            <!-- Image Library Link in Bottom Toolbar -->
+            <a href="/library" style="
+                background: rgba(255,255,238,0.1);
+                color: #E8FFE8;
+                text-decoration: none;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 8px;
+                font-weight: bold;
+                border: 1px solid rgba(255,255,238,0.2);
+                transition: all 0.2s ease;
+            " title="Image Library" onmouseover="this.style.background='rgba(255,255,238,0.2)'" onmouseout="this.style.background='rgba(255,255,238,0.1)'">🖼️ LIB</a>
         </div>
         <div style="color: rgba(255,255,238,0.8); font-size: 8px;">Power: <span id="toolbar-power" style="color: #FFE8C8;">IDLE</span></div>
     </div>
@@ -334,9 +302,40 @@
 
     <div class="container" style="margin-top: 50px; margin-bottom: 40px;">
         <div class="header">
-            <h1><a href="/" style="text-decoration: none; color: inherit; font-family: 'Nova Cut', serif;">HAICHAN</a></h1>
-            
-            
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <h1><a href="/" style="text-decoration: none; color: inherit; font-family: 'Nova Cut', serif;">HAICHAN</a></h1>
+
+                <!-- Header Navigation Links -->
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <a href="/library" style="
+                        background: linear-gradient(135deg, #9AB87A 0%, #708B75 100%);
+                        color: #FFFFEE;
+                        text-decoration: none;
+                        padding: 8px 16px;
+                        border-radius: 5px;
+                        font-size: 11px;
+                        font-weight: bold;
+                        border: 2px solid #444B6E;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 2px 4px rgba(68, 75, 110, 0.2);
+                        font-family: 'Courier New', monospace;
+                    " title="Browse and Upload Images" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(68, 75, 110, 0.3)'" onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='0 2px 4px rgba(68, 75, 110, 0.2)'">🖼️ IMAGE LIBRARY</a>
+
+                    <a href="/mining" style="
+                        background: linear-gradient(135deg, #708B75 0%, #444B6E 100%);
+                        color: #FFFFEE;
+                        text-decoration: none;
+                        padding: 8px 16px;
+                        border-radius: 5px;
+                        font-size: 11px;
+                        font-weight: bold;
+                        border: 2px solid #444B6E;
+                        transition: all 0.3s ease;
+                        box-shadow: 0 2px 4px rgba(68, 75, 110, 0.2);
+                        font-family: 'Courier New', monospace;
+                    " title="Mining Dashboard" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(68, 75, 110, 0.3)'" onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='0 2px 4px rgba(68, 75, 110, 0.2)'">⛏️ MINING</a>
+                </div>
+            </div>
         </div>
         
         @yield('content')
