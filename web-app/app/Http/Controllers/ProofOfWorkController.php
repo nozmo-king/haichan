@@ -23,7 +23,9 @@ class ProofOfWorkController extends Controller
             'hash' => 'required|string|size:64',
             'nonce' => 'required|integer|min:0',
             'data' => 'required|string',
-            'pattern' => 'required|string|in:21,21e8,21e80,21e800,21e8000,000021e8'
+            'pattern' => 'required|string|in:21,21e8,21e80,21e800,21e8000,000021e8',
+            'target_type' => 'nullable|string',
+            'target_id' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -171,11 +173,11 @@ class ProofOfWorkController extends Controller
         }
 
         // Server-side verification: recompute hash and verify
-        $testData = $data . ':' . $nonce;
-        $serverHash = hash('sha256', $testData);
+        // The client already includes nonce in data, so use data directly
+        $serverHash = hash('sha256', $data);
         
         Log::info('SERVER HASH VERIFICATION', [
-            'test_data' => $testData,
+            'data' => $data,
             'server_hash' => $serverHash,
             'client_hash' => $submittedHash,
             'hashes_match' => $serverHash === $submittedHash
@@ -191,7 +193,7 @@ class ProofOfWorkController extends Controller
             ]);
             
             // Additional validation for fallback hashes
-            if (!$this->validateFallbackHash($testData, $submittedHash, $pattern)) {
+            if (!$this->validateFallbackHash($data, $submittedHash, $pattern)) {
                 return ['valid' => false, 'error' => 'Invalid fallback hash computation'];
             }
         }

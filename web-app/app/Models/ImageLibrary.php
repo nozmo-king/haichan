@@ -12,40 +12,44 @@ class ImageLibrary extends Model
     protected $table = 'image_library';
 
     protected $fillable = [
-        'sha256_hash',
-        'original_filename',
-        'mime_type',
+        'filename',
+        'original_name',
+        'hash',
+        'file_path',
         'file_size',
+        'mime_type',
         'width',
         'height',
-        'storage_path',
-        'thumbnail_path',
+        'total_pow_earned',
         'usage_count',
-        'first_uploaded_at',
-        'last_used_at',
-        'uploaded_by_ip',
-        'metadata'
+        'unique_posts',
+        'auto_dither',
+        'dither_settings',
+        'first_thread_id',
+        'first_post_id',
+        'uploader_ip'
     ];
 
     protected $casts = [
-        'first_uploaded_at' => 'datetime',
-        'last_used_at' => 'datetime',
-        'metadata' => 'array'
+        'dither_settings' => 'array',
+        'auto_dither' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     /**
      * Store a new image in the library or return existing one if already exists
      */
-    public static function storeImage(UploadedFile $file, ?string $uploaderIp = null): self
+    public static function storeImage(UploadedFile $file, ?string $uploaderIp = null, ?int $threadId = null, ?int $postId = null): self
     {
         // Calculate SHA256 hash of the file
         $hash = hash_file('sha256', $file->path());
-        
+
         // Check if image already exists
-        $existingImage = static::where('sha256_hash', $hash)->first();
+        $existingImage = static::where('hash', $hash)->first();
         if ($existingImage) {
             $existingImage->increment('usage_count');
-            $existingImage->update(['last_used_at' => now()]);
+            $existingImage->increment('unique_posts');
             return $existingImage;
         }
 
@@ -54,35 +58,31 @@ class ImageLibrary extends Model
         $width = $imageInfo[0] ?? 0;
         $height = $imageInfo[1] ?? 0;
 
-        // Generate storage path based on hash
+        // Generate unique filename
         $extension = $file->getClientOriginalExtension();
-        $storagePath = "images/library/" . substr($hash, 0, 2) . "/" . substr($hash, 2, 2) . "/" . $hash . "." . $extension;
-        $thumbnailPath = "images/library/thumbs/" . substr($hash, 0, 2) . "/" . substr($hash, 2, 2) . "/" . $hash . "_thumb.jpg";
+        $filename = time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+        $filePath = "forum/images/" . $filename;
 
-        // Store the original file
-        Storage::disk('public')->put($storagePath, file_get_contents($file->path()));
-
-        // Create thumbnail
-        static::createThumbnail($file->path(), storage_path('app/public/' . $thumbnailPath));
-
-        // Extract metadata
-        $metadata = static::extractMetadata($file->path());
+        // Store the file
+        $file->storeAs('public/forum/images', $filename);
 
         // Create database record
         return static::create([
-            'sha256_hash' => $hash,
-            'original_filename' => $file->getClientOriginalName(),
-            'mime_type' => $file->getMimeType(),
+            'filename' => $filename,
+            'original_name' => $file->getClientOriginalName(),
+            'hash' => $hash,
+            'file_path' => $filePath,
             'file_size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
             'width' => $width,
             'height' => $height,
-            'storage_path' => $storagePath,
-            'thumbnail_path' => $thumbnailPath,
+            'total_pow_earned' => 0,
             'usage_count' => 1,
-            'first_uploaded_at' => now(),
-            'last_used_at' => now(),
-            'uploaded_by_ip' => $uploaderIp,
-            'metadata' => $metadata
+            'unique_posts' => 1,
+            'auto_dither' => false,
+            'first_thread_id' => $threadId,
+            'first_post_id' => $postId,
+            'uploader_ip' => $uploaderIp,
         ]);
     }
 
@@ -91,16 +91,17 @@ class ImageLibrary extends Model
      */
     public static function getByHash(string $hash): ?self
     {
-        return static::where('sha256_hash', $hash)->first();
+        return static::where('hash', $hash)->first();
     }
 
     /**
-     * Mark image as used (increment usage count)
+     * Mark image as used and award PoW points based on thread/post PoW
      */
-    public function markAsUsed(): void
+    public function markAsUsed(int $powPoints = 1): void
     {
         $this->increment('usage_count');
-        $this->update(['last_used_at' => now()]);
+        $this->increment('unique_posts');
+        $this->increment('total_pow_earned', $powPoints);
     }
 
     /**
@@ -108,24 +109,48 @@ class ImageLibrary extends Model
      */
     public function getImageUrl(): string
     {
-        return Storage::disk('public')->url($this->storage_path);
+        return asset('storage/' . $this->file_path);
     }
 
     /**
-     * Get the full URL to the thumbnail
+     * Award PoW to this image based on post/thread performance
      */
-    public function getThumbnailUrl(): string
+    public function awardPoW(int $points): void
     {
-        return Storage::disk('public')->url($this->thumbnail_path);
+        $this->increment('total_pow_earned', $points);
     }
 
     /**
-     * Get popular images (most used)
+     * Get ever-shifting library - images ranked by PoW and usage with randomization
      */
-    public static function getPopular(int $limit = 50)
+    public static function getShiftingLibrary(int $limit = 100)
+    {
+        // Get images with weighted random selection based on PoW and usage
+        // Use RANDOM() for SQLite instead of RAND() for MySQL
+        return static::selectRaw('*, (total_pow_earned * 2 + usage_count) as weight')
+                    ->orderByRaw('weight DESC, RANDOM()')
+                    ->limit($limit)
+                    ->get();
+    }
+
+    /**
+     * Get top PoW earning images
+     */
+    public static function getTopPoWEarners(int $limit = 50)
+    {
+        return static::orderBy('total_pow_earned', 'desc')
+                    ->orderBy('usage_count', 'desc')
+                    ->limit($limit)
+                    ->get();
+    }
+
+    /**
+     * Get most popular images (by usage)
+     */
+    public static function getMostPopular(int $limit = 50)
     {
         return static::orderBy('usage_count', 'desc')
-                    ->orderBy('last_used_at', 'desc')
+                    ->orderBy('unique_posts', 'desc')
                     ->limit($limit)
                     ->get();
     }
@@ -135,21 +160,33 @@ class ImageLibrary extends Model
      */
     public static function getRecent(int $limit = 50)
     {
-        return static::orderBy('first_uploaded_at', 'desc')
+        return static::orderBy('created_at', 'desc')
                     ->limit($limit)
                     ->get();
     }
 
     /**
-     * Search images by filename or metadata
+     * Search images by filename
      */
     public static function search(string $query, int $limit = 50)
     {
-        return static::where('original_filename', 'LIKE', "%{$query}%")
-                    ->orWhere('metadata->description', 'LIKE', "%{$query}%")
+        return static::where('original_name', 'LIKE', "%{$query}%")
+                    ->orderBy('total_pow_earned', 'desc')
                     ->orderBy('usage_count', 'desc')
                     ->limit($limit)
                     ->get();
+    }
+
+    /**
+     * Get images for the mouseover-reactive grid
+     */
+    public static function getMovingLibrary(int $limit = 200)
+    {
+        return static::selectRaw('*, (total_pow_earned + usage_count * 10) as power_level')
+                    ->orderBy('power_level', 'desc')
+                    ->limit($limit)
+                    ->get()
+                    ->shuffle(); // Randomize initial positions
     }
 
     /**

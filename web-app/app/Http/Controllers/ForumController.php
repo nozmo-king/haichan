@@ -20,7 +20,10 @@ class ForumController extends Controller
 
     public function showBoard($board)
     {
-        $board = Board::where('code', $board)->firstOrFail();
+        // Handle both board codes (gen) and board names (General)
+        $board = Board::where('code', $board)
+            ->orWhere('name', $board)
+            ->firstOrFail();
         $threads = Thread::where('board_id', $board->id)
             ->with(['proofOfWork']) // Eager load to prevent N+1 queries
             ->withCount('posts')
@@ -48,7 +51,10 @@ class ForumController extends Controller
 
     public function showThread($board, $threadId)
     {
-        $boardModel = Board::where('code', $board)->firstOrFail();
+        // Handle both board codes (gen) and board names (General)
+        $boardModel = Board::where('code', $board)
+            ->orWhere('name', $board)
+            ->firstOrFail();
         $thread = Thread::with(['proofOfWork'])
                        ->withSum('proofOfWork', 'points')
                        ->findOrFail($threadId);
@@ -96,7 +102,7 @@ class ForumController extends Controller
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
             'pow_challenge_id' => 'required|string|size:32',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:8192'
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096'
         ]);
 
         $boardModel = Board::where('code', $board)->firstOrFail();
@@ -161,31 +167,35 @@ class ForumController extends Controller
 
     public function storeReply(Request $request, $board, $threadId)
     {
-        // Debug logging for form submission
-        Log::info('Reply form submission received', [
-            'parent_id' => $request->input('parent_id'),
-            'content_preview' => substr($request->input('content', ''), 0, 30) . '...',
-            'form_data_keys' => array_keys($request->all())
+        // Log reply submission
+        Log::info('Reply submission', [
+            'thread_id' => $threadId,
+            'content_length' => strlen($request->input('content', '')),
+            'has_image' => $request->hasFile('image')
         ]);
 
         $request->validate([
             'content' => 'required|max:2000',
-            'parent_id' => 'nullable|exists:posts,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:8192',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
             'pow_challenge_id' => 'required|string|size:32'
         ]);
 
-        $boardModel = Board::where('code', $board)->firstOrFail();
+        // Handle both board codes (gen) and board names (General)
+        $boardModel = Board::where('code', $board)
+            ->orWhere('name', $board)
+            ->firstOrFail();
         $thread = Thread::findOrFail($threadId);
         
         // Validate Proof of Work for reply
-        $challengeData = "post:{$threadId}:{$request->content}:{$request->pow_challenge_id}";
+        // Use pow_data if provided (includes nonce), otherwise construct it
+        $challengeData = $request->pow_data ?: "post:{$threadId}:{$request->content}:{$request->pow_challenge_id}";
+
         $verification = Post::verifyProofOfWork(
-            $challengeData, 
-            $request->pow_nonce, 
-            $request->pow_hash, 
+            $challengeData,
+            $request->pow_nonce,
+            $request->pow_hash,
             '21e8' // Default pattern
         );
         
@@ -205,7 +215,7 @@ class ForumController extends Controller
             'content' => $request->content,
             'user_id' => null,
             'author_name' => $anonymousUser,
-            'parent_id' => $request->parent_id,
+            'parent_id' => null, // Simple replies, no nesting for now
             'pow_nonce' => $request->pow_nonce,
             'pow_hash' => $request->pow_hash,
             'pow_challenge_id' => $request->pow_challenge_id,

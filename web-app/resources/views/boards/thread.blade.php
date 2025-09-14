@@ -1,727 +1,420 @@
-@extends('layout')
-
-@section('title', ($thread->title ?: 'Thread') . ' - ' . $board->title)
-
-@section('content')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ ($thread->title ?: 'Thread') . ' - /' . $board->code . '/' }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/haichan.css">
+    @vite('resources/js/simple-mining.js')
     <style>
-        .reply-popout {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10001;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        @keyframes strobe {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
-        .reply-popout-backdrop {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
+        .strobing-emoji {
+            animation: strobe 2s infinite;
         }
-        .reply-popout-content {
-            position: relative;
-            background: #F5F5DC;
-            border: 2px solid #708B75;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        .reply-popout-header {
-            background: linear-gradient(135deg, #708B75, #5A7B5F);
-            color: #F5F5DC;
-            padding: 15px 20px;
-            border-radius: 6px 6px 0 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .reply-popout-header h3 {
+        body {
             margin: 0;
-            font-size: 14pt;
-        }
-        .close-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 4px;
-            color: #F5F5DC;
-            padding: 4px 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        .close-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        .reply-popout form {
-            padding: 20px;
-        }
-        .reply-form-field {
-            margin-bottom: 15px;
-        }
-        .reply-form-field label {
-            display: block;
-            color: var(--text-primary);
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .reply-form-field textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-family: monospace;
-            resize: vertical;
-            background-color: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-        .reply-form-field input[type="file"] {
-            width: 100%;
-            padding: 5px;
-        }
-        .reply-form-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-        .btn-primary, .btn-secondary {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .btn-primary {
-            background: var(--accent-color);
-            color: var(--bg-primary);
-        }
-        .btn-primary:hover {
-            background: var(--border-color);
-        }
-        .btn-secondary {
-            background: #ccc;
-            color: #333;
-        }
-        .btn-secondary:hover {
-            background: #bbb;
+            padding: 0;
+            background: linear-gradient(135deg, #FFFACD 0%, #F0F8FF 100%);
+            font-family: 'Georgia', serif;
+            min-height: 100vh;
         }
     </style>
-        <div class="header">
-            <h1><a href="/">Haichan</a></h1>
-            <nav>
-                <a href="/boards">📋 Boards</a>
-                <a href="/{{ $board->name }}">{{ $board->name }}/</a>
-                <a href="/{{ $board->name }}/catalog">📑 Catalog</a>
-                <a href="/mining">⛏️ Mining</a>
-            </nav>
+</head>
+<body>
+<!-- Japanese Web Aesthetic Container with Homepage Style -->
+<div style="margin: 60px auto 40px auto; max-width: 900px; background: #F5F5DC; border: 2px solid #708B75; box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);">
+    <!-- Header with proper color scheme -->
+    <div style="background: linear-gradient(135deg, #FFFACD 0%, #F5F5DC 100%); padding: 25px 40px; border-bottom: 2px solid #708B75; position: relative; text-align: center;">
+        <div style="position: absolute; top: 15px; right: 20px; background: #3D315B; color: #FFFFEE; padding: 4px 12px; font-size: 9px; font-weight: 500; letter-spacing: 0.5px; border-radius: 3px;">
+            β版
         </div>
 
+        <h1 style="font-size: 24px; color: #3D315B; margin: 0 0 12px 0; font-weight: 300; letter-spacing: 1.5px; font-family: 'Nova Cut', serif;">
+            <span class="strobing-emoji" style="font-size: 22px; color: #B87333;">💬</span>
+            {{ $thread->title ?: 'Thread #' . $thread->id }}
+            <span class="strobing-emoji" style="font-size: 22px; color: #CD5C5C;">⚡</span>
+        </h1>
+
+        <div style="width: 80px; height: 2px; background: linear-gradient(to right, #708B75, #9AB87A); margin: 15px auto;"></div>
+
+        <p style="color: #708B75; font-size: 12px; line-height: 1.5; margin: 15px 0 0 0; font-weight: 400;">/{{ $board->code }}/ discussion thread</p>
+
+        <!-- Navigation breadcrumb with proper spacing -->
+        <div style="margin-top: 20px; font-size: 11px; color: #444B6E;">
+            <a href="{{ route('boards.index') }}" style="color: #708B75; text-decoration: none; margin-right: 10px;">[Boards]</a>
+            <a href="/{{ $board->code }}" style="color: #708B75; text-decoration: none; margin-right: 10px;">[/{{ $board->code }}/]</a>
+            <a href="/{{ $board->code }}/catalog" style="color: #708B75; text-decoration: none; margin-right: 10px;">[Catalog]</a>
+            <span style="color: #9AB87A;">[Thread #{{ $thread->id }}]</span>
+        </div>
+    </div>
+
+    <!-- Content area with proper spacing -->
+    <div style="padding: 40px; background: #FFFFEE;">
+
         @if($errors->any())
-        <div class="alert alert-danger">
+        <div style="background: #FFE6E6; border: 1px solid #FF9999; padding: 15px; margin-bottom: 30px; border-radius: 5px;">
             @foreach($errors->all() as $error)
-                <p>{{ $error }}</p>
+                <p style="color: #CC0000; margin: 5px 0; font-size: 12px;">• {{ $error }}</p>
             @endforeach
         </div>
         @endif
 
+        <!-- Original Post -->
+        <div id="post{{ $thread->id }}" style="background: #F5F5DC; border: 2px solid #708B75; border-radius: 8px; padding: 30px; margin-bottom: 30px;"
+             data-mine-type="thread" data-mine-target="thread-{{ $thread->id }}" data-mine-weight="60"
+             data-thread-id="{{ $thread->id }}" data-thread-title="{{ $thread->title ?: 'Thread #' . $thread->id }}">
 
-
-        <!-- Original post -->
-        <div class="post op-post" id="post{{ $thread->id }}" 
-             data-mine-type="thread" 
-             data-mine-target="thread-{{ $thread->id }}"
-             data-mine-weight="60"
-             data-thread-id="{{ $thread->id }}"
-             data-thread-title="{{ $thread->title ?: 'Thread #' . $thread->id }}">
-            <div class="post-header">
-                <span class="subject">{{ $thread->title ?: 'No Subject' }}</span>
-                <span class="poster-info">
-                    Anonymous {{ $thread->created_at->format('m/d/y H:i:s') }} No.{{ $thread->id }}
-                    <a href="javascript:void(0)" class="reply-link" onclick="showReplyForm({{ $thread->id }}, '{{ addslashes($thread->content) }}')">[Reply]</a>
-                    <a href="javascript:void(0)" class="quote-link" onclick="quotePost({{ $thread->id }}, '{{ addslashes($thread->content) }}')">[Quote]</a>
-                </span>
-            </div>
-            
-            @if($thread->image_path)
-            <div style="float: left; margin: 5px 15px 10px 0;">
-                <div style="font-size: 8pt; margin-bottom: 3px;">
-                    File: {{ $thread->image_filename ?: 'image' }}
+            <!-- Post Header -->
+            <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #9AB87A;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+                    <h2 style="color: #3D315B; font-size: 18px; margin: 0; font-weight: 600;">
+                        {{ $thread->title ?: 'No Subject' }}
+                    </h2>
+                    <div style="color: #708B75; font-size: 11px; text-align: right;">
+                        <div>Anonymous • {{ $thread->created_at->format('M d, Y H:i') }}</div>
+                        <div><a href="#post{{ $thread->id }}" style="color: #9AB87A; text-decoration: none;">No.{{ $thread->id }}</a></div>
+                    </div>
                 </div>
-                <img src="{{ route('thread.image', $thread->id) }}" style="max-width: 200px; max-height: 200px;">
             </div>
-            @endif
-            
-            <div class="post-content">
-                {!! nl2br(e($thread->content)) !!}
+
+            <!-- Post Content -->
+            <div style="display: flex; gap: 25px; margin-bottom: 20px;">
+                @if($thread->image_path)
+                <div style="flex-shrink: 0;">
+                    <div style="margin-bottom: 8px; font-size: 10px; color: #708B75;">
+                        File: {{ $thread->image_filename ?: 'image' }}
+                        ({{ number_format(filesize(storage_path('app/public/' . $thread->image_path)) / 1024, 1) }} KB)
+                    </div>
+                    <img src="{{ route('thread.image', $thread->id) }}"
+                         style="max-width: 200px; max-height: 200px; border: 1px solid #708B75; border-radius: 5px; cursor: pointer;"
+                         alt="{{ $thread->image_filename }}"
+                         onclick="this.style.maxWidth = this.style.maxWidth === 'none' ? '200px' : 'none'">
+                </div>
+                @endif
+
+                <div style="flex-grow: 1;">
+                    <div style="color: #3D315B; font-size: 14px; line-height: 1.6; margin-bottom: 15px;">
+                        {!! nl2br(e($thread->content)) !!}
+                    </div>
+                </div>
             </div>
-            <div class="post-hash-preview" id="hash-{{ $thread->id }}" style="font-family: monospace; font-size: 8pt; color: #888; margin-top: 5px; opacity: 0.6;">
-                <span class="hash-label">sha256:</span>
+
+            <!-- Post Hash -->
+            <div id="hash-{{ $thread->id }}" style="font-family: monospace; font-size: 10px; color: #9AB87A; padding: 10px; background: #FFFACD; border-radius: 3px;">
+                <span style="color: #708B75;">sha256:</span>
                 <span class="hash-value">calculating...</span>
                 <span class="hash-bump-indicator" style="display: none; color: #ff6b35; font-weight: bold; margin-left: 10px;">🔥 21e8 BUMP!</span>
             </div>
-            <div style="clear: both;"></div>
         </div>
 
-        <!-- Replies -->
-        @foreach($posts as $post)
-            @include('forum.post-recursive', ['post' => $post, 'level' => 0, 'thread' => $thread, 'board' => $board])
-        @endforeach
+        <!-- Replies Section -->
+        @if(count($posts) > 0)
+        <div style="margin-bottom: 40px;">
+            <div style="text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #708B75;">
+                <h3 style="color: #444B6E; font-size: 16px; margin: 0; font-weight: 400; letter-spacing: 1px;">
+                    <span class="strobing-emoji">💭</span> Replies ({{ count($posts) }}) <span class="strobing-emoji">📝</span>
+                </h3>
+            </div>
 
-        <!-- Reply form -->
+            <div style="space-y: 20px;">
+                @foreach($posts as $post)
+                    @include('forum.post-recursive', ['post' => $post, 'level' => 0, 'thread' => $thread, 'board' => $board])
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        <!-- Reply Form -->
         @if(!$thread->locked)
-        <div class="reply-form">
-            <h3>[Post a Reply]</h3>
-            <form method="POST" action="/{{ $board->code }}/{{ $thread->id }}/reply" enctype="multipart/form-data" id="reply-form">
+        <div style="background: #F5F5DC; border: 2px solid #708B75; border-radius: 8px; padding: 30px;" id="reply-form">
+            <div style="text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #708B75;">
+                <h3 style="color: #444B6E; font-size: 16px; margin: 0; font-weight: 400; letter-spacing: 1px;">
+                    <span class="strobing-emoji">✍️</span> Post Reply <span class="strobing-emoji">💫</span>
+                </h3>
+            </div>
+
+            <form method="POST" action="/{{ strtolower($board->code) }}/{{ $thread->id }}/reply"
+                  enctype="multipart/form-data" id="reply-form-actual"
+                  data-original-action="/{{ strtolower($board->code) }}/{{ $thread->id }}/reply">
                 @csrf
-                <!-- Hidden PoW fields -->
                 <input type="hidden" name="pow_nonce" id="reply-pow-nonce" value="">
                 <input type="hidden" name="pow_hash" id="reply-pow-hash" value="">
                 <input type="hidden" name="pow_challenge_id" id="reply-pow-challenge-id" value="">
-                
-                <table>
-                    <tr>
-                        <td>Comment</td>
-                        <td><textarea name="content" id="reply-content" rows="5" cols="50" required></textarea></td>
-                    </tr>
-                    <tr>
-                        <td>File</td>
-                        <td><input type="file" name="image" accept="image/*"></td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td>
-                            <button type="button" id="mine-reply-btn" class="btn-primary">Mine & Submit Reply</button>
-                            <div id="reply-mining-status" style="margin-top: 10px; font-size: 10px; color: #666; display: none;">
-                                <div>Mining proof of work...</div>
-                                <div>Pattern: <span style="color: #8B0000; font-weight: bold;">21e8</span></div>
-                                <div>Hashes: <span id="reply-hash-count">0</span></div>
-                                <div>Rate: <span id="reply-hash-rate">0</span> H/s</div>
-                                <div style="margin-top: 5px;">
-                                    <button type="button" id="stop-reply-mining" class="btn-stop">Stop Mining</button>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
+
+                <!-- Comment Field -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Comment</label>
+                    <textarea name="content" id="reply-content" required rows="6"
+                              style="width: 100%; padding: 15px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 13px; line-height: 1.5; resize: vertical; box-sizing: border-box;"></textarea>
+                </div>
+
+                <!-- File Upload -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Image (optional)</label>
+                    <input type="file" name="image" accept="image/*"
+                           style="width: 100%; padding: 10px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 12px; box-sizing: border-box;">
+                </div>
+
+                <!-- Mining Status -->
+                <div id="reply-mining-status" style="display: none; margin-bottom: 25px; padding: 20px; background: #FFFACD; border: 1px solid #9AB87A; border-radius: 5px;">
+                    <div style="font-family: monospace; font-size: 11px; color: #666;">
+                        <div style="margin-bottom: 10px;">⛏️ Mining proof of work...</div>
+                        <div>Pattern: <strong>21e8</strong></div>
+                        <div>Hashes: <span id="reply-hash-count">0</span></div>
+                        <div>Rate: <span id="reply-hash-rate">0</span> H/s</div>
+                        <div style="margin-top: 15px;">
+                            <button type="button" id="stop-reply-mining"
+                                    style="background: #CD5C5C; color: white; border: none; padding: 8px 15px; border-radius: 3px; font-size: 11px; cursor: pointer;">
+                                Stop Mining
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div style="text-align: center;">
+                    <button type="button" id="mine-reply-btn"
+                            style="background: linear-gradient(135deg, #708B75, #9AB87A); color: #FFFFEE; border: none; padding: 15px 30px; border-radius: 5px; font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: 0.5px; transition: all 0.3s;">
+                        Mine & Submit Reply
+                    </button>
+                </div>
             </form>
+        </div>
+        @else
+        <div style="text-align: center; padding: 40px; background: #F5F5DC; border: 2px dashed #9AB87A; border-radius: 8px;">
+            <div style="font-size: 20px; margin-bottom: 10px;">🔒</div>
+            <p style="color: #708B75; font-size: 14px; margin: 0;">This thread is locked and no longer accepting replies.</p>
         </div>
         @endif
     </div>
+</div>
 
+<script>
+// Hash calculation system
+class PostHashSystem {
+    constructor() {
+        this.bumpMultiplier = 10;
+    }
 
-    <script>
-        
-        // Post hash calculation and 21e8 detection
-        class PostHashSystem {
-            constructor() {
-                this.bumpMultiplier = 10; // 10x bump for 21e8 hashes
-            }
-            
-            async sha256(text) {
-                const encoder = new TextEncoder();
-                const data = encoder.encode(text);
-                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-                const hashArray = Array.from(new Uint8Array(hashBuffer));
-                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            }
-            
-            async calculatePostHash(postId, content) {
-                try {
-                    const hash = await this.sha256(content);
-                    const hashElement = document.querySelector(`#hash-${postId} .hash-value`);
-                    const bumpIndicator = document.querySelector(`#hash-${postId} .hash-bump-indicator`);
-                    
-                    if (hashElement) {
-                        // Show first 16 characters of hash
-                        hashElement.textContent = hash.substring(0, 16) + '...';
-                        hashElement.title = hash; // Full hash on hover
-                        
-                        // Check for 21e8 bump
-                        if (hash.startsWith('21e8')) {
-                            this.trigger21e8Bump(postId, hash, bumpIndicator);
-                        }
-                    }
-                } catch (error) {
-                    console.error('Hash calculation failed:', error);
-                    const hashElement = document.querySelector(`#hash-${postId} .hash-value`);
-                    if (hashElement) {
-                        hashElement.textContent = 'error';
-                    }
+    async sha256(text) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async calculatePostHash(postId, content) {
+        try {
+            const hash = await this.sha256(content);
+            const hashElement = document.querySelector(`#hash-${postId} .hash-value`);
+            const bumpIndicator = document.querySelector(`#hash-${postId} .hash-bump-indicator`);
+
+            if (hashElement) {
+                hashElement.textContent = hash.substring(0, 16) + '...';
+                hashElement.title = hash;
+                if (hash.startsWith('21e8')) {
+                    this.trigger21e8Bump(postId, hash, bumpIndicator);
                 }
             }
-            
-            trigger21e8Bump(postId, hash, bumpIndicator) {
-                console.log(`🔥 21e8 BUMP DETECTED! Post #${postId}: ${hash}`);
-                
-                // Show bump indicator
-                if (bumpIndicator) {
-                    bumpIndicator.style.display = 'inline';
-                    bumpIndicator.style.animation = 'bumpPulse 1s ease-in-out 3';
-                }
-                
-                // Apply visual effects to post
-                const post = document.querySelector(`#post${postId}`);
-                if (post) {
-                    post.style.border = '2px solid #ff6b35';
-                    post.style.boxShadow = '0 0 20px rgba(255, 107, 53, 0.5)';
-                    post.style.animation = 'bumpGlow 2s ease-in-out';
-                }
-                
-                // Submit bump to server
-                this.submitBumpToServer(postId, hash);
-                
-                // Show celebration
-                this.celebrateBump(postId, hash);
-            }
-            
-            async submitBumpToServer(postId, hash) {
-                try {
-                    const response = await fetch('/api/post-bump', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify({
-                            post_id: postId,
-                            hash: hash,
-                            multiplier: this.bumpMultiplier,
-                            thread_id: {{ $thread->id }}
-                        })
-                    });
-                    
-                    const result = await response.json();
-                    if (result.success) {
-                        console.log(`✅ 21e8 bump applied! Post #${postId} +${result.bump_points} points`);
-                    }
-                } catch (error) {
-                    console.error('Bump submission failed:', error);
-                }
-            }
-            
-            celebrateBump(postId, hash) {
-                // Create floating text
-                const post = document.querySelector(`#post${postId}`);
-                if (post) {
-                    const celebration = document.createElement('div');
-                    celebration.style.cssText = `
-                        position: absolute;
-                        top: -30px;
-                        left: 50%;
-                        transform: translateX(-50%);
-                        color: #ff6b35;
-                        font-weight: bold;
-                        font-size: 14pt;
-                        text-shadow: 0 0 10px #ff6b35;
-                        pointer-events: none;
-                        z-index: 1000;
-                        animation: floatUp 3s ease-out forwards;
-                    `;
-                    celebration.textContent = '🔥 +' + this.bumpMultiplier + 'x BUMP!';
-                    
-                    post.style.position = 'relative';
-                    post.appendChild(celebration);
-                    
-                    setTimeout(() => celebration.remove(), 3000);
-                }
-            }
-            
-            async processAllPosts() {
-                // Process thread (OP)
-                const threadContent = `{!! addslashes($thread->content) !!}`;
-                await this.calculatePostHash({{ $thread->id }}, threadContent);
-                
-                // Process all posts recursively (including nested replies)
-                @php
-                function flattenPosts($posts, $flattened = []) {
-                    foreach ($posts as $post) {
-                        $flattened[] = $post;
-                        if ($post->allReplies && $post->allReplies->count() > 0) {
-                            $flattened = flattenPosts($post->allReplies, $flattened);
-                        }
-                    }
-                    return $flattened;
-                }
-                $allPosts = flattenPosts($posts);
-                @endphp
-                
-                @foreach($allPosts as $post)
-                const post{{ $post->id }}Content = `{!! addslashes($post->content) !!}`;
-                await this.calculatePostHash({{ $post->id }}, post{{ $post->id }}Content);
-                @endforeach
-            }
+        } catch (error) {
+            console.error('Hash calculation failed:', error);
         }
+    }
 
-        // CSS animations for bump effects
-        const bumpStyles = document.createElement('style');
-        bumpStyles.textContent = `
-            @keyframes bumpPulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.1); }
-            }
-            @keyframes bumpGlow {
-                0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 53, 0.5); }
-                50% { box-shadow: 0 0 40px rgba(255, 107, 53, 0.8); }
-            }
-            @keyframes floatUp {
-                0% { opacity: 1; transform: translateX(-50%) translateY(0); }
-                100% { opacity: 0; transform: translateX(-50%) translateY(-50px); }
-            }
-            
-            /* Theme integration for hash previews */
-            .theme-business .post-hash-preview {
-                color: #666;
-                background: rgba(192, 192, 192, 0.1);
-                border-radius: 2px;
-                padding: 2px 4px;
-            }
-            .theme-pleasure .post-hash-preview {
-                color: #00ff41;
-                text-shadow: 0 0 3px currentColor;
-                background: rgba(0, 255, 65, 0.05);
-                border: 1px solid rgba(0, 255, 65, 0.2);
-                border-radius: 2px;
-                padding: 2px 4px;
-            }
-        `;
-        document.head.appendChild(bumpStyles);
+    trigger21e8Bump(postId, hash, bumpIndicator) {
+        console.log(`🔥 21e8 BUMP! Post #${postId}: ${hash}`);
+        if (bumpIndicator) bumpIndicator.style.display = 'inline';
 
-        // Initialize hash system
-        const postHashSystem = new PostHashSystem();
+        const post = document.querySelector(`#post${postId}`);
+        if (post) {
+            post.style.border = '2px solid #ff6b35';
+            post.style.boxShadow = '0 0 20px rgba(255, 107, 53, 0.5)';
+        }
+        this.submitBumpToServer(postId, hash);
+    }
 
-        // Set default mining target for this thread page
-        document.addEventListener('DOMContentLoaded', function() {
-            // Calculate all post hashes
-            postHashSystem.processAllPosts();
-            
-            // Initialize mining to target this thread by default
-            function initThreadMining() {
-                if (window.haichanMiner) {
-                    window.haichanMiner.switchTarget('thread', {{ $thread->id }}, '{{ addslashes($thread->title ?: "Thread #" . $thread->id) }}');
-                } else {
-                    // Retry after global mining script loads
-                    setTimeout(initThreadMining, 100);
-                }
-            }
-            initThreadMining();
-            
-            // Auto-refresh PoW score every 5 seconds
-            setInterval(() => {
-                fetch(window.location.href + '?pow_only=1', {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    async submitBumpToServer(postId, hash) {
+        try {
+            const response = await fetch('/api/post-bump', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    post_id: postId,
+                    hash: hash,
+                    multiplier: this.bumpMultiplier,
+                    thread_id: {{ $thread->id }}
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.pow_score !== undefined) {
-                        const powDisplay = document.querySelector('.pow-display-section h3');
-                        if (powDisplay) {
-                            powDisplay.innerHTML = `⚡ Thread Proof of Work: ${data.pow_score} points`;
-                        }
-                    }
-                })
-                .catch(err => console.log('PoW refresh failed:', err));
-            }, 5000);
-        });
-
-        // Popout reply form
-        function showReplyForm(postId, content = '') {
-            // Remove existing popout if any
-            const existingPopout = document.querySelector('.reply-popout');
-            if (existingPopout) {
-                existingPopout.remove();
-            }
-
-            const popout = document.createElement('div');
-            popout.className = 'reply-popout';
-            popout.innerHTML = `
-                <div class="reply-popout-backdrop" onclick="closeReplyForm()"></div>
-                <div class="reply-popout-content">
-                    <div class="reply-popout-header">
-                        <h3>Reply to Post #${postId}</h3>
-                        <button onclick="closeReplyForm()" class="close-btn">✕</button>
-                    </div>
-                    <form method="POST" action="/{{ $board->name }}/{{ $thread->id }}/reply" enctype="multipart/form-data" id="popout-reply-form">
-                        @csrf
-                        <input type="hidden" name="parent_id" value="${postId}">
-                        <input type="hidden" name="pow_nonce" id="popout-pow-nonce" value="">
-                        <input type="hidden" name="pow_hash" id="popout-pow-hash" value="">
-                        <input type="hidden" name="pow_challenge_id" id="popout-pow-challenge-id" value="">
-                        <div class="reply-form-field">
-                            <label>Comment</label>
-                            <textarea name="content" id="popout-reply-content" rows="5" placeholder="Enter your reply..." required></textarea>
-                        </div>
-                        <div class="reply-form-field">
-                            <label>File</label>
-                            <input type="file" name="image" accept="image/*">
-                        </div>
-                        <div class="reply-form-actions">
-                            <button type="button" id="popout-mine-reply-btn" class="btn-primary">Mine & Submit Reply</button>
-                            <button type="button" onclick="closeReplyForm()" class="btn-secondary">Cancel</button>
-                        </div>
-                        <div id="popout-reply-mining-status" style="margin-top: 10px; font-size: 10px; color: #666; display: none;">
-                            <div>Mining proof of work...</div>
-                            <div>Pattern: <span style="color: #8B0000; font-weight: bold;">21e8</span></div>
-                            <div>Hashes: <span id="popout-reply-hash-count">0</span></div>
-                            <div>Rate: <span id="popout-reply-hash-rate">0</span> H/s</div>
-                            <div style="margin-top: 5px;">
-                                <button type="button" id="popout-stop-reply-mining" class="btn-stop">Stop Mining</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            `;
-            
-            document.body.appendChild(popout);
-            popout.querySelector('textarea').focus();
-            
-            // Add event listeners for the popout mining
-            setupPopoutMining();
-        }
-
-        function closeReplyForm() {
-            const popout = document.querySelector('.reply-popout');
-            if (popout) {
-                popout.remove();
-            }
-        }
-
-        // Quote functionality
-        function quotePost(postId, content = '') {
-            showReplyForm(postId, content);
-            setTimeout(() => {
-                const textarea = document.querySelector('.reply-popout textarea[name="content"]');
-                if (textarea) {
-                    // Create a clean quote from the content
-                    const quotedContent = content.split('\n').map(line => '>' + line).join('\n');
-                    textarea.value = `>>${postId}\n${quotedContent}\n\n`;
-                    textarea.focus();
-                    // Position cursor after the quote
-                    textarea.selectionStart = textarea.selectionEnd = textarea.value.length;
-                }
-            }, 100);
-        }
-
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.poster-info') && !e.target.closest('.reply-link') && !e.target.closest('.quote-link')) {
-                const post = e.target.closest('.post');
-                const postId = post.id.replace('post', '');
-                showReplyForm(postId);
-            }
-        });
-
-        // Close popout on Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeReplyForm();
-            }
-        });
-
-        // Theme switching
-        document.querySelectorAll('.theme-option').forEach(option => {
-            option.addEventListener('click', (e) => {
-                const theme = e.target.dataset.theme;
-                document.documentElement.setAttribute('data-theme', theme);
-                localStorage.setItem('haichan-theme', theme);
-                
-                // Update theme selector active state
-                document.querySelectorAll('.theme-option').forEach(opt => {
-                    opt.style.transform = 'scale(1)';
-                    opt.style.boxShadow = 'none';
-                });
-                e.target.style.transform = 'scale(1.2)';
-                e.target.style.boxShadow = '0 0 8px rgba(255,255,255,0.5)';
             });
-        });
-
-        // Load saved theme
-        const savedTheme = localStorage.getItem('haichan-theme') || 'haichan';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        
-        // Set active theme selector
-        const activeTheme = document.querySelector(`[data-theme="${savedTheme}"]`);
-        if (activeTheme) {
-            activeTheme.style.transform = 'scale(1.2)';
-            activeTheme.style.boxShadow = '0 0 8px rgba(255,255,255,0.5)';
-        }
-
-        // Reply Mining System
-        let replyMiningInProgress = false;
-        let replyMiningWorker = null;
-
-        function generateChallengeId() {
-            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-            let result = '';
-            for (let i = 0; i < 32; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            const result = await response.json();
+            if (result.success) {
+                console.log(`✅ Bump applied! Post #${postId} +${result.bump_points} points`);
             }
-            return result;
+        } catch (error) {
+            console.error('Bump submission failed:', error);
         }
+    }
 
-        async function mineReplyProof(threadId, content, pattern) {
-            const challengeId = generateChallengeId();
-            const challengeData = `post:${threadId}:${content}:${challengeId}`;
-            let nonce = 0;
-            let startTime = Date.now();
-            let hashCount = 0;
+    async processAllPosts() {
+        const threadContent = `{!! addslashes($thread->content) !!}`;
+        await this.calculatePostHash({{ $thread->id }}, threadContent);
 
-            document.getElementById('reply-pow-challenge-id').value = challengeId;
-
-            const hashCountEl = document.getElementById('reply-hash-count');
-            const hashRateEl = document.getElementById('reply-hash-rate');
-            const statusEl = document.getElementById('reply-mining-status');
-            statusEl.style.display = 'block';
-
-            async function mineStep() {
-                if (!replyMiningInProgress) return;
-
-                const batchSize = 500;
-                for (let i = 0; i < batchSize && replyMiningInProgress; i++) {
-                    const testData = challengeData + ':' + nonce;
-                    const encoder = new TextEncoder();
-                    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(testData));
-                    const hashHex = Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, '0')).join('');
-                    
-                    hashCount++;
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    const rate = Math.round(hashCount / elapsed);
-                    
-                    hashCountEl.textContent = hashCount.toLocaleString();
-                    hashRateEl.textContent = rate.toLocaleString();
-                    
-                    if (hashHex.startsWith(pattern.toLowerCase())) {
-                        document.getElementById('reply-pow-nonce').value = nonce;
-                        document.getElementById('reply-pow-hash').value = hashHex;
-                        replyMiningInProgress = false;
-                        statusEl.style.display = 'none';
-                        
-                        // Auto-submit the form
-                        document.getElementById('reply-form').submit();
-                        return;
-                    }
-                    nonce++;
-                }
-                
-                if (replyMiningInProgress) {
-                    setTimeout(mineStep, 1);
+        @php
+        function flattenPosts($posts, $flattened = []) {
+            foreach ($posts as $post) {
+                $flattened[] = $post;
+                if ($post->allReplies && $post->allReplies->count() > 0) {
+                    $flattened = flattenPosts($post->allReplies, $flattened);
                 }
             }
-            
-            await mineStep();
+            return $flattened;
         }
+        $allPosts = flattenPosts($posts);
+        @endphp
 
-        // Reply mining button event
-        document.getElementById('mine-reply-btn').addEventListener('click', async () => {
-            const content = document.getElementById('reply-content').value.trim();
-            if (!content) {
-                alert('Please enter a reply first!');
+        @foreach($allPosts as $post)
+        const post{{ $post->id }}Content = `{!! addslashes($post->content) !!}`;
+        await this.calculatePostHash({{ $post->id }}, post{{ $post->id }}Content);
+        @endforeach
+    }
+}
+
+// Reply mining system
+let replyMiningInProgress = false;
+
+function generateChallengeId() {
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function mineReplyProof(threadId, content, pattern) {
+    const challengeId = generateChallengeId();
+    const challengeData = `post:${threadId}:${content}:${challengeId}`;
+    let nonce = 0, startTime = Date.now(), hashCount = 0;
+
+    document.getElementById('reply-pow-challenge-id').value = challengeId;
+
+    const hashCountEl = document.getElementById('reply-hash-count');
+    const hashRateEl = document.getElementById('reply-hash-rate');
+    const statusEl = document.getElementById('reply-mining-status');
+    statusEl.style.display = 'block';
+
+    async function mineStep() {
+        if (!replyMiningInProgress) return;
+
+        const batchSize = 500;
+        for (let i = 0; i < batchSize && replyMiningInProgress; i++) {
+            const testData = challengeData + ':' + nonce;
+            const encoder = new TextEncoder();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(testData));
+            const hashHex = Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, '0')).join('');
+
+            hashCount++;
+            const elapsed = (Date.now() - startTime) / 1000;
+            const rate = Math.round(hashCount / elapsed);
+
+            hashCountEl.textContent = hashCount.toLocaleString();
+            hashRateEl.textContent = rate.toLocaleString();
+
+            if (hashHex.startsWith(pattern.toLowerCase())) {
+                document.getElementById('reply-pow-nonce').value = nonce;
+                document.getElementById('reply-pow-hash').value = hashHex;
+                replyMiningInProgress = false;
+                statusEl.style.display = 'none';
+                document.getElementById('reply-form-actual').submit();
                 return;
             }
-            
-            replyMiningInProgress = true;
-            document.getElementById('mine-reply-btn').disabled = true;
-            document.getElementById('mine-reply-btn').textContent = 'Mining...';
-            
-            await mineReplyProof({{ $thread->id }}, content, '21e8');
-        });
-
-        // Stop reply mining button
-        document.getElementById('stop-reply-mining').addEventListener('click', () => {
-            replyMiningInProgress = false;
-            document.getElementById('reply-mining-status').style.display = 'none';
-            document.getElementById('mine-reply-btn').disabled = false;
-            document.getElementById('mine-reply-btn').textContent = 'Mine & Submit Reply';
-        });
-
-        // Popout mining functions
-        let popoutMiningInProgress = false;
-
-        function setupPopoutMining() {
-            const mineBtn = document.getElementById('popout-mine-reply-btn');
-            const stopBtn = document.getElementById('popout-stop-reply-mining');
-            
-            if (mineBtn) {
-                mineBtn.addEventListener('click', async () => {
-                    const content = document.getElementById('popout-reply-content').value.trim();
-                    if (!content) {
-                        alert('Please enter a reply first!');
-                        return;
-                    }
-                    
-                    popoutMiningInProgress = true;
-                    mineBtn.disabled = true;
-                    mineBtn.textContent = 'Mining...';
-                    
-                    await minePopoutReplyProof({{ $thread->id }}, content, '21e8');
-                });
-            }
-            
-            if (stopBtn) {
-                stopBtn.addEventListener('click', () => {
-                    popoutMiningInProgress = false;
-                    document.getElementById('popout-reply-mining-status').style.display = 'none';
-                    document.getElementById('popout-mine-reply-btn').disabled = false;
-                    document.getElementById('popout-mine-reply-btn').textContent = 'Mine & Submit Reply';
-                });
-            }
+            nonce++;
         }
 
-        async function minePopoutReplyProof(threadId, content, pattern) {
-            const challengeId = generateChallengeId();
-            const challengeData = `post:${threadId}:${content}:${challengeId}`;
-            let nonce = 0;
-            let startTime = Date.now();
-            let hashCount = 0;
+        if (replyMiningInProgress) setTimeout(mineStep, 1);
+    }
 
-            document.getElementById('popout-pow-challenge-id').value = challengeId;
+    await mineStep();
+}
 
-            const hashCountEl = document.getElementById('popout-reply-hash-count');
-            const hashRateEl = document.getElementById('popout-reply-hash-rate');
-            const statusEl = document.getElementById('popout-reply-mining-status');
-            statusEl.style.display = 'block';
+// Initialize
+const postHashSystem = new PostHashSystem();
 
-            async function mineStep() {
-                if (!popoutMiningInProgress) return;
+document.addEventListener('DOMContentLoaded', function() {
+    postHashSystem.processAllPosts();
 
-                const batchSize = 500;
-                for (let i = 0; i < batchSize && popoutMiningInProgress; i++) {
-                    const testData = challengeData + ':' + nonce;
-                    const encoder = new TextEncoder();
-                    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(testData));
-                    const hashHex = Array.from(new Uint8Array(hashBuffer), b => b.toString(16).padStart(2, '0')).join('');
-                    
-                    hashCount++;
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    const rate = Math.round(hashCount / elapsed);
-                    
-                    hashCountEl.textContent = hashCount.toLocaleString();
-                    hashRateEl.textContent = rate.toLocaleString();
-                    
-                    if (hashHex.startsWith(pattern.toLowerCase())) {
-                        document.getElementById('popout-pow-nonce').value = nonce;
-                        document.getElementById('popout-pow-hash').value = hashHex;
-                        popoutMiningInProgress = false;
-                        statusEl.style.display = 'none';
-                        
-                        // Auto-submit the form
-                        document.getElementById('popout-reply-form').submit();
-                        return;
-                    }
-                    nonce++;
-                }
-                
-                if (popoutMiningInProgress) {
-                    setTimeout(mineStep, 1);
-                }
-            }
-            
-            await mineStep();
+    document.getElementById('mine-reply-btn').addEventListener('click', async () => {
+        const content = document.getElementById('reply-content').value.trim();
+        if (!content) {
+            alert('Please enter a reply first!');
+            return;
         }
-    </script>
-@endsection
+
+        replyMiningInProgress = true;
+        document.getElementById('mine-reply-btn').disabled = true;
+        document.getElementById('mine-reply-btn').textContent = 'Mining...';
+
+        await mineReplyProof({{ $thread->id }}, content, '21e8');
+    });
+
+    document.getElementById('stop-reply-mining').addEventListener('click', () => {
+        replyMiningInProgress = false;
+        document.getElementById('reply-mining-status').style.display = 'none';
+        document.getElementById('mine-reply-btn').disabled = false;
+        document.getElementById('mine-reply-btn').textContent = 'Mine & Submit Reply';
+    });
+
+    // Initialize mining target
+    function initThreadMining() {
+        if (window.simpleMiner) {
+            window.simpleMiner.switchTarget('thread', {{ $thread->id }}, '{{ addslashes($thread->title ?: "Thread #" . $thread->id) }}');
+        } else {
+            setTimeout(initThreadMining, 100);
+        }
+    }
+    initThreadMining();
+
+    // Force form action to stay lowercase
+    const replyForm = document.getElementById('reply-form-actual');
+    if (replyForm) {
+        const correctAction = '/{{ strtolower($board->code) }}/{{ $thread->id }}/reply';
+        replyForm.action = correctAction;
+
+        // Intercept form submission and force correct URL
+        replyForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(replyForm);
+            const correctUrl = '/{{ strtolower($board->code) }}/{{ $thread->id }}/reply';
+
+            fetch(correctUrl, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    alert('Reply failed. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Reply error:', error);
+                alert('Reply failed. Please try again.');
+            });
+        });
+    }
+});
+</script>
+</body>
+</html>

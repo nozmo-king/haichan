@@ -173,6 +173,24 @@
             </div>
         </div>
 
+        <!-- Targeted Mining Section -->
+        <div style="background: #F5F5DC; border: 1px solid #708B75; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+            <h3 style="color: #444B6E; margin-bottom: 10px; font-size: 16px;">🎯 Targeted Mining</h3>
+            <div style="margin-bottom: 10px;">
+                <label style="font-size: 12px; color: #666;">Mine specific thread/post (enter SHA256 hash):</label>
+                <input type="text" id="target-hash" placeholder="Enter SHA256 hash of thread or post content..."
+                       style="width: 100%; padding: 8px; border: 1px solid #708B75; border-radius: 3px; font-family: monospace; font-size: 11px;">
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn" onclick="setTargetHash()">Set Target</button>
+                <button class="btn" onclick="clearTargetHash()">Clear (Global Mining)</button>
+                <span id="target-status" style="font-size: 11px; color: #666; font-style: italic;">Global mining mode</span>
+            </div>
+            <div style="margin-top: 10px; font-size: 11px; color: #999;">
+                💡 Tip: Copy SHA256 hash from thread/post headers or use browser dev tools to inspect content hashes
+            </div>
+        </div>
+
         <!-- Current Hash Display -->
         <div style="background: #F5F5DC; border: 1px solid #708B75; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
             <h3 style="color: #444B6E; margin-bottom: 10px; font-size: 16px;">Current Hash</h3>
@@ -203,6 +221,7 @@
         let proofsFound = 0;
         let sessionPoints = 0;
         let nonce = Math.floor(Math.random() * 1000000);
+        let targetHash = null;
 
         function startMining() {
             if (miningActive) return;
@@ -323,7 +342,40 @@
         
         function generateMiningData() {
             const timestamp = Date.now();
-            return `global:haichan:${timestamp}`;
+            if (targetHash) {
+                return `target:${targetHash}:${timestamp}`;
+            } else {
+                return `global:haichan:${timestamp}`;
+            }
+        }
+
+        function setTargetHash() {
+            const hashInput = document.getElementById('target-hash').value.trim();
+            if (!hashInput) {
+                alert('Please enter a SHA256 hash');
+                return;
+            }
+
+            // Validate hash format (64 hex characters)
+            if (!/^[a-fA-F0-9]{64}$/.test(hashInput)) {
+                alert('Invalid SHA256 hash format. Must be 64 hexadecimal characters.');
+                return;
+            }
+
+            targetHash = hashInput.toLowerCase();
+            document.getElementById('target-status').textContent = `Targeting: ${targetHash.substring(0, 16)}...`;
+            document.getElementById('current-target').textContent = `custom hash (${targetHash.substring(0, 16)}...)`;
+
+            logMessage(`🎯 Target set: ${targetHash.substring(0, 16)}...`);
+        }
+
+        function clearTargetHash() {
+            targetHash = null;
+            document.getElementById('target-hash').value = '';
+            document.getElementById('target-status').textContent = 'Global mining mode';
+            document.getElementById('current-target').textContent = 'global';
+
+            logMessage('🌐 Switched to global mining mode');
         }
         
         async function sha256(message) {
@@ -386,8 +438,8 @@
                         nonce: nonce,
                         data: data,
                         pattern: pattern,
-                        target_type: 'global',
-                        target_id: 'haichan'
+                        target_type: targetHash ? 'custom' : 'global',
+                        target_id: targetHash ? targetHash : 'haichan'
                     })
                 });
                 

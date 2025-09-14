@@ -5,11 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Haichan - PoW Forum')</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/haichan.css">
     @vite('resources/js/simple-mining.js')
     <script>
         // Force complete cache refresh
         console.log('🔄 LAYOUT LOADED - New mining system should initialize');
+
+        // AGGRESSIVE text sanitizer - KILL ALL PROBLEMATIC TEXT ON EVERY PAGE
+        function sanitizeAllText() {
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let node;
+            const badPatterns = [
+                /join the computational resistance/gi,
+                /computational resistance/gi,
+                /decentralized discourse/gi,
+                /every hash you mine is a vote/gi,
+                /vote for decentralized/gi
+            ];
+
+            while (node = walker.nextNode()) {
+                let changed = false;
+                for (let pattern of badPatterns) {
+                    if (pattern.test(node.nodeValue)) {
+                        node.nodeValue = node.nodeValue.replace(pattern, '');
+                        changed = true;
+                    }
+                }
+                if (changed && node.nodeValue.trim() === '') {
+                    node.nodeValue = '';
+                }
+            }
+
+            // Also check all elements for innerHTML
+            document.querySelectorAll('*').forEach(el => {
+                for (let pattern of badPatterns) {
+                    if (el.innerHTML && pattern.test(el.innerHTML)) {
+                        el.innerHTML = el.innerHTML.replace(pattern, '');
+                    }
+                }
+            });
+        }
+
+        // Run sanitizer immediately and set up continuous monitoring
+        document.addEventListener('DOMContentLoaded', sanitizeAllText);
+        setInterval(sanitizeAllText, 1000); // Run every second
     </script>
     <script>
     // Force cache refresh and clear old mining system
@@ -27,337 +75,7 @@
         if (oldDash) oldDash.remove();
     });
     </script>
-    <style>
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #ccc;
-            padding-bottom: 30px;
-        }
-        
-        .board-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
-        }
-        
-        .board-item {
-            border: 1px solid #ccc;
-            padding: 15px;
-            background-color: #f9f9f9;
-        }
-        
-        .board-code {
-            font-size: 24px;
-            font-weight: bold;
-            color: #789922;
-            margin-bottom: 10px;
-        }
-        
-        .board-name {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .board-desc {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
-        }
-        
-        .board-stats {
-            font-size: 12px;
-            color: #888;
-        }
-        
-        .thread-list {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 20px;
-        }
-        
-        .thread-list th,
-        .thread-list td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: left;
-        }
-        
-        .thread-list th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-        }
-        
-        .thread-title {
-            font-weight: bold;
-        }
-        
-        .thread-meta {
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .post {
-            border: 1px solid #ccc;
-            margin: 10px 0;
-            padding: 15px;
-            background-color: #f9f9f9;
-        }
-        
-        .post-header {
-            font-size: 12px;
-            color: #117743;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        
-        .post-content {
-            line-height: 1.4;
-        }
-        
-        a {
-            color: #34345c;
-            text-decoration: underline;
-        }
-        
-        a:hover {
-            color: #dd0000;
-        }
-        
-        .breadcrumb {
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-        
-        .breadcrumb a {
-            color: #34345c;
-        }
-        
-        .thread-preview {
-            padding: 15px;
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .thread-header {
-            margin-bottom: 10px;
-        }
-        
-        .post-preview {
-            margin-bottom: 15px;
-            font-style: italic;
-            color: #333;
-        }
-        
-        .replies-preview {
-            margin-left: 20px;
-        }
-        
-        .reply-preview {
-            margin: 8px 0;
-            font-size: 14px;
-            color: #555;
-        }
-        
-        .reply-author {
-            font-weight: bold;
-            color: #117743;
-        }
-        
-        .nested-reply {
-            margin-left: 25px;
-            margin-top: 5px;
-            font-size: 13px;
-            color: #666;
-        }
-        
-        .more-replies, .more-posts {
-            margin-top: 10px;
-            font-size: 12px;
-            color: #888;
-        }
-        
-        .more-posts a {
-            color: #789922;
-            font-weight: bold;
-        }
-        
-        .reply-form {
-            margin: 20px 0;
-            padding: 15px;
-            background-color: #f5f5f5;
-            border: 1px solid #ccc;
-        }
-        
-        .reply-form input, .reply-form textarea {
-            width: 100%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px solid #ccc;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .reply-form button {
-            padding: 8px 15px;
-            background-color: #789922;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .reply-form button:hover {
-            background-color: #5a7019;
-        }
-        
-        .nested-post {
-            margin-left: 30px;
-            border-left: 3px solid #ccc;
-            padding-left: 15px;
-        }
-        
-        .post-image, .thread-image {
-            margin: 10px 0;
-        }
-        
-        .post-image img, .thread-image img {
-            border: 1px solid #ccc;
-            transition: all 0.3s ease;
-        }
-        
-        .post-image img:hover, .thread-image img:hover {
-            border-color: #789922;
-        }
-        
-        .form-group input[type="file"] {
-            background-color: #f9f9f9;
-            border: 1px solid #ccc;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-        
-        .thread-preview-image, .post-preview-image, .reply-preview-image {
-            display: inline-block;
-            flex-shrink: 0;
-        }
-        
-        .thread-preview-image img, .post-preview-image img, .reply-preview-image img {
-            border-radius: 3px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            object-fit: cover;
-        }
-        
-        .thread-preview-image img:hover, .post-preview-image img:hover, .reply-preview-image img:hover {
-            border-color: #789922;
-            transform: scale(1.15);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
-        
-        .thread-preview-image img {
-            width: 180px;
-            height: 180px;
-        }
-        
-        .post-preview-image img {
-            width: 120px;
-            height: 120px;
-        }
-        
-        .reply-preview-image img {
-            width: 80px;
-            height: 80px;
-        }
-        
-        .reply-preview {
-            margin: 20px 0;
-            font-size: 15px;
-            color: #555;
-            line-height: 1.6;
-            padding: 15px 0;
-            border-bottom: 1px solid #ddd;
-            min-height: 60px;
-        }
-        
-        .nested-reply {
-            margin-left: 35px;
-            margin-top: 12px;
-            font-size: 14px;
-            color: #666;
-            line-height: 1.5;
-            padding: 10px 0;
-            border-left: 3px solid #e8e8e8;
-            padding-left: 15px;
-            background-color: #fefefe;
-        }
-        
-        .deeply-nested-reply {
-            margin-left: 40px;
-            margin-top: 10px;
-            font-size: 13px;
-            color: #777;
-            line-height: 1.4;
-            padding: 8px 0;
-            border-left: 3px solid #f0f0f0;
-            padding-left: 12px;
-            background-color: #fdfdfd;
-            min-height: 30px;
-        }
-        
-        .deeply-nested-reply img {
-            width: 60px;
-            height: 60px;
-        }
-        
-        .thread-preview {
-            padding: 25px;
-            border-bottom: 2px solid #ddd;
-            min-height: 200px;
-            margin-bottom: 20px;
-        }
-        
-        .post-preview {
-            margin-bottom: 25px;
-            font-style: italic;
-            color: #333;
-            line-height: 1.7;
-            padding: 20px;
-            background-color: #fafafa;
-            border-left: 4px solid #789922;
-            font-size: 15px;
-        }
-        
-        .replies-preview {
-            margin-left: 30px;
-            margin-top: 25px;
-            padding: 20px;
-            background-color: #f8f8f8;
-            border-radius: 5px;
-            border: 1px solid #e8e8e8;
-        }
-        
-        .more-posts a {
-            color: #789922;
-            font-weight: bold;
-            text-decoration: none;
-            padding: 5px 10px;
-            background-color: #f0f0f0;
-            border-radius: 3px;
-            display: inline-block;
-            margin-top: 10px;
-        }
-        
-        .more-posts a:hover {
-            background-color: #789922;
-            color: white;
-        }
-    </style>
+    <!-- All styles are now in /css/haichan.css -->
 </head>
 <body>
     <!-- Mining Status Bar -->
@@ -378,7 +96,7 @@
         justify-content: space-between;
         align-items: center;
     ">
-        <div style="display: flex; align-items: center; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
             <div style="display: flex; align-items: center; gap: 5px;">
                 <span id="mining-indicator" style="
                     display: inline-block;
@@ -390,25 +108,46 @@
                 "></span>
                 <span style="color: #FFFFEE; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">HAICHAN MINING NETWORK</span>
             </div>
-            <div style="color: #FFFFEE;">
-                <span style="color: rgba(255,255,238,0.8);">HASH RATE:</span>
+            <div style="color: #FFFFEE; font-size: 9px;">
+                <span style="color: rgba(255,255,238,0.7);">CURRENT:</span>
                 <span id="network-hashrate" style="color: #E8FFE8; font-weight: bold;">0 H/s</span>
             </div>
-            <div style="color: #FFFFEE;">
-                <span style="color: rgba(255,255,238,0.8);">TOTAL HASHES:</span>
-                <span id="network-total-hashes" style="color: #E8FFE8; font-weight: bold;">0</span>
+            <div style="color: #FFFFEE; font-size: 9px;">
+                <span style="color: rgba(255,255,238,0.7);">TODAY:</span>
+                <span id="network-daily-pow" style="color: #FFE8C8; font-weight: bold;">{{ $dailyProofs ?? 0 }} PoW</span>
             </div>
-            <div style="color: #FFFFEE;">
-                <span style="color: rgba(255,255,238,0.8);">VALID PROOFS:</span>
-                <span id="network-valid-proofs" style="color: #FFE8C8; font-weight: bold;">0</span>
+            <div style="color: #FFFFEE; font-size: 9px;">
+                <span style="color: rgba(255,255,238,0.7);">WEEK:</span>
+                <span id="network-weekly-pow" style="color: #E8FFE8; font-weight: bold;">{{ $weeklyProofs ?? 0 }} PoW</span>
             </div>
-            <div style="color: #FFFFEE;">
-                <span style="color: rgba(255,255,238,0.8);">ACTIVE MINERS:</span>
-                <span id="network-active-miners" style="color: #FFD8D8; font-weight: bold;">1</span>
+            <div style="color: #FFFFEE; font-size: 9px;">
+                <span style="color: rgba(255,255,238,0.7);">GLOBAL PoW:</span>
+                <span id="network-total-pow" style="color: #FFD8D8; font-weight: bold;">{{ number_format($totalProofs ?? 0) }}</span>
+            </div>
+            <div style="color: #FFFFEE; font-size: 9px;">
+                <span style="color: rgba(255,255,238,0.7);">TOTAL HASHES:</span>
+                <span id="network-total-hashes" style="color: #E8FFE8; font-weight: bold;">{{ number_format($totalHashes ?? 0) }}</span>
+            </div>
+            <div style="color: #FFFFEE; font-size: 9px;">
+                <span style="color: rgba(255,255,238,0.7);">MINERS:</span>
+                <span id="network-active-miners" style="color: #FFD8D8; font-weight: bold;">{{ $activeSessions ?? 1 }}</span>
             </div>
         </div>
         
         <div style="display: flex; align-items: center; gap: 10px;">
+            <!-- Image Library Quick Access -->
+            <a href="/library" style="
+                background: #9AB87A;
+                color: #FFFFEE;
+                text-decoration: none;
+                padding: 4px 8px;
+                border-radius: 3px;
+                font-size: 9px;
+                font-weight: bold;
+                border: 1px solid #708B75;
+                transition: all 0.2s ease;
+            " title="Access Image Library" onmouseover="this.style.background='#708B75'" onmouseout="this.style.background='#9AB87A'">🖼️ LIBRARY</a>
+
             <div id="current-mining-hash" style="
                 font-family: 'Courier New', monospace;
                 font-size: 9px;
@@ -431,14 +170,28 @@
                 margin-left: 10px;
                 cursor: pointer;
             " onchange="if(this.value) window.location.href=this.value">
-                <option value="">📋 Boards</option>
-                <option value="/gen">💬 /gen/</option>
-                <option value="/film">🎬 /film/</option>
-                <option value="/biz">💼 /biz/</option>
-                <option value="/lit">📚 /lit/</option>
-                <option value="/x">👽 /x/</option>
-                <option value="/meta">⚙️ /meta/</option>
-                <option value="/mu">🎵 /mu/</option>
+                <option value="">🌐 Navigate</option>
+                <option value="/library">🖼️ Image Library</option>
+                <option value="/mining">⛏️ Mining Dashboard</option>
+                <option value="/faq">❓ FAQ & Help</option>
+                <optgroup label="📋 Boards">
+                @php
+                $boardIcons = [
+                    'gen' => '💬',
+                    'tech' => '💻',
+                    'biz' => '💼',
+                    'film' => '🎬',
+                    'x' => '👽',
+                    'lit' => '📚',
+                    'meta' => '⚙️',
+                    'mu' => '🎵'
+                ];
+                $allBoards = \App\Models\Board::orderBy('code')->get();
+                @endphp
+                @foreach($allBoards as $board)
+                <option value="/{{ $board->code }}">{{ $boardIcons[$board->code] ?? '📌' }} /{{ $board->code }}/</option>
+                @endforeach
+                </optgroup>
             </select>
             <button id="mini-dash-toggle" style="
                 background: #708B75;
@@ -449,14 +202,139 @@
                 cursor: pointer;
                 font-size: 12px;
                 margin-left: 5px;
-            " title="Toggle Mini Dashboard (Ctrl+D)">⛏️</button>
+            " title="Open Mining Dashboard">⛏️</button>
         </div>
     </div>
 
-    
-    <div class="container" style="margin-top: 50px;">
+    <!-- Bottom Mining Toolbar (Always Visible) -->
+    <div id="bottom-mining-toolbar" style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: linear-gradient(135deg, #708B75 0%, #9AB87A 100%);
+        color: #FFFFEE;
+        font-family: 'Courier New', monospace;
+        font-size: 9px;
+        padding: 6px 15px;
+        z-index: 9998;
+        border-top: 1px solid #444B6E;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 -2px 8px rgba(68, 75, 110, 0.2);
+    ">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="color: #E8FFE8; font-weight: bold;">MINING STATUS</div>
+            <div style="color: rgba(255,255,238,0.9);">Rate: <span id="toolbar-hashrate" style="color: #E8FFE8; font-weight: bold;">0 H/s</span></div>
+            <div style="color: rgba(255,255,238,0.9);">Total: <span id="toolbar-total-hashes" style="color: #E8FFE8; font-weight: bold;">0</span></div>
+            <div style="color: rgba(255,255,238,0.9);">Target: <span id="toolbar-target" style="color: #FFD8D8; font-weight: bold;">None</span></div>
+        </div>
+        <div style="color: rgba(255,255,238,0.8); font-size: 8px;">Power: <span id="toolbar-power" style="color: #FFE8C8;">IDLE</span></div>
+    </div>
+
+    <!-- Moveable Mini Dashboard (Hidden by Default) -->
+    <div id="mini-dashboard" style="
+        position: fixed;
+        top: 100px;
+        right: 20px;
+        width: 320px;
+        background: #F5F5DC;
+        border: 2px solid #444B6E;
+        border-radius: 5px;
+        z-index: 10000;
+        display: none;
+        font-family: 'Courier New', monospace;
+        box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);
+    ">
+        <!-- Dashboard Header -->
+        <div id="dashboard-header" style="
+            background: linear-gradient(135deg, #444B6E 0%, #708B75 100%);
+            color: #FFFFEE;
+            padding: 8px 12px;
+            font-size: 10pt;
+            font-weight: bold;
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 3px 3px 0 0;
+        ">
+            <span>⛏️ HAICHAN MINER</span>
+            <div>
+                <button id="minimize-dashboard" style="
+                    background: transparent;
+                    border: 1px solid #FFFFEE;
+                    color: #FFFFEE;
+                    padding: 1px 4px;
+                    margin-right: 3px;
+                    cursor: pointer;
+                    font-size: 10px;
+                    border-radius: 2px;
+                " title="Minimize">−</button>
+                <button id="close-dashboard" style="
+                    background: transparent;
+                    border: 1px solid #FFFFEE;
+                    color: #FFFFEE;
+                    padding: 1px 4px;
+                    cursor: pointer;
+                    font-size: 10px;
+                    border-radius: 2px;
+                " title="Close">✕</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboard-content" style="padding: 15px; font-size: 9pt;">
+            <div style="margin-bottom: 10px;">
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Mining Target:</div>
+                <div id="dashboard-target" style="color: #666; font-size: 8pt;">No target selected</div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Performance:</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 8pt;">
+                    <div>Hash Rate: <span id="dashboard-hashrate" style="color: #789922; font-weight: bold;">0 H/s</span></div>
+                    <div>Difficulty: <span id="dashboard-difficulty" style="color: #789922; font-weight: bold;">21e8</span></div>
+                    <div>Total Hashes: <span id="dashboard-total" style="color: #666;">0</span></div>
+                    <div>Valid Proofs: <span id="dashboard-proofs" style="color: #666;">0</span></div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Mining Power: <span id="power-level-display">1</span>/10</div>
+                <input type="range" id="dashboard-power-slider" min="1" max="10" value="1" style="
+                    width: 100%;
+                    margin: 5px 0;
+                    background: #708B75;
+                    border-radius: 5px;
+                ">
+                <div style="display: flex; justify-content: space-between; font-size: 7pt; color: #666;">
+                    <span>1: Whisper (~50 H/s)</span>
+                    <span>5: Cruise (~1K H/s)</span>
+                    <span>10: OVERDRIVE (~10K H/s)</span>
+                </div>
+            </div>
+
+            <div>
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Current Hash:</div>
+                <div id="dashboard-current-hash" style="
+                    font-family: monospace;
+                    font-size: 7pt;
+                    color: #888;
+                    word-break: break-all;
+                    background: #FAFAFA;
+                    padding: 3px;
+                    border: 1px solid #DDD;
+                    border-radius: 2px;
+                ">calculating...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top: 50px; margin-bottom: 40px;">
         <div class="header">
-            <h1><a href="/" style="text-decoration: none; color: inherit;">HAICHAN</a></h1>
+            <h1><a href="/" style="text-decoration: none; color: inherit; font-family: 'Nova Cut', serif;">HAICHAN</a></h1>
             
             
         </div>
@@ -466,13 +344,153 @@
 
     <!-- Simple Haichan Mining System -->
     @vite('resources/js/simple-mining.js')
-    
+
+    <script>
+        // Mini Dashboard Controls
+        document.addEventListener('DOMContentLoaded', function() {
+            const dashboard = document.getElementById('mini-dashboard');
+            const dashboardHeader = document.getElementById('dashboard-header');
+            const toggleBtn = document.getElementById('mini-dash-toggle');
+            const minimizeBtn = document.getElementById('minimize-dashboard');
+            const closeBtn = document.getElementById('close-dashboard');
+            const dashboardContent = document.getElementById('dashboard-content');
+
+            let isMinimized = false;
+            let isDragging = false;
+            let dragOffset = { x: 0, y: 0 };
+
+            // Open dashboard
+            toggleBtn.addEventListener('click', function() {
+                dashboard.style.display = 'block';
+                if (isMinimized) {
+                    dashboardContent.style.display = 'block';
+                    isMinimized = false;
+                }
+            });
+
+            // Minimize dashboard
+            minimizeBtn.addEventListener('click', function() {
+                dashboardContent.style.display = 'none';
+                isMinimized = true;
+            });
+
+            // Close dashboard
+            closeBtn.addEventListener('click', function() {
+                dashboard.style.display = 'none';
+                if (isMinimized) {
+                    dashboardContent.style.display = 'block';
+                    isMinimized = false;
+                }
+            });
+
+            // Make dashboard draggable
+            dashboardHeader.addEventListener('mousedown', function(e) {
+                isDragging = true;
+                const rect = dashboard.getBoundingClientRect();
+                dragOffset.x = e.clientX - rect.left;
+                dragOffset.y = e.clientY - rect.top;
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                if (isDragging) {
+                    const x = e.clientX - dragOffset.x;
+                    const y = e.clientY - dragOffset.y;
+
+                    // Keep within viewport
+                    const maxX = window.innerWidth - dashboard.offsetWidth;
+                    const maxY = window.innerHeight - dashboard.offsetHeight;
+
+                    dashboard.style.left = Math.max(0, Math.min(x, maxX)) + 'px';
+                    dashboard.style.top = Math.max(50, Math.min(y, maxY)) + 'px';
+                    dashboard.style.right = 'auto';
+                }
+            });
+
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+                document.body.style.userSelect = '';
+            });
+
+            // Keyboard shortcut (Ctrl+D)
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'd') {
+                    e.preventDefault();
+                    toggleBtn.click();
+                }
+            });
+
+            // Update toolbar and dashboard with mining stats
+            function updateMiningDisplays() {
+                if (window.simpleMiner) {
+                    const stats = window.simpleMiner.getStats();
+
+                    // Update bottom toolbar
+                    document.getElementById('toolbar-hashrate').textContent = stats.hashRate.toLocaleString() + ' H/s';
+                    document.getElementById('toolbar-total-hashes').textContent = stats.totalHashes.toLocaleString();
+                    document.getElementById('toolbar-target').textContent = stats.target || 'None';
+                    document.getElementById('toolbar-power').textContent = stats.powerLevel || 'IDLE';
+
+                    // Update dashboard
+                    document.getElementById('dashboard-hashrate').textContent = stats.hashRate.toLocaleString() + ' H/s';
+                    document.getElementById('dashboard-total').textContent = stats.totalHashes.toLocaleString();
+                    document.getElementById('dashboard-proofs').textContent = stats.validProofs || '0';
+                    document.getElementById('dashboard-target').textContent = stats.target || 'No target selected';
+                    document.getElementById('dashboard-current-hash').textContent = stats.currentHash || 'calculating...';
+                }
+            }
+
+            // Update displays every second
+            setInterval(updateMiningDisplays, 1000);
+
+            // Granular power level control (1-10 scale)
+            const powerSlider = document.getElementById('dashboard-power-slider');
+            const powerDisplay = document.getElementById('power-level-display');
+
+            powerSlider.addEventListener('input', function(e) {
+                const level = parseInt(e.target.value);
+                powerDisplay.textContent = level;
+
+                // Update power level in mining system
+                if (window.simpleMiner && window.simpleMiner.setPowerLevel) {
+                    const powerLevels = {
+                        1: 'whisper',    // ~50 H/s
+                        2: 'quiet',      // ~100 H/s
+                        3: 'low',        // ~200 H/s
+                        4: 'medium-low', // ~400 H/s
+                        5: 'cruise',     // ~1K H/s
+                        6: 'active',     // ~2K H/s
+                        7: 'high',       // ~3K H/s
+                        8: 'turbo',      // ~5K H/s
+                        9: 'maximum',    // ~7K H/s
+                        10: 'overdrive'  // ~10K H/s
+                    };
+                    window.simpleMiner.setPowerLevel(powerLevels[level], level);
+                }
+            });
+        });
+    </script>
+
     <!-- Additional CSS for pulse animation -->
     <style>
         @keyframes pulse {
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.05); opacity: 0.8; }
             100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Dashboard hover effects */
+        #mini-dash-toggle:hover {
+            background: #9AB87A !important;
+            transform: scale(1.1);
+        }
+
+        #minimize-dashboard:hover, #close-dashboard:hover {
+            background: rgba(255,255,255,0.2) !important;
+        }
+
+        #dashboard-header:hover {
+            background: linear-gradient(135deg, #708B75 0%, #9AB87A 100%) !important;
         }
     </style>
 </body>

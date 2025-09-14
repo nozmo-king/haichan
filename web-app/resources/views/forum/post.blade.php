@@ -20,13 +20,18 @@
 </div>
 
 <div id="reply-form-post-{{ $post->id }}" class="reply-form" style="display: none;">
-    <form action="{{ route('forum.reply', [$board->code, $thread->id]) }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ strtolower('/' . $board->code . '/' . $thread->id . '/reply') }}" method="POST" enctype="multipart/form-data" data-original-action="{{ strtolower('/' . $board->code . '/' . $thread->id . '/reply') }}">
         @csrf
         <input type="hidden" name="parent_id" value="{{ $post->id }}">
+        <!-- Hidden PoW fields -->
+        <input type="hidden" name="pow_nonce" id="pow_nonce_post_{{ $post->id }}" required>
+        <input type="hidden" name="pow_hash" id="pow_hash_post_{{ $post->id }}" required>
+        <input type="hidden" name="pow_challenge_id" id="pow_challenge_id_post_{{ $post->id }}" required>
+
         <textarea name="content" rows="3" placeholder="Write your reply..." required maxlength="2000"></textarea>
         <div style="margin: 10px 0;">
             <label for="image-post-{{ $post->id }}" style="font-size: 12px;">Image (optional):</label>
-            <input type="file" name="image" id="image-post-{{ $post->id }}" accept="image/*" 
+            <input type="file" name="image" id="image-post-{{ $post->id }}" accept="image/*"
                    style="width: 100%; padding: 5px; margin: 5px 0;">
             <small style="color: #666; font-size: 11px;">Max 2MB. JPEG, PNG, JPG, GIF</small>
         </div>

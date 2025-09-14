@@ -1,5 +1,37 @@
-/* Haichan - Local Development CSS (Yotsuba-style) */
-/* Color Scheme: #3D315B (purple bg), #444B6E (dark), #708B75 (medium), #9AB87A (light green) */
+/* HAICHAN - UNIFIED CSS SYSTEM */
+/* Yotsuba-inspired 4chan aesthetic with consistent spacing and components */
+
+:root {
+    /* Core Colors */
+    --bg-main: #FFFFEE;
+    --bg-alt: #F5F5DC;
+    --bg-accent: #FFFACD;
+    --border-primary: #444B6E;
+    --border-secondary: #708B75;
+    --text-primary: #444B6E;
+    --text-secondary: #666;
+    --accent-green: #789922;
+    --accent-red: #dd0000;
+    --accent-mining: #9AB87A;
+
+    /* Spacing System */
+    --space-xs: 5px;
+    --space-sm: 10px;
+    --space-md: 15px;
+    --space-lg: 20px;
+    --space-xl: 30px;
+
+    /* Typography */
+    --font-main: 'Courier New', monospace;
+    --font-size-xs: 8pt;
+    --font-size-sm: 9pt;
+    --font-size-base: 10pt;
+    --font-size-md: 11pt;
+    --font-size-lg: 12pt;
+    --font-size-xl: 14pt;
+    --font-size-title: 18pt;
+    --font-size-header: 24pt;
+}
 
 @keyframes strobe {
     0%, 100% { opacity: 1; }
@@ -17,48 +49,102 @@
 }
 
 body {
-    font-family: 'Courier New', monospace;
-    background: #F5F5DC;
-    color: #444B6E;
+    font-family: var(--font-main);
+    background: var(--bg-alt);
+    color: var(--text-primary);
     line-height: 1.4;
-    font-size: 11px;
+    font-size: var(--font-size-base);
+    margin: 0;
+    padding: 0;
 }
 
+/* === LAYOUT SYSTEM === */
 .container {
-    max-width: 1024px;
-    margin: 0 auto;
+    max-width: 680px;
+    margin: 60px auto;
+    background: #F5F5DC;
+    border: 2px solid #708B75;
+    box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);
+    padding-bottom: 40px; /* Space for bottom toolbar */
+}
+
+.page-content {
+    margin: 0;
+    padding: 30px;
     background: #FFFFEE;
-    min-height: 100vh;
-    border-left: 2px solid #708B75;
-    border-right: 2px solid #708B75;
-    box-shadow: 0 0 20px rgba(61, 49, 91, 0.1);
+    min-height: calc(100vh - 120px);
+}
+
+.page-section {
+    margin: 0 0 var(--space-lg) 0;
+    padding: 0;
+}
+
+/* Navigation */
+.nav-breadcrumb {
+    background: #F5F5DC;
+    border: 1px solid #708B75;
+    padding: 10px 15px;
+    margin: 0 0 20px 0;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+}
+
+.nav-breadcrumb a {
+    color: #3D315B;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.nav-breadcrumb a:hover {
+    color: #dd0000;
+}
+
+.nav-breadcrumb .thread-info {
+    float: right;
+    color: #708B75;
+    font-weight: bold;
 }
 
 /* Header */
 .header {
     background: linear-gradient(135deg, #FFFACD 0%, #F5F5DC 100%);
-    padding: 20px;
+    padding: 40px 30px;
     border-bottom: 2px solid #708B75;
     text-align: center;
+    position: relative;
+}
+
+.header::before {
+    content: 'β版';
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: #3D315B;
+    color: #FFFFEE;
+    padding: 2px 8px;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
 }
 
 .header h1 {
-    font-size: 24pt;
-    font-weight: 400;
+    font-size: 28px;
     color: #3D315B;
+    margin: 0 0 12px 0;
+    font-weight: 300;
     letter-spacing: 2px;
-    margin-bottom: 8px;
+    font-family: 'Nova Cut', serif;
     transition: all 0.3s ease;
-    font-family: 'Courier New', monospace;
 }
 
 .header h1 a {
-    color: #FFFFEE;
+    color: #3D315B;
     text-decoration: none;
 }
 
 .header h1 a:hover {
-    text-shadow: 
+    text-shadow:
         2px 2px 0 #444B6E,
         3px 3px 0 #3D315B,
         4px 4px 0 rgba(61, 49, 91, 0.8),
@@ -69,10 +155,22 @@ body {
     transform: translate(-1px, -1px);
 }
 
+.header::after {
+    content: '';
+    display: block;
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(to right, #708B75, #9AB87A);
+    margin: 15px auto;
+}
+
 .header p {
-    color: #FFFFEE;
+    color: #708B75;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 15px 0 0 0;
+    font-weight: 400;
     font-style: italic;
-    margin-bottom: 8px;
 }
 
 .header nav a {
@@ -91,25 +189,86 @@ body {
 
 /* Board Header */
 .board-header {
-    background: #9AB87A;
-    padding: 15px 20px;
-    border-bottom: 1px solid #444B6E;
+    background: var(--bg-accent);
+    border: 1px solid var(--border-secondary);
+    padding: var(--space-md) var(--space-lg);
+    margin: 0 0 var(--space-md) 0;
     text-align: center;
 }
 
 .board-header h2 {
-    color: #444B6E;
-    font-size: 18pt;
+    color: var(--text-primary);
+    font-size: var(--font-size-title);
     font-weight: bold;
-    margin-bottom: 5px;
+    margin: 0 0 var(--space-xs) 0;
 }
 
-/* Forms */
-.post-form, .reply-form {
+.board-header p {
+    color: var(--text-secondary);
+    font-size: var(--font-size-base);
+    margin: 0;
+}
+
+/* === FORMS SYSTEM === */
+.form-container {
     background: #F5F5DC;
     border: 1px solid #708B75;
-    margin: 20px;
-    padding: 15px;
+    margin: 20px 0;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(61, 49, 91, 0.1);
+}
+
+.form-title {
+    color: #3D315B;
+    font-size: 12px;
+    margin: 0 0 15px 0;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.form-table {
+    width: 100%;
+    border-spacing: 0;
+}
+
+.form-table td {
+    padding: 8px;
+    vertical-align: top;
+}
+
+.form-label {
+    width: 80px;
+    font-size: 11px;
+    color: #708B75;
+    font-weight: bold;
+}
+
+.form-input, .form-textarea {
+    width: 100%;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    border: 1px solid #708B75;
+    padding: 6px;
+    background: #FFFFEE;
+    color: #3D315B;
+}
+
+.form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: #9AB87A;
+    box-shadow: 0 0 0 2px rgba(154, 184, 122, 0.2);
+    background: #FFFEF7;
+}
+
+.form-textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+.mining-status {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    margin-top: var(--space-sm);
 }
 
 .post-form h3, .reply-form h3 {
@@ -140,32 +299,63 @@ body {
     resize: vertical;
 }
 
-.btn-primary, .btn-bump, .btn-stop {
-    background: #9AB87A;
-    color: #444B6E;
+/* === BUTTONS SYSTEM === */
+.btn {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
     border: 1px solid #708B75;
-    padding: 6px 12px;
+    padding: 12px 25px;
     cursor: pointer;
-    font-family: inherit;
-    font-size: 9pt;
-    font-weight: bold;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
 }
 
-.btn-primary:hover, .btn-bump:hover {
+.btn-primary {
+    background: linear-gradient(135deg, #708B75, #9AB87A);
+    color: #FFFFEE;
+    border: 1px solid #708B75;
+}
+
+.btn-stop {
+    background: #F5F5DC;
+    color: #3D315B;
+    border: 1px solid #708B75;
+}
+
+.btn-primary:hover, .btn:hover {
+    background: linear-gradient(135deg, #9AB87A, #708B75);
+    color: #FFFFEE;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(68, 75, 110, 0.2);
+}
+
+.btn-stop:hover {
     background: #708B75;
     color: #FFFFEE;
 }
 
 /* Thread Listing */
 .threads-list {
-    margin: 20px;
+    margin: 0;
 }
 
 .thread-preview {
     background: #F5F5DC;
     border: 1px solid #708B75;
-    margin-bottom: 15px;
-    padding: 10px;
+    margin-bottom: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(61, 49, 91, 0.1);
+    transition: all 0.3s ease;
+}
+
+.thread-preview:hover {
+    background: #FFFACD;
+    border-color: #444B6E;
+    box-shadow: 0 4px 12px rgba(68, 75, 110, 0.15);
+    transform: translateY(-1px);
 }
 
 .subject {
@@ -208,32 +398,71 @@ body {
     border: 1px solid #708B75;
 }
 
-/* Posts */
+/* === POSTS SYSTEM === */
 .post {
     background: #F5F5DC;
     border: 1px solid #708B75;
-    margin: 5px 20px;
-    padding: 10px;
+    margin: 0 0 15px 0;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(61, 49, 91, 0.1);
 }
 
 .op-post {
-    border-color: #444B6E;
     background: #FFFACD;
-    border-width: 2px;
-}
-
-.reply-post {
-    margin-left: 40px;
+    border: 2px solid #444B6E;
+    margin: 0 0 20px 0;
+    padding: 15px;
+    box-shadow: 0 4px 12px rgba(68, 75, 110, 0.15);
 }
 
 .post-header {
-    font-size: 10pt;
-    margin-bottom: 8px;
+    margin-bottom: var(--space-sm);
+    font-size: var(--font-size-base);
 }
 
 .post-content {
-    font-size: 10pt;
+    display: flex;
+    gap: var(--space-sm);
+    margin: var(--space-xs) 0;
+}
+
+.post-image {
+    flex-shrink: 0;
+}
+
+.post-text {
+    flex-grow: 1;
+    font-size: var(--font-size-base);
+}
+
+.post-hash {
+    font-family: var(--font-main);
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    margin-top: var(--space-sm);
+    clear: both;
+}
+
+.reply-post {
+    margin-left: var(--space-xl);
+}
+
+.nested-post {
+    margin-left: var(--space-lg);
+    border-left: 2px solid #ddd;
+    padding-left: var(--space-sm);
+}
+
+.post-header {
+    font-size: var(--font-size-base);
+    margin-bottom: var(--space-sm);
+    color: var(--text-primary);
+}
+
+.post-content {
+    font-size: var(--font-size-base);
     line-height: 1.4;
+    margin: var(--space-sm) 0;
 }
 
 .post-content .greentext {
@@ -247,15 +476,17 @@ body {
 
 /* PoW Bumping */
 .pow-bump-section {
-    background: #F5F5DC;
-    border: 1px solid #708B75;
-    margin: 20px;
-    padding: 15px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border-secondary);
+    margin: var(--space-lg) var(--space-md);
+    padding: var(--space-md);
+    border-radius: 3px;
 }
 
 .pow-bump-section h3 {
-    color: #444B6E;
-    margin-bottom: 8px;
+    color: var(--text-primary);
+    margin-bottom: var(--space-sm);
+    font-size: var(--font-size-lg);
 }
 
 .bump-mining {
@@ -266,9 +497,10 @@ body {
 }
 
 .mining-status {
-    font-size: 8pt;
-    color: #888;
-    margin-top: 8px;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    margin-top: var(--space-sm);
+    font-family: var(--font-main);
 }
 
 /* Board listing */
@@ -300,8 +532,10 @@ body {
 
 /* Error alerts */
 .alert {
-    padding: 10px;
-    margin: 20px;
+    padding: var(--space-md);
+    margin: var(--space-lg) var(--space-md);
+    border-radius: 3px;
+    font-size: var(--font-size-base);
 }
 
 .alert-danger {

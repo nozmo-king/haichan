@@ -8,14 +8,21 @@ use Illuminate\Support\Facades\Schema;
 class Board extends Model
 {
     protected $fillable = [
-        'code', 'name', 'description', 'active', 'total_pow_points', 'pow_submissions_count', 'last_pow_at'
+        'code', 'name', 'description', 'active', 'total_pow_points', 'pow_submissions_count', 'last_pow_at',
+        'total_pow', 'daily_pow', 'weekly_pow', 'activity_score', 'display_order', 'shift_metadata', 'last_pow_update'
     ];
 
     protected $casts = [
         'active' => 'boolean',
         'total_pow_points' => 'decimal:2',
         'pow_submissions_count' => 'integer',
-        'last_pow_at' => 'datetime'
+        'last_pow_at' => 'datetime',
+        'total_pow' => 'integer',
+        'daily_pow' => 'integer',
+        'weekly_pow' => 'integer',
+        'activity_score' => 'decimal:2',
+        'shift_metadata' => 'array',
+        'last_pow_update' => 'datetime'
     ];
 
     public function threads()
@@ -99,5 +106,93 @@ class Board extends Model
     public function getTotalThreadPowAttribute()
     {
         return $this->threads()->sum('pow_difficulty');
+    }
+
+    /**
+     * Update board PoW stats and activity score
+     */
+    public function updatePowStats()
+    {
+        $now = now();
+
+        // Calculate daily PoW (last 24 hours)
+        $dailyPow = $this->threads()
+            ->where('created_at', '>', $now->subDay())
+            ->sum('pow_difficulty');
+
+        // Calculate weekly PoW (last 7 days)
+        $weeklyPow = $this->threads()
+            ->where('created_at', '>', $now->subWeek())
+            ->sum('pow_difficulty');
+
+        // Calculate total PoW
+        $totalPow = $this->threads()->sum('pow_difficulty');
+
+        // Calculate activity score based on recent activity
+        $recentThreads = $this->threads()->where('created_at', '>', $now->subHours(6))->count();
+        $recentPosts = Post::whereIn('thread_id', $this->threads()->pluck('id'))
+            ->where('created_at', '>', $now->subHours(6))
+            ->count();
+
+        $activityScore = ($dailyPow * 2) + ($recentThreads * 100) + ($recentPosts * 10);
+
+        $this->update([
+            'daily_pow' => $dailyPow,
+            'weekly_pow' => $weeklyPow,
+            'total_pow' => $totalPow,
+            'activity_score' => $activityScore,
+            'last_pow_update' => $now,
+        ]);
+    }
+
+    /**
+     * Get ever-shifting board order - changes based on activity and PoW
+     */
+    public static function getShiftingOrder($limit = null)
+    {
+        $query = static::selectRaw('*, (activity_score + total_pow / 100 + RANDOM() * 50) as shift_weight')
+                      ->orderBy('shift_weight', 'desc');
+
+        if ($limit) {
+            $query->limit($limit);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get boards for mouseover-reactive display
+     */
+    public static function getMovingBoards()
+    {
+        return static::selectRaw('*, (activity_score + daily_pow * 5) as power_level')
+                    ->orderBy('power_level', 'desc')
+                    ->get()
+                    ->shuffle(); // Randomize initial positions
+    }
+
+    /**
+     * Award PoW to this board when threads/posts are created
+     */
+    public function awardPoW(int $points)
+    {
+        $this->increment('total_pow', $points);
+        $this->increment('daily_pow', $points);
+        $this->increment('weekly_pow', $points);
+        $this->increment('activity_score', $points * 2);
+    }
+
+    /**
+     * Get board position in shifting order (for animations)
+     */
+    public function getShiftPosition(): int
+    {
+        $allBoards = static::getShiftingOrder();
+        foreach ($allBoards as $index => $board) {
+            if ($board->id === $this->id) {
+                return $index + 1;
+            }
+        }
+        return 0;
     }
 }
