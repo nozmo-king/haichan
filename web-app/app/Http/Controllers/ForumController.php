@@ -26,8 +26,13 @@ class ForumController extends Controller
             ->firstOrFail();
         $threads = Thread::where('board_id', $board->id)
             ->withCount('posts')
-            ->orderByDesc('created_at') // Sort by creation date
-            ->paginate(20);
+            ->get()
+            ->map(function ($thread) {
+                $thread->accumulated_points = \App\Models\ProofSubmission::getTargetPoints('thread', $thread->id);
+                return $thread;
+            })
+            ->sortByDesc('accumulated_points') // Sort by mining energy expenditure
+            ->take(20);
         
         return view('boards.show', compact('board', 'threads'));
     }
@@ -37,8 +42,13 @@ class ForumController extends Controller
         $boardModel = Board::where('code', $board)->firstOrFail();
         $threads = Thread::where('board_id', $boardModel->id)
             ->withCount('posts')
-            ->orderByDesc('created_at')
-            ->paginate(100);
+            ->get()
+            ->map(function ($thread) {
+                $thread->accumulated_points = \App\Models\ProofSubmission::getTargetPoints('thread', $thread->id);
+                return $thread;
+            })
+            ->sortByDesc('accumulated_points') // Auto-bump based on mining energy
+            ->take(100);
         
         return view('boards.catalog', ['board' => $boardModel, 'threads' => $threads]);
     }

@@ -112,10 +112,10 @@
                 <div style="background: #F5F5DC; border: 1px solid #9AB87A; border-radius: 8px; padding: 25px; margin-bottom: 20px; transition: all 0.3s; hover:box-shadow: 0 2px 8px rgba(68, 75, 110, 0.2); position: relative;"
                      data-thread-id="{{ $thread->id }}" data-thread-title="{{ $thread->title ?: 'Thread #' . $thread->id }}">
 
-                    @if($thread->pow_difficulty && $thread->pow_difficulty > 0)
-                    <!-- PoW Mining Badge -->
+                    @if($thread->accumulated_points > 0)
+                    <!-- Energy Expenditure Badge -->
                     <div style="position: absolute; top: -8px; right: 15px; background: linear-gradient(135deg, #708B75, #9AB87A); color: #FFFFEE; padding: 4px 12px; font-size: 10px; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 2px solid #FFFFEE;">
-                        ⛏️ {{ number_format($thread->pow_difficulty, 2) }}
+                        ⚡ {{ number_format($thread->accumulated_points, 1) }}
                     </div>
                     @endif
 

@@ -190,8 +190,8 @@
              data-thread-id="{{ $thread->id }}"
              data-thread-title="{{ $thread->title }}">
 
-            @if($thread->proof_of_work_sum_points > 0)
-            <div class="catalog-pow-badge">{{ $thread->proof_of_work_sum_points }}⚡</div>
+            @if($thread->accumulated_points > 0)
+            <div class="catalog-pow-badge">{{ number_format($thread->accumulated_points, 1) }}⚡</div>
             @endif
 
             @if($thread->image_path)
