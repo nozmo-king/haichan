@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/haichan.css">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     @vite('resources/js/simple-mining.js')
     <script>
         // Force complete cache refresh
@@ -78,10 +81,6 @@
             <div style="color: #FFFFEE; font-size: 9px;">
                 <span style="color: rgba(255,255,238,0.7);">GLOBAL PoW:</span>
                 <span id="network-total-pow" style="color: #FFD8D8; font-weight: bold;">{{ number_format($totalProofs ?? 0) }}</span>
-            </div>
-            <div style="color: #FFFFEE; font-size: 9px;">
-                <span style="color: rgba(255,255,238,0.7);">TOTAL HASHES:</span>
-                <span id="network-total-hashes" style="color: #E8FFE8; font-weight: bold;">{{ number_format($totalHashes ?? 0) }}</span>
             </div>
             <div style="color: #FFFFEE; font-size: 9px;">
                 <span style="color: rgba(255,255,238,0.7);">MINERS:</span>
@@ -169,10 +168,9 @@
         <div style="display: flex; align-items: center; gap: 15px;">
             <div style="color: #E8FFE8; font-weight: bold;">MINING STATUS</div>
             <div style="color: rgba(255,255,238,0.9);">Rate: <span id="toolbar-hashrate" style="color: #E8FFE8; font-weight: bold;">0 H/s</span></div>
-            <div style="color: rgba(255,255,238,0.9);">Total: <span id="toolbar-total-hashes" style="color: #E8FFE8; font-weight: bold;">0</span></div>
             <div style="color: rgba(255,255,238,0.9);">Target: <span id="toolbar-target" style="color: #FFD8D8; font-weight: bold;">None</span></div>
 
-            <!-- Image Library Link in Bottom Toolbar -->
+            <!-- Navigation Links in Bottom Toolbar -->
             <a href="/library" style="
                 background: rgba(255,255,238,0.1);
                 color: #E8FFE8;
@@ -184,8 +182,47 @@
                 border: 1px solid rgba(255,255,238,0.2);
                 transition: all 0.2s ease;
             " title="Image Library" onmouseover="this.style.background='rgba(255,255,238,0.2)'" onmouseout="this.style.background='rgba(255,255,238,0.1)'">🖼️ LIB</a>
+
+            <a href="/mining" style="
+                background: rgba(255,255,238,0.1);
+                color: #E8FFE8;
+                text-decoration: none;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 8px;
+                font-weight: bold;
+                border: 1px solid rgba(255,255,238,0.2);
+                transition: all 0.2s ease;
+            " title="Mining Dashboard" onmouseover="this.style.background='rgba(255,255,238,0.2)'" onmouseout="this.style.background='rgba(255,255,238,0.1)'">⛏️ MINE</a>
         </div>
-        <div style="color: rgba(255,255,238,0.8); font-size: 8px;">Power: <span id="toolbar-power" style="color: #FFE8C8;">IDLE</span></div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="color: rgba(255,255,238,0.8); font-size: 8px;">Power: <span id="toolbar-power" style="color: #FFE8C8;">IDLE</span></div>
+
+            <!-- Theme Switcher -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: rgba(255,255,238,0.8); font-size: 8px;">Theme:</span>
+                <button id="theme-light" class="theme-btn theme-active" style="
+                    background: #FFFFEE;
+                    color: #444B6E;
+                    border: 1px solid #708B75;
+                    padding: 2px 6px;
+                    font-size: 7px;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    font-weight: bold;
+                " onclick="switchTheme('light')">☀️ LIGHT</button>
+                <button id="theme-night" class="theme-btn" style="
+                    background: #2A2A2A;
+                    color: #CCCCCC;
+                    border: 1px solid #555566;
+                    padding: 2px 6px;
+                    font-size: 7px;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    font-weight: bold;
+                " onclick="switchTheme('night')">🌙 NIGHT</button>
+            </div>
+        </div>
     </div>
 
     <!-- Moveable Mini Dashboard (Hidden by Default) -->
@@ -251,8 +288,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 8pt;">
                     <div>Hash Rate: <span id="dashboard-hashrate" style="color: #789922; font-weight: bold;">0 H/s</span></div>
                     <div>Difficulty: <span id="dashboard-difficulty" style="color: #789922; font-weight: bold;">21e8</span></div>
-                    <div>Total Hashes: <span id="dashboard-total" style="color: #666;">0</span></div>
-                    <div>Valid Proofs: <span id="dashboard-proofs" style="color: #666;">0</span></div>
+                    <div>Session Proofs: <span id="dashboard-proofs" style="color: #666;">0</span></div>
                 </div>
             </div>
 
@@ -289,39 +325,8 @@
 
     <div class="container" style="margin-top: 50px; margin-bottom: 40px;">
         <div class="header">
-            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                <h1><a href="/" style="text-decoration: none; color: inherit; font-family: 'Nova Cut', serif;">HAICHAN</a></h1>
-
-                <!-- Header Navigation Links -->
-                <div style="display: flex; align-items: center; gap: 15px;">
-                    <a href="/library" style="
-                        background: linear-gradient(135deg, #9AB87A 0%, #708B75 100%);
-                        color: #FFFFEE;
-                        text-decoration: none;
-                        padding: 8px 16px;
-                        border-radius: 5px;
-                        font-size: 11px;
-                        font-weight: bold;
-                        border: 2px solid #444B6E;
-                        transition: all 0.3s ease;
-                        box-shadow: 0 2px 4px rgba(68, 75, 110, 0.2);
-                        font-family: 'Courier New', monospace;
-                    " title="Browse and Upload Images" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(68, 75, 110, 0.3)'" onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='0 2px 4px rgba(68, 75, 110, 0.2)'">🖼️ IMAGE LIBRARY</a>
-
-                    <a href="/mining" style="
-                        background: linear-gradient(135deg, #708B75 0%, #444B6E 100%);
-                        color: #FFFFEE;
-                        text-decoration: none;
-                        padding: 8px 16px;
-                        border-radius: 5px;
-                        font-size: 11px;
-                        font-weight: bold;
-                        border: 2px solid #444B6E;
-                        transition: all 0.3s ease;
-                        box-shadow: 0 2px 4px rgba(68, 75, 110, 0.2);
-                        font-family: 'Courier New', monospace;
-                    " title="Mining Dashboard" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(68, 75, 110, 0.3)'" onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='0 2px 4px rgba(68, 75, 110, 0.2)'">⛏️ MINING</a>
-                </div>
+            <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                <h1><a href="/" style="text-decoration: none; color: inherit; font-family: 'Nova Cut', serif;" id="header-text">HAICHAN</a></h1>
             </div>
         </div>
         
@@ -413,14 +418,12 @@
 
                     // Update bottom toolbar
                     document.getElementById('toolbar-hashrate').textContent = stats.hashRate.toLocaleString() + ' H/s';
-                    document.getElementById('toolbar-total-hashes').textContent = stats.totalHashes.toLocaleString();
                     document.getElementById('toolbar-target').textContent = stats.target || 'None';
                     document.getElementById('toolbar-power').textContent = stats.powerLevel || 'IDLE';
 
                     // Update dashboard
                     document.getElementById('dashboard-hashrate').textContent = stats.hashRate.toLocaleString() + ' H/s';
-                    document.getElementById('dashboard-total').textContent = stats.totalHashes.toLocaleString();
-                    document.getElementById('dashboard-proofs').textContent = stats.validProofs || '0';
+                    document.getElementById('dashboard-proofs').textContent = stats.proofsFound || '0';
                     document.getElementById('dashboard-target').textContent = stats.target || 'No target selected';
                     document.getElementById('dashboard-current-hash').textContent = stats.currentHash || 'calculating...';
                 }
@@ -429,33 +432,37 @@
             // Update displays every second
             setInterval(updateMiningDisplays, 1000);
 
-            // Persistent cursor trail effect
-            const trailElements = [];
-            const maxTrails = 15;
+            // Header seizure effect
+            const headerText = document.getElementById('header-text');
+            let seizureInterval;
 
-            document.addEventListener('mousemove', function(e) {
-                // Create new trail element
-                const trail = document.createElement('div');
-                trail.className = 'cursor-trail';
-                trail.style.left = (e.clientX - 3) + 'px';
-                trail.style.top = (e.clientY - 3) + 'px';
-                document.body.appendChild(trail);
-
-                trailElements.push(trail);
-
-                // Remove oldest trails to maintain max count
-                if (trailElements.length > maxTrails) {
-                    const oldTrail = trailElements.shift();
-                    if (oldTrail.parentNode) {
-                        oldTrail.parentNode.removeChild(oldTrail);
+            headerText.addEventListener('mouseenter', function() {
+                let count = 0;
+                seizureInterval = setInterval(function() {
+                    const letters = headerText.textContent.split('').map((letter, i) => {
+                        const randomX = (Math.random() - 0.5) * 20;
+                        const randomY = (Math.random() - 0.5) * 15;
+                        const randomRotate = (Math.random() - 0.5) * 360;
+                        const randomScale = 0.5 + Math.random() * 1.5;
+                        const randomColor = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFF'][Math.floor(Math.random() * 7)];
+                        return `<span style="display: inline-block; transform: translate(${randomX}px, ${randomY}px) rotate(${randomRotate}deg) scale(${randomScale}); color: ${randomColor}; text-shadow: ${Math.random()*10}px ${Math.random()*10}px ${Math.random()*20}px rgba(255,255,255,0.8);">${letter}</span>`;
+                    }).join('');
+                    headerText.innerHTML = letters;
+                    count++;
+                    if (count > 100) { // Prevent infinite seizure
+                        clearInterval(seizureInterval);
                     }
-                }
+                }, 50); // Very fast seizure effect
+            });
 
-                // Fade out older trails
-                trailElements.forEach((trail, index) => {
-                    const opacity = (index + 1) / trailElements.length * 0.6;
-                    trail.style.opacity = opacity;
-                });
+            headerText.addEventListener('mouseleave', function() {
+                clearInterval(seizureInterval);
+                headerText.innerHTML = 'HAICHAN';
+                headerText.style.transform = '';
+                headerText.style.color = '';
+                headerText.style.textShadow = '';
+                headerText.style.letterSpacing = '';
+                headerText.style.filter = '';
             });
 
             // Granular power level control (1-10 scale)
@@ -508,19 +515,38 @@
             background: linear-gradient(135deg, #708B75 0%, #9AB87A 100%) !important;
         }
 
-        /* Persistent cursor trail effect */
-        .cursor-trail {
-            position: fixed;
-            width: 6px;
-            height: 6px;
-            background: radial-gradient(circle, rgba(154, 184, 122, 0.6) 0%, rgba(154, 184, 122, 0.2) 50%, transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            mix-blend-mode: multiply;
-            transition: all 0.1s ease-out;
-        }
 
     </style>
+
+    <!-- Theme Switching Script -->
+    <script>
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('haichan-theme') || 'light';
+            applyTheme(savedTheme);
+        });
+
+        // Switch theme function
+        function switchTheme(theme) {
+            localStorage.setItem('haichan-theme', theme);
+            applyTheme(theme);
+        }
+
+        // Apply theme to the page
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+
+            // Update button states
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('theme-active');
+            });
+            document.getElementById('theme-' + theme).classList.add('theme-active');
+
+            // Update button opacity for active state
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.style.opacity = btn.classList.contains('theme-active') ? '1' : '0.7';
+            });
+        }
+    </script>
 </body>
 </html>

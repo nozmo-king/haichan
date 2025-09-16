@@ -33,6 +33,21 @@
     --font-size-header: 24pt;
 }
 
+/* Dark/Night Theme Variables */
+[data-theme="night"] {
+    /* Core Colors - Dark Theme */
+    --bg-main: #1A1A1A;
+    --bg-alt: #2A2A2A;
+    --bg-accent: #3A3A3A;
+    --border-primary: #555566;
+    --border-secondary: #667755;
+    --text-primary: #CCCCCC;
+    --text-secondary: #AAAAAA;
+    --accent-green: #99BB44;
+    --accent-red: #FF3333;
+    --accent-mining: #88AA66;
+}
+
 @keyframes strobe {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
@@ -62,8 +77,8 @@ body {
 .container {
     max-width: 680px;
     margin: 60px auto;
-    background: #F5F5DC;
-    border: 2px solid #708B75;
+    background: var(--bg-alt);
+    border: 2px solid var(--border-secondary);
     box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);
     padding-bottom: 40px; /* Space for bottom toolbar */
 }
@@ -71,7 +86,7 @@ body {
 .page-content {
     margin: 0;
     padding: 30px;
-    background: #FFFFEE;
+    background: var(--bg-main);
     min-height: calc(100vh - 120px);
 }
 

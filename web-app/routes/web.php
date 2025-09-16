@@ -101,6 +101,22 @@ Route::get('/faq', function() {
     return view('static.faq');
 });
 
+// Admin routes (requires authentication)
+Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', [App\Http\Controllers\AdminController::class, 'index'])->name('index');
+    Route::resource('keys', App\Http\Controllers\AdminController::class, [
+        'except' => ['show'],
+        'names' => [
+            'index' => 'keys.index',
+            'create' => 'keys.create',
+            'store' => 'keys.store',
+            'edit' => 'keys.edit',
+            'update' => 'keys.update',
+            'destroy' => 'keys.destroy'
+        ]
+    ]);
+});
+
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
 });

@@ -130,12 +130,6 @@
                 </div>
             </div>
 
-            <!-- Post Hash -->
-            <div id="hash-{{ $thread->id }}" style="font-family: monospace; font-size: 10px; color: #9AB87A; padding: 10px; background: #FFFACD; border-radius: 3px;">
-                <span style="color: #708B75;">sha256:</span>
-                <span class="hash-value">calculating...</span>
-                <span class="hash-bump-indicator" style="display: none; color: #ff6b35; font-weight: bold; margin-left: 10px;">🔥 21e8 BUMP!</span>
-            </div>
         </div>
 
         <!-- Replies Section -->
@@ -242,8 +236,9 @@ class PostHashSystem {
             const bumpIndicator = document.querySelector(`#hash-${postId} .hash-bump-indicator`);
 
             if (hashElement) {
-                hashElement.textContent = hash.substring(0, 16) + '...';
-                hashElement.title = hash;
+                hashElement.textContent = hash;
+                hashElement.style.fontSize = '9px';
+                hashElement.style.wordBreak = 'break-all';
                 if (hash.startsWith('21e8')) {
                     this.trigger21e8Bump(postId, hash, bumpIndicator);
                 }
@@ -289,28 +284,7 @@ class PostHashSystem {
         }
     }
 
-    async processAllPosts() {
-        const threadContent = `{!! addslashes($thread->content) !!}`;
-        await this.calculatePostHash({{ $thread->id }}, threadContent);
-
-        @php
-        function flattenPosts($posts, $flattened = []) {
-            foreach ($posts as $post) {
-                $flattened[] = $post;
-                if ($post->allReplies && $post->allReplies->count() > 0) {
-                    $flattened = flattenPosts($post->allReplies, $flattened);
-                }
-            }
-            return $flattened;
-        }
-        $allPosts = flattenPosts($posts);
-        @endphp
-
-        @foreach($allPosts as $post)
-        const post{{ $post->id }}Content = `{!! addslashes($post->content) !!}`;
-        await this.calculatePostHash({{ $post->id }}, post{{ $post->id }}Content);
-        @endforeach
-    }
+    // Removed hash calculation - now using unified PoW system
 }
 
 // Reply mining system

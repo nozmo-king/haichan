@@ -34,11 +34,6 @@
         </div>
     </div>
 
-    <div class="post-hash" id="hash-{{ $post->id }}">
-        <span class="hash-label">sha256:</span>
-        <span class="hash-value">calculating...</span>
-        <span class="hash-bump-indicator" style="display: none; color: #ff6b35; font-weight: bold; margin-left: 10px;">🔥 21e8 BUMP!</span>
-    </div>
 </div>
 
 @if($post->allReplies && $post->allReplies->count() > 0)

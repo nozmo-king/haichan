@@ -170,10 +170,10 @@
                 @endforelse
             </div>
 
-            <!-- Pagination -->
-            @if($threads->hasPages())
-            <div style="text-align: center; padding: 30px 0; border-top: 1px solid #708B75; margin-top: 30px;">
-                {{ $threads->links() }}
+            <!-- Energy-based sorting - no pagination needed as we show top 20 by expenditure -->
+            @if(count($threads) >= 20)
+            <div style="text-align: center; padding: 30px 0; border-top: 1px solid #708B75; margin-top: 30px; color: #708B75; font-size: 14px;">
+                <em>Showing top 20 threads by energy expenditure</em>
             </div>
             @endif
         </div>
@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         document.getElementById('thread-pow-nonce').value = nonce;
                         document.getElementById('thread-pow-hash').value = hashHex;
 
-                        miningText.textContent = `✅ Proof found! Hash: ${hashHex.substring(0, 16)}...`;
+                        miningText.textContent = `✅ Proof found! Hash: ${hashHex}`;
                         miningIndicator.textContent = '✅';
                         miningBar.style.width = '100%';
                         miningBar.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';

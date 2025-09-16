@@ -241,6 +241,7 @@ class SimpleMiner {
             const threadElement = e.target.closest('[data-thread-id]');
             if (threadElement && threadElement.dataset.threadId) {
                 const threadTitle = threadElement.dataset.threadTitle || `Thread ${threadElement.dataset.threadId}`;
+                threadElement.style.cursor = 'crosshair';
                 this.startHoverMining({
                     dataset: {
                         mineType: 'thread',
@@ -254,6 +255,7 @@ class SimpleMiner {
             // Check for general mining targets
             const target = e.target.closest('[data-mine-type]');
             if (target) {
+                target.style.cursor = 'crosshair';
                 this.startHoverMining(target);
             }
         });
@@ -262,7 +264,11 @@ class SimpleMiner {
             const threadElement = e.target.closest('[data-thread-id]');
             const target = e.target.closest('[data-mine-type]');
 
-            if (threadElement || target) {
+            if (threadElement) {
+                threadElement.style.cursor = '';
+                this.stopHoverMining();
+            } else if (target) {
+                target.style.cursor = '';
                 this.stopHoverMining();
             }
         });
@@ -348,7 +354,7 @@ class SimpleMiner {
 
                 <div style="margin-bottom: 10px;">
                     <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Hash Rate: <span id="simple-hashrate" style="color: #708B75;">0 H/s</span></div>
-                    <div style="color: #444B6E; font-size: 9px;">Hashes: <span id="simple-total" style="color: #708B75;">0</span> | Proofs: <span id="simple-proofs" style="color: #708B75;">0</span></div>
+                    <div style="color: #444B6E; font-size: 9px;">Proofs Found: <span id="simple-proofs" style="color: #708B75;">0</span></div>
                     <div style="color: #444B6E; font-size: 9px;">Pattern: <span style="color: #CD5C5C;">21e8</span></div>
                 </div>
 
@@ -407,12 +413,10 @@ class SimpleMiner {
         // Update dashboard displays
         setInterval(() => {
             const hashrateEl = document.getElementById('simple-hashrate');
-            const totalEl = document.getElementById('simple-total');
             const proofsEl = document.getElementById('simple-proofs');
             const hashEl = document.getElementById('simple-current-hash');
 
             if (hashrateEl) hashrateEl.textContent = `${this.getHashRate()} H/s`;
-            if (totalEl) totalEl.textContent = this.hashCount.toLocaleString();
             if (proofsEl) proofsEl.textContent = this.proofsFound.toLocaleString();
             if (hashEl) hashEl.textContent = this.currentHash ? this.currentHash.substring(0, 24) + '...' : 'calculating...';
         }, 1000);
@@ -435,7 +439,6 @@ class SimpleMiner {
     getStats() {
         return {
             hashRate: this.getHashRate(),
-            totalHashes: this.hashCount,
             proofsFound: this.proofsFound,
             target: this.getDisplayName(),
             powerLevel: this.mode.toUpperCase(),

@@ -26,17 +26,16 @@
     <div style="padding: 30px; background: #FFFFEE;">
 <div class="page-content">
     <!-- Navigation breadcrumb -->
-    <div class="nav-breadcrumb">
-        <span class="thread-info">Boards</span>
-    </div>
-
     <div class="board-listing">
             <h2>Boards</h2>
             <div class="boards-grid">
                 @foreach($boards as $board)
-                <div class="board-card" 
+                <div class="board-card"
                      data-board-code="{{ $board->code }}"
-                     data-board-name="{{ $board->title }}">
+                     data-board-name="{{ $board->title }}"
+                     data-mine-type="board"
+                     data-mine-target="{{ $board->code }}"
+                     data-mine-title="{{ $board->title }}">
                     <h3><a href="{{ $board->url }}">{{ $board->title }}</a></h3>
                     <p>{{ $board->description }}</p>
                     <div class="board-stats">

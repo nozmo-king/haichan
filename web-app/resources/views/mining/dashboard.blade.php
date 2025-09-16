@@ -359,10 +359,10 @@
             }
 
             targetHash = hashInput.toLowerCase();
-            document.getElementById('target-status').textContent = `Targeting: ${targetHash.substring(0, 16)}...`;
-            document.getElementById('current-target').textContent = `custom hash (${targetHash.substring(0, 16)}...)`;
+            document.getElementById('target-status').textContent = `Targeting: ${targetHash}`;
+            document.getElementById('current-target').textContent = `custom hash (${targetHash})`;
 
-            logMessage(`🎯 Target set: ${targetHash.substring(0, 16)}...`);
+            logMessage(`🎯 Target set: ${targetHash}`);
         }
 
         function clearTargetHash() {
@@ -416,7 +416,7 @@
             const points = calculatePoints(pattern);
             sessionPoints += points;
             
-            logMessage(`🎯 PROOF FOUND! ${hash.substring(0, 16)}... (${points} points)`);
+            logMessage(`🎯 PROOF FOUND! ${hash} (${points} points)`);
             
             // Trigger celebration animations
             celebrateProof(pattern, points);

@@ -219,9 +219,9 @@
         @endforelse
     </div>
 
-    @if($threads->hasPages())
-    <div style="text-align: center; padding: 20px;">
-        {{ $threads->links() }}
+    @if(count($threads) >= 20)
+    <div style="text-align: center; padding: 20px; color: #708B75; font-size: 14px;">
+        <em>Showing top 20 threads by energy expenditure</em>
     </div>
     @endif
 </div>

@@ -174,7 +174,7 @@ class ThreadCreationMiner {
             const hash = await this.sha256(testData);
             
             this.hashCount++;
-            document.getElementById('current-hash').textContent = hash.substring(0, 32) + '...';
+            document.getElementById('current-hash').textContent = hash;
             
             // Update progress bar based on hash attempts
             const progress = (this.hashCount % 1000) / 10;
@@ -226,7 +226,7 @@ class ThreadCreationMiner {
             clearInterval(this.statsInterval);
         }
         
-        this.log(`🎯 PROOF FOUND! Hash: ${hash.substring(0, 32)}...`);
+        this.log(`🎯 PROOF FOUND! Hash: ${hash}`);
         this.log(`✅ Thread creation unlocked! Click "Create Thread" to proceed.`);
         
         // Visual celebration

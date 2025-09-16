@@ -626,7 +626,7 @@ class ImageLibrarySystem {
             const result = await response.json();
 
             if (result.success) {
-                statusDiv.textContent = `✅ Uploaded! Hash: ${result.hash.substring(0, 16)}... | PoW: ${result.pow_points}`;
+                statusDiv.textContent = `✅ Uploaded! Hash: ${result.hash} | PoW: ${result.pow_points}`;
                 // Add new image to library dynamically instead of reloading page
                 this.addNewImageToLibrary(result.image);
 
@@ -662,7 +662,7 @@ function openImageModal(imageId) {
             <div style="margin-top: 15px; font-size: 12px; color: #708B75;">
                 <div>PoW Earned: <strong>${pow}</strong></div>
                 <div>Usage Count: <strong>${usage}</strong></div>
-                <div>Hash: <code style="font-size: 10px;">${hash.substring(0, 32)}...</code></div>
+                <div>Hash: <code style="font-size: 9px; word-break: break-all;">${hash}</code></div>
             </div>
             <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
                 <button onclick="copyImageHash('${hash}')" style="padding: 6px 12px; background: #708B75; color: white; border: none; border-radius: 3px; cursor: pointer;">Copy Hash</button>
