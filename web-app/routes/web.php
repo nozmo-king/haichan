@@ -1,41 +1,31 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 
 Route::get('/', function () {
     $userCount = \App\Models\User::count();
     $userCap = 256; // Define the user cap
     $boards = \App\Models\Board::all();
-    
-    // Calculate global hashrate from recent proofs (last 5 minutes)
-    $recentProofs = \App\Models\ProofOfWork::where('verified_at', '>', now()->subMinutes(5))->count();
-    $globalHashrate = $recentProofs * 100000; // Estimate based on proof difficulty
-    
-    $activeSessions = max(1, floor($recentProofs / 3)); // Estimate active miners
-    
-    // Total network stats
-    $totalHashes = \App\Models\ProofOfWork::count() * 500000; // Estimate total hashes
-    $totalProofs = \App\Models\ProofOfWork::count();
-    
+
+    // Calculate real stats from actual proof submissions
+    $recentProofs = \App\Models\ProofSubmission::where('created_at', '>', now()->subMinutes(5))->count();
+    $activeSessions = \App\Models\ProofSubmission::where('created_at', '>', now()->subMinutes(5))
+        ->distinct('user_session')->count('user_session');
+
+    // Real computational stats - no dummy multipliers
+    $totalProofs = \App\Models\ProofSubmission::count();
+    $totalHashes = \App\Models\ProofSubmission::getTotalHashes();
+    $globalHashrate = $recentProofs > 0 ? ($recentProofs * 12) : 0; // Proofs per 5min * 12 = proofs per hour
+
     return view('welcome', compact('userCount', 'userCap', 'boards', 'globalHashrate', 'activeSessions', 'totalHashes', 'totalProofs'));
 });
 
-Route::get('/test', function () {
-    try {
-        $boardCount = \App\Models\Board::count();
-        $boards = \App\Models\Board::all()->pluck('name');
-        $activeBoards = \App\Models\Board::getActiveBoards()->pluck('name');
-        
-        return response()->json([
-            'status' => 'Routes working!',
-            'total_boards' => $boardCount,
-            'all_boards' => $boards,
-            'active_boards' => $activeBoards
-        ]);
-    } catch (Exception $e) {
-        return response()->json(['error' => $e->getMessage()]);
-    }
-});
+// Authentication routes
+Route::get('/login', [AuthController::class, 'showLogin'])->name('auth.login');
+Route::post('/challenge', [AuthController::class, 'getChallenge'])->middleware('throttle:25,1')->name('auth.challenge');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
+Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
 Route::get('/boards', function () {
     try {
@@ -53,8 +43,7 @@ Route::get('/forum/board/{code}/thread/{threadId}', [App\Http\Controllers\ForumC
 Route::get('/forum/board/{code}/create', [App\Http\Controllers\ForumController::class, 'createThread'])->name('forum.create');
 Route::post('/forum/board/{code}/create', [App\Http\Controllers\ForumController::class, 'storeThread'])->name('forum.store');
 
-// Skip login for now - redirect to forum
-Route::get('/login', function() { return redirect('/'); })->name('login');
+// Login route is handled above by AuthController
 
 // Dynamic board routes - supports all boards: gen, tech, biz, film, x, lit, meta, mu
 Route::group([], function () {
@@ -99,13 +88,10 @@ Route::get('/api/image-library/stats', [App\Http\Controllers\ImageLibraryControl
 Route::get('/api/image-library/search', [App\Http\Controllers\ImageLibraryController::class, 'search']);
 Route::get('/api/image-library/shifting', [App\Http\Controllers\ImageLibraryController::class, 'getShiftingArrangement']);
 
-// PoW Bump API routes for ever-shifting bumps system
-Route::post('/api/post-bump', [App\Http\Controllers\ProofOfWorkController::class, 'postBump']);
-Route::post('/api/thread-bump', [App\Http\Controllers\ProofOfWorkController::class, 'bumpThread']);
+// All PoW functionality now handled by unified /api/proof endpoint
 
-Route::get('/mining', function() {
-    return view('mining.dashboard');
-});
+Route::get('/mining', [App\Http\Controllers\MiningController::class, 'dashboard']);
+Route::get('/mining/stats', [App\Http\Controllers\MiningController::class, 'stats']);
 
 Route::get('/rules', function() {
     return view('static.rules');

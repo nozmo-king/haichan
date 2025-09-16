@@ -109,7 +109,16 @@
 
             <div class="threads-list">
                 @forelse($threads as $thread)
-                <div style="background: #F5F5DC; border: 1px solid #9AB87A; border-radius: 8px; padding: 25px; margin-bottom: 20px; transition: all 0.3s; hover:box-shadow: 0 2px 8px rgba(68, 75, 110, 0.2);">
+                <div style="background: #F5F5DC; border: 1px solid #9AB87A; border-radius: 8px; padding: 25px; margin-bottom: 20px; transition: all 0.3s; hover:box-shadow: 0 2px 8px rgba(68, 75, 110, 0.2); position: relative;"
+                     data-thread-id="{{ $thread->id }}" data-thread-title="{{ $thread->title ?: 'Thread #' . $thread->id }}">
+
+                    @if($thread->pow_difficulty && $thread->pow_difficulty > 0)
+                    <!-- PoW Mining Badge -->
+                    <div style="position: absolute; top: -8px; right: 15px; background: linear-gradient(135deg, #708B75, #9AB87A); color: #FFFFEE; padding: 4px 12px; font-size: 10px; border-radius: 12px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 2px solid #FFFFEE;">
+                        ⛏️ {{ number_format($thread->pow_difficulty, 2) }}
+                    </div>
+                    @endif
+
                     <!-- Thread Header -->
                     <div style="margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #9AB87A;">
                         <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">
@@ -120,6 +129,14 @@
                         <div style="color: #708B75; font-size: 11px;">
                             Anonymous • {{ $thread->created_at->format('M d, Y H:i') }} • No.{{ $thread->id }}
                         </div>
+                        @if($thread->pow_hash)
+                        <div style="margin-top: 8px; padding: 6px; background: rgba(154, 184, 122, 0.05); border: 1px solid rgba(154, 184, 122, 0.3); border-radius: 3px;">
+                            <div style="font-size: 9px; color: #708B75; font-weight: bold; margin-bottom: 3px;">⛏️ PROOF HASH</div>
+                            <div style="font-family: 'Courier New', monospace; font-size: 10px; color: #666; word-break: break-all;">
+                                {{ Str::limit($thread->pow_hash, 32, '...') }}
+                            </div>
+                        </div>
+                        @endif
                     </div>
 
                     <!-- Thread Content -->

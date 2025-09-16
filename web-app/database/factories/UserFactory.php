@@ -23,22 +23,12 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        // User factory needs an allowed_public_key_id to work with the secp256k1 auth system
+        // In testing, you should create AllowedPublicKey records first
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'allowed_public_key_id' => null, // Must be set manually or via relationships
+            'last_challenge' => null,
+            'challenge_expires_at' => null,
         ];
-    }
-
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function unverified(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
     }
 }

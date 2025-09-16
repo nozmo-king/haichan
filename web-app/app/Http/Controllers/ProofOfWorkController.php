@@ -23,7 +23,7 @@ class ProofOfWorkController extends Controller
             'hash' => 'required|string|size:64',
             'nonce' => 'required|integer|min:0',
             'data' => 'required|string',
-            'pattern' => 'required|string|in:21,21e8,21e80,21e800,21e8000,000021e8',
+            'pattern' => 'required|string|in:21,21e8,21e80,21e800,21e8000,000021e8,000,666,dead',
             'target_type' => 'nullable|string',
             'target_id' => 'nullable|string'
         ]);
@@ -267,7 +267,10 @@ class ProofOfWorkController extends Controller
             '21e80' => 5,
             '21e800' => 25,
             '21e8000' => 125,
-            '000021e8' => 625
+            '000021e8' => 625,
+            '000' => 250,  // Legendary pattern
+            '666' => 375,  // Cursed pattern
+            'dead' => 200  // Death pattern
         ];
         return $points[$pattern] ?? 0.1;
     }

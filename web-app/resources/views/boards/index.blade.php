@@ -19,7 +19,7 @@
 
         <div style="width: 80px; height: 2px; background: linear-gradient(to right, #708B75, #9AB87A); margin: 10px auto;"></div>
 
-        <p class="fade-text" style="color: #708B75; font-size: 12px; line-height: 1.5; margin: 8px 0 0 0; font-weight: 400;" data-en="Ever-shifting forum boards" data-jp="常時変化する板">Ever-shifting forum boards</p>
+        <p class="fade-text" style="color: #708B75; font-size: 12px; line-height: 1.5; margin: 8px 0 0 0; font-weight: 400;" data-en="Anonymous discussion boards" data-jp="匿名掲示板">Anonymous discussion boards</p>
     </div>
 
     <!-- Content area -->

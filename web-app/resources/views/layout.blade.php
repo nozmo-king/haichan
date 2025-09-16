@@ -90,19 +90,6 @@
         </div>
         
         <div style="display: flex; align-items: center; gap: 10px;">
-            <!-- Image Library Quick Access -->
-            <a href="/library" style="
-                background: #9AB87A;
-                color: #FFFFEE;
-                text-decoration: none;
-                padding: 4px 8px;
-                border-radius: 3px;
-                font-size: 9px;
-                font-weight: bold;
-                border: 1px solid #708B75;
-                transition: all 0.2s ease;
-            " title="Access Image Library" onmouseover="this.style.background='#708B75'" onmouseout="this.style.background='#9AB87A'">🖼️ LIBRARY</a>
-
             <div id="current-mining-hash" style="
                 font-family: 'Courier New', monospace;
                 font-size: 9px;
@@ -442,6 +429,35 @@
             // Update displays every second
             setInterval(updateMiningDisplays, 1000);
 
+            // Persistent cursor trail effect
+            const trailElements = [];
+            const maxTrails = 15;
+
+            document.addEventListener('mousemove', function(e) {
+                // Create new trail element
+                const trail = document.createElement('div');
+                trail.className = 'cursor-trail';
+                trail.style.left = (e.clientX - 3) + 'px';
+                trail.style.top = (e.clientY - 3) + 'px';
+                document.body.appendChild(trail);
+
+                trailElements.push(trail);
+
+                // Remove oldest trails to maintain max count
+                if (trailElements.length > maxTrails) {
+                    const oldTrail = trailElements.shift();
+                    if (oldTrail.parentNode) {
+                        oldTrail.parentNode.removeChild(oldTrail);
+                    }
+                }
+
+                // Fade out older trails
+                trailElements.forEach((trail, index) => {
+                    const opacity = (index + 1) / trailElements.length * 0.6;
+                    trail.style.opacity = opacity;
+                });
+            });
+
             // Granular power level control (1-10 scale)
             const powerSlider = document.getElementById('dashboard-power-slider');
             const powerDisplay = document.getElementById('power-level-display');
@@ -491,6 +507,20 @@
         #dashboard-header:hover {
             background: linear-gradient(135deg, #708B75 0%, #9AB87A 100%) !important;
         }
+
+        /* Persistent cursor trail effect */
+        .cursor-trail {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: radial-gradient(circle, rgba(154, 184, 122, 0.6) 0%, rgba(154, 184, 122, 0.2) 50%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: multiply;
+            transition: all 0.1s ease-out;
+        }
+
     </style>
 </body>
 </html>

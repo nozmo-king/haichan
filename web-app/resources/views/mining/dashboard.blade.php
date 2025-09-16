@@ -162,10 +162,6 @@
                         <span id="proofs-found" style="color: #9AB87A; font-weight: bold;">0</span>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
-                        <span>Session Points:</span>
-                        <span id="session-points" style="color: #9AB87A; font-weight: bold;">0</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
                         <span>Mining Time:</span>
                         <span id="mining-time" style="color: #9AB87A; font-weight: bold;">00:00</span>
                     </div>

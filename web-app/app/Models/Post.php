@@ -83,8 +83,9 @@ class Post extends Model
 
     public static function verifyProofOfWork($data, $nonce, $hash, $pattern)
     {
-        // The client includes nonce in the data already, so use data directly
-        $calculatedHash = hash('sha256', $data);
+        // Frontend includes nonce in the hash calculation: challengeData + ':' + nonce
+        $fullData = $data . ':' . $nonce;
+        $calculatedHash = hash('sha256', $fullData);
 
         if ($calculatedHash !== strtolower($hash)) {
             return ['valid' => false, 'error' => 'Hash mismatch'];

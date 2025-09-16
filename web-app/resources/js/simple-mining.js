@@ -5,9 +5,10 @@ class SimpleMiner {
     constructor() {
         this.isActive = false;
         this.hashCount = 0;
+        this.proofsFound = 0; // Track successful proofs found
         this.startTime = 0;
         this.currentHash = '';
-        this.pattern = '21e8';
+        this.pattern = '21e8'; // Should hit roughly every 5 seconds at typical mining rates
         this.nonce = 0;
         this.mode = 'off';
         this.targetType = 'global';
@@ -30,22 +31,30 @@ class SimpleMiner {
     detectMiningTarget() {
         const path = window.location.pathname;
 
-        if (path.match(/^\/library\/?$/)) {
+        // Special pages - should use global mining
+        if (path.match(/^\/boards\/?$/) || path.match(/^\/mining\/?$/) || path.match(/^\/faq\/?$/) || path.match(/^\/rules\/?$/)) {
+            this.targetType = 'global';
+            this.targetId = 'haichan';
+        } else if (path.match(/^\/library\/?$/)) {
             this.targetType = 'images';
             this.targetId = 'library';
         } else if (path.match(/^\/(\w+)\/(\d+)$/)) {
+            // Thread pages like /gen/123
             const matches = path.match(/^\/(\w+)\/(\d+)$/);
             this.targetType = 'thread';
             this.targetId = matches[2];
         } else if (path.match(/^\/(\w+)\/catalog$/)) {
+            // Catalog pages like /gen/catalog
             const matches = path.match(/^\/(\w+)\/catalog$/);
             this.targetType = 'board';
             this.targetId = matches[1];
-        } else if (path.match(/^\/(\w+)\/?$/)) {
-            const matches = path.match(/^\/(\w+)\/?$/);
+        } else if (path.match(/^\/(gen|tech|biz|film|x|lit|meta|mu)\/?$/)) {
+            // Individual board pages - only match actual board codes
+            const matches = path.match(/^\/(gen|tech|biz|film|x|lit|meta|mu)\/?$/);
             this.targetType = 'board';
             this.targetId = matches[1];
         } else {
+            // Default to global for everything else (homepage, etc.)
             this.targetType = 'global';
             this.targetId = 'haichan';
         }
@@ -55,12 +64,20 @@ class SimpleMiner {
     }
 
     autoStart() {
-        this.setMode('idle');
+        // Load persisted mining state
+        const savedMode = localStorage.getItem('haichan_mining_mode') || 'idle';
+        const savedProofCount = localStorage.getItem('haichan_proof_count') || '0';
+
+        this.proofsFound = parseInt(savedProofCount);
+        this.setMode(savedMode);
     }
 
     setMode(newMode) {
         console.log(`🎯 Setting mining mode to: ${newMode}`);
         this.mode = newMode;
+
+        // Persist mining mode across page loads
+        localStorage.setItem('haichan_mining_mode', newMode);
 
         if (newMode === 'off') {
             this.stop();
@@ -74,6 +91,7 @@ class SimpleMiner {
     start() {
         if (this.isActive) return;
 
+        console.log(`🔥 Starting mining in ${this.mode} mode, targeting: ${this.targetType}:${this.targetId}`);
         this.isActive = true;
         this.startTime = Date.now();
         this.hashCount = 0;
@@ -108,15 +126,27 @@ class SimpleMiner {
     }
 
     async performHash() {
-        const data = `${this.targetType}:${this.targetId}:${this.nonce}:${Date.now()}`;
-        const hash = await this.sha256(data);
+        // Construct challenge data to match backend expectation
+        const challengeData = `${this.targetType}:${this.targetId}`;
+        const fullData = `${challengeData}:${this.nonce}`;
+        const hash = await this.sha256(fullData);
         this.currentHash = hash;
         this.hashCount++;
         this.nonce++;
 
+        // Debug: Log some hashes to verify generation
+        if (this.hashCount % 1000 === 0) {
+            console.log(`Debug hash #${this.hashCount}: ${hash.substring(0, 8)}... (looking for ${this.pattern})`);
+        }
+
         if (hash.startsWith(this.pattern)) {
-            console.log(`💎 PROOF FOUND! ${hash.substring(0, 16)}...`);
-            await this.submitProof(data, this.nonce - 1, hash);
+            console.log(`💎 PROOF FOUND! ${hash.substring(0, 16)}... after ${this.hashCount} attempts`);
+            console.log(`📊 Challenge data: ${challengeData}`);
+            console.log(`🔢 Nonce: ${this.nonce - 1}`);
+            console.log(`🔗 Full hash: ${hash}`);
+            console.log(`🎯 Target: ${this.targetType}:${this.targetId}`);
+            this.triggerSeizureAnimation();
+            await this.submitProof(challengeData, this.nonce - 1, hash);
         }
 
         this.updateHashDisplay();
@@ -130,6 +160,16 @@ class SimpleMiner {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
+    triggerSeizureAnimation() {
+        const dashboard = document.getElementById('simple-mini-dashboard');
+        if (dashboard) {
+            dashboard.style.animation = 'haichan-seizure 0.5s ease-in-out';
+            setTimeout(() => {
+                dashboard.style.animation = '';
+            }, 500);
+        }
+    }
+
     async submitProof(data, nonce, hash) {
         try {
             const response = await fetch('/api/proof', {
@@ -139,16 +179,25 @@ class SimpleMiner {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
                 body: JSON.stringify({
-                    data: data,
-                    nonce: nonce,
+                    target_type: this.targetType,
+                    target_id: this.targetId,
+                    pattern: this.pattern,
                     hash: hash,
-                    pattern: this.pattern
+                    nonce: nonce,
+                    challenge_data: data,
+                    hashes_computed: this.hashCount, // Send actual hash count as computational work
+                    metadata: {
+                        hash_rate: this.getHashRate(),
+                        browser: navigator.userAgent.substring(0, 100)
+                    }
                 })
             });
 
             const result = await response.json();
             if (result.success) {
-                console.log('✅ Proof accepted!');
+                this.proofsFound++;
+                localStorage.setItem('haichan_proof_count', this.proofsFound.toString());
+                console.log(`✅ Proof accepted! Total proofs found: ${this.proofsFound}`);
             } else {
                 console.log('❌ Proof rejected:', result.message);
             }
@@ -188,6 +237,21 @@ class SimpleMiner {
 
     setupHoverMining() {
         document.addEventListener('mouseover', (e) => {
+            // Check for threads first - everything is minable!
+            const threadElement = e.target.closest('[data-thread-id]');
+            if (threadElement && threadElement.dataset.threadId) {
+                const threadTitle = threadElement.dataset.threadTitle || `Thread ${threadElement.dataset.threadId}`;
+                this.startHoverMining({
+                    dataset: {
+                        mineType: 'thread',
+                        mineTarget: threadElement.dataset.threadId,
+                        mineTitle: threadTitle
+                    }
+                });
+                return;
+            }
+
+            // Check for general mining targets
             const target = e.target.closest('[data-mine-type]');
             if (target) {
                 this.startHoverMining(target);
@@ -195,8 +259,10 @@ class SimpleMiner {
         });
 
         document.addEventListener('mouseout', (e) => {
+            const threadElement = e.target.closest('[data-thread-id]');
             const target = e.target.closest('[data-mine-type]');
-            if (target) {
+
+            if (threadElement || target) {
                 this.stopHoverMining();
             }
         });
@@ -282,7 +348,8 @@ class SimpleMiner {
 
                 <div style="margin-bottom: 10px;">
                     <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Hash Rate: <span id="simple-hashrate" style="color: #708B75;">0 H/s</span></div>
-                    <div style="color: #444B6E; font-size: 9px;">Total: <span id="simple-total" style="color: #708B75;">0</span> | Pattern: <span style="color: #CD5C5C;">21e8</span></div>
+                    <div style="color: #444B6E; font-size: 9px;">Hashes: <span id="simple-total" style="color: #708B75;">0</span> | Proofs: <span id="simple-proofs" style="color: #708B75;">0</span></div>
+                    <div style="color: #444B6E; font-size: 9px;">Pattern: <span style="color: #CD5C5C;">21e8</span></div>
                 </div>
 
                 <div style="margin-bottom: 10px;">
@@ -341,10 +408,12 @@ class SimpleMiner {
         setInterval(() => {
             const hashrateEl = document.getElementById('simple-hashrate');
             const totalEl = document.getElementById('simple-total');
+            const proofsEl = document.getElementById('simple-proofs');
             const hashEl = document.getElementById('simple-current-hash');
 
             if (hashrateEl) hashrateEl.textContent = `${this.getHashRate()} H/s`;
             if (totalEl) totalEl.textContent = this.hashCount.toLocaleString();
+            if (proofsEl) proofsEl.textContent = this.proofsFound.toLocaleString();
             if (hashEl) hashEl.textContent = this.currentHash ? this.currentHash.substring(0, 24) + '...' : 'calculating...';
         }, 1000);
     }
@@ -367,10 +436,10 @@ class SimpleMiner {
         return {
             hashRate: this.getHashRate(),
             totalHashes: this.hashCount,
+            proofsFound: this.proofsFound,
             target: this.getDisplayName(),
             powerLevel: this.mode.toUpperCase(),
-            currentHash: this.currentHash,
-            validProofs: 0
+            currentHash: this.currentHash
         };
     }
 

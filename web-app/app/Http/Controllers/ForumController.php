@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Board;
 use App\Models\Thread;
 use App\Models\Post;
-use App\Models\ProofOfWork;
+use App\Models\ProofSubmission;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
@@ -25,11 +25,8 @@ class ForumController extends Controller
             ->orWhere('name', $board)
             ->firstOrFail();
         $threads = Thread::where('board_id', $board->id)
-            ->with(['proofOfWork']) // Eager load to prevent N+1 queries
             ->withCount('posts')
-            ->withSum('proofOfWork', 'points') // Sum PoW points for sorting
-            ->orderByDesc('proof_of_work_sum_points') // Sort by total PoW descending
-            ->orderByDesc('created_at') // Secondary sort by creation date
+            ->orderByDesc('created_at') // Sort by creation date
             ->paginate(20);
         
         return view('boards.show', compact('board', 'threads'));
@@ -39,10 +36,7 @@ class ForumController extends Controller
     {
         $boardModel = Board::where('code', $board)->firstOrFail();
         $threads = Thread::where('board_id', $boardModel->id)
-            ->with(['proofOfWork']) // Eager load
             ->withCount('posts')
-            ->withSum('proofOfWork', 'points')
-            ->orderByDesc('proof_of_work_sum_points')
             ->orderByDesc('created_at')
             ->paginate(100);
         
@@ -55,13 +49,14 @@ class ForumController extends Controller
         $boardModel = Board::where('code', $board)
             ->orWhere('name', $board)
             ->firstOrFail();
-        $thread = Thread::with(['proofOfWork'])
-                       ->withSum('proofOfWork', 'points')
-                       ->findOrFail($threadId);
-        
+        $thread = Thread::findOrFail($threadId);
+
         // Return just PoW score for AJAX requests
         if (request()->get('pow_only')) {
-            return response()->json(['pow_score' => $thread->proof_of_work_sum_points ?? 0]);
+            $powScore = ProofSubmission::where('target_type', 'thread')
+                ->where('target_id', $threadId)
+                ->sum('difficulty');
+            return response()->json(['pow_score' => $powScore]);
         }
         
         // Load top-level posts (no parent) with their nested replies
@@ -97,30 +92,33 @@ class ForumController extends Controller
             return back()->withErrors(['content' => 'Content is required'])->withInput();
         }
 
-        // Validate Proof of Work and image
+        // Validate PoW and image upload
         $request->validate([
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
             'pow_challenge_id' => 'required|string|size:32',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096'
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600'
         ]);
 
         $boardModel = Board::where('code', $board)->firstOrFail();
-        
-        // Generate challenge data and verify PoW
+
+        // Generate proper challenge data and verify PoW
         $challengeData = "thread:{$boardModel->code}:{$title}:{$request->pow_challenge_id}";
         $verification = Thread::verifyProofOfWork(
-            $challengeData, 
-            $request->pow_nonce, 
-            $request->pow_hash, 
-            '21e8' // Default pattern
+            $challengeData,
+            $request->pow_nonce,
+            $request->pow_hash,
+            '21e8'
         );
-        
+
         if (!$verification['valid']) {
-            Log::error('PoW verification failed', [
+            Log::error('Thread PoW verification failed', [
                 'error' => $verification['error'],
                 'board' => $board,
-                'title' => $title
+                'title' => $title,
+                'challenge_data' => $challengeData,
+                'nonce' => $request->pow_nonce,
+                'submitted_hash' => $request->pow_hash
             ]);
             return back()->withErrors(['pow' => 'Proof of work verification failed: ' . $verification['error']])->withInput();
         }
@@ -176,7 +174,7 @@ class ForumController extends Controller
 
         $request->validate([
             'content' => 'required|max:2000',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
             'pow_challenge_id' => 'required|string|size:32'
@@ -187,27 +185,28 @@ class ForumController extends Controller
             ->orWhere('name', $board)
             ->firstOrFail();
         $thread = Thread::findOrFail($threadId);
-        
-        // Validate Proof of Work for reply
-        // Use pow_data if provided (includes nonce), otherwise construct it
-        $challengeData = $request->pow_data ?: "post:{$threadId}:{$request->content}:{$request->pow_challenge_id}";
 
-        $verification = Post::verifyProofOfWork(
+        // Generate proper challenge data and verify PoW for reply
+        $challengeData = "reply:{$boardModel->code}:{$threadId}:{$request->pow_challenge_id}";
+        $verification = Thread::verifyProofOfWork(
             $challengeData,
             $request->pow_nonce,
             $request->pow_hash,
-            '21e8' // Default pattern
+            '21e8'
         );
-        
+
         if (!$verification['valid']) {
             Log::error('Reply PoW verification failed', [
                 'error' => $verification['error'],
+                'board' => $board,
                 'thread_id' => $threadId,
-                'challenge_data' => $challengeData
+                'challenge_data' => $challengeData,
+                'nonce' => $request->pow_nonce,
+                'submitted_hash' => $request->pow_hash
             ]);
             return back()->withErrors(['pow' => 'Proof of work verification failed: ' . $verification['error']])->withInput();
         }
-        
+
         $anonymousUser = 'Anonymous#' . substr(hash('sha256', $request->ip() . time()), 0, 8);
 
         $postData = [

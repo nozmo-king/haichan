@@ -22,7 +22,7 @@
                 <div style="width: 120px; height: 3px; background: linear-gradient(to right, #708B75, #9AB87A); margin: 20px auto;"></div>
 
                 <p style="color: #708B75; font-size: 16px; line-height: 1.6; margin: 20px 0; font-weight: 500; max-width: 600px; margin-left: auto; margin-right: auto;">
-                    The ultimate anonymous imageboard powered by your browser's mining capabilities. Post, discuss, and mine computational proof-of-work - all in one seamless experience.
+                    A refined discussion network where computational authenticity meets thoughtful discourse. Every interaction is secured by client-side proof-of-work, ensuring quality signal over noise.
                 </p>
             </div>
         </div>
@@ -41,20 +41,20 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-top: 20px;">
                     <div style="text-align: center; padding: 20px; background: #FFFACD; border: 1px solid #9AB87A; border-radius: 5px;">
                         <div style="font-size: 24px; color: #708B75; margin-bottom: 10px;">⛏️</div>
-                        <h4 style="color: #444B6E; margin: 8px 0; font-size: 13px; font-weight: 600;">Browser Mining</h4>
-                        <p style="color: #708B75; font-size: 11px; line-height: 1.4; margin: 0;">Your browser mines SHA-256 hashes while you browse, contributing to the network's proof-of-work system.</p>
+                        <h4 style="color: #444B6E; margin: 8px 0; font-size: 13px; font-weight: 600;">Computational Proof</h4>
+                        <p style="color: #708B75; font-size: 11px; line-height: 1.4; margin: 0;">Client-side SHA-256 mining creates cryptographic proof-of-work, establishing computational cost for authentic discourse.</p>
                     </div>
 
                     <div style="text-align: center; padding: 20px; background: #FFFACD; border: 1px solid #9AB87A; border-radius: 5px;">
                         <div style="font-size: 24px; color: #9AB87A; margin-bottom: 10px;">🔐</div>
-                        <h4 style="color: #444B6E; margin: 8px 0; font-size: 13px; font-weight: 600;">Anonymous Posts</h4>
-                        <p style="color: #708B75; font-size: 11px; line-height: 1.4; margin: 0;">Post anonymously without registration. Your identity is protected by cryptographic proof-of-work.</p>
+                        <h4 style="color: #444B6E; margin: 8px 0; font-size: 13px; font-weight: 600;">Pseudonymous Identity</h4>
+                        <p style="color: #708B75; font-size: 11px; line-height: 1.4; margin: 0;">No registration required. Cryptographic proof-of-work establishes contribution without compromising privacy.</p>
                     </div>
 
                     <div style="text-align: center; padding: 20px; background: #FFFACD; border: 1px solid #9AB87A; border-radius: 5px;">
                         <div style="font-size: 24px; color: #CD5C5C; margin-bottom: 10px;">🎨</div>
-                        <h4 style="color: #444B6E; margin: 8px 0; font-size: 13px; font-weight: 600;">Image Library</h4>
-                        <p style="color: #708B75; font-size: 11px; line-height: 1.4; margin: 0;">Upload and mine images with automatic dithering and ever-shifting arrangements.</p>
+                        <h4 style="color: #444B6E; margin: 8px 0; font-size: 13px; font-weight: 600;">Media Mining</h4>
+                        <p style="color: #708B75; font-size: 11px; line-height: 1.4; margin: 0;">Algorithmic image processing with dynamic dithering creates unique visual experiences through computational art.</p>
                     </div>
                 </div>
             </div>
@@ -149,47 +149,6 @@
     </div>
 
     <script>
-    // AGGRESSIVE text sanitizer - KILL ALL PROBLEMATIC TEXT
-    function sanitizeText() {
-        const walker = document.createTreeWalker(
-            document.body,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
-
-        let node;
-        const badPatterns = [
-            /join the computational resistance/gi,
-            /computational resistance/gi,
-            /decentralized discourse/gi,
-            /every hash you mine is a vote/gi,
-            /vote for decentralized/gi
-        ];
-
-        while (node = walker.nextNode()) {
-            let changed = false;
-            for (let pattern of badPatterns) {
-                if (pattern.test(node.nodeValue)) {
-                    node.nodeValue = node.nodeValue.replace(pattern, '');
-                    changed = true;
-                }
-            }
-            if (changed && node.nodeValue.trim() === '') {
-                node.nodeValue = '';
-            }
-        }
-
-        // Also check all elements for innerHTML
-        document.querySelectorAll('*').forEach(el => {
-            for (let pattern of badPatterns) {
-                if (el.innerHTML && pattern.test(el.innerHTML)) {
-                    el.innerHTML = el.innerHTML.replace(pattern, '');
-                }
-            }
-        });
-    }
-
     // Language toggle functionality
     function toggleLanguage() {
         const elements = document.querySelectorAll('.fade-text[data-jp]');
@@ -204,27 +163,6 @@
             }
         });
     }
-
-    // Strobing emoji animation
-    document.addEventListener('DOMContentLoaded', function() {
-        // Clean any bad text on load
-        sanitizeText();
-
-        // Set up mutation observer to clean any dynamically added bad text
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                    sanitizeText();
-                }
-            });
-        });
-
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true,
-            characterData: true
-        });
-    });
     </script>
 
     <style>

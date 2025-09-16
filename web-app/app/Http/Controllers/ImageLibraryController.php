@@ -20,38 +20,144 @@ class ImageLibraryController extends Controller
     {
         $request->validate([
             'image_id' => 'required|exists:image_library,id',
-            'hash_rate' => 'nullable|integer|min:0|max:10000'
+            'hash_rate' => 'nullable|integer|min:0|max:10000',
+            'proof_hash' => 'nullable|string|size:64',
+            'nonce' => 'nullable|integer'
         ]);
 
         $image = ImageLibrary::findOrFail($request->image_id);
 
-        // Award PoW points based on hash rate and randomness
-        $hashRate = $request->hash_rate ?? rand(100, 1000);
-        $basePoints = max(1, floor($hashRate / 100));
-        $bonusPoints = rand(0, 5); // Random bonus 0-5
-        $totalPoints = $basePoints + $bonusPoints;
+        // If proper PoW proof is provided, verify it first
+        if ($request->has('proof_hash') && $request->has('nonce')) {
+            $proofController = new \App\Http\Controllers\ProofOfWorkController();
 
-        // Apply mining bonus for rare hash patterns
-        if (str_starts_with($image->hash, '000')) {
-            $totalPoints *= 5; // Legendary bonus
-        } elseif (str_starts_with($image->hash, '21e8')) {
-            $totalPoints *= 2; // Common pattern bonus
+            // Create data string for image mining
+            $data = "image_mine:{$image->id}:{$image->hash}:{$request->nonce}";
+            $pattern = $this->detectHashPattern($request->proof_hash);
+
+            $verification = $proofController->verifyProof(
+                $data,
+                $request->nonce,
+                $request->proof_hash,
+                $pattern
+            );
+
+            if (!$verification['valid']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $verification['error'] ?? 'Proof of work verification failed'
+                ], 400);
+            }
+
+            // Award points based on actual PoW pattern
+            $totalPoints = $this->calculateImageMiningPoints($request->proof_hash, $pattern);
+
+            // Create ProofOfWork record
+            \App\Models\ProofOfWork::create([
+                'thread_id' => null, // Image mining doesn't relate to threads
+                'hash' => $request->proof_hash,
+                'nonce' => $request->nonce,
+                'data' => $data,
+                'pattern' => $pattern,
+                'points' => $totalPoints,
+                'ip_address' => $request->ip(),
+                'verified_at' => now()
+            ]);
+
+        } else {
+            // Fallback to simplified mining for UI interactions without real PoW
+            $hashRate = $request->hash_rate ?? rand(500, 2000);
+            $basePoints = max(5, floor($hashRate / 50));
+            $bonusPoints = rand(5, 25);
+            $totalPoints = $basePoints + $bonusPoints;
+
+            // Apply multipliers based on image's file hash patterns
+            if (str_starts_with($image->hash, '000')) {
+                $totalPoints *= 10;
+            } elseif (str_starts_with($image->hash, '21e8')) {
+                $totalPoints *= 3;
+            } elseif (str_starts_with($image->hash, '666')) {
+                $totalPoints *= 15;
+            } elseif (str_starts_with($image->hash, 'dead')) {
+                $totalPoints *= 8;
+            }
+        }
+
+        // Rare chance for MEGA JACKPOT
+        $jackpot = rand(1, 100) <= 5;
+        if ($jackpot) {
+            $totalPoints *= 5;
         }
 
         $image->awardPoW($totalPoints);
+
+        $message = "Mined {$totalPoints} PoW points!";
+        if ($jackpot) {
+            $message = "🎰 MEGA JACKPOT! {$totalPoints} PoW points!";
+        } elseif (str_starts_with($image->hash, '000')) {
+            $message = "💎 LEGENDARY HASH! {$totalPoints} PoW points!";
+        } elseif (str_starts_with($image->hash, '666')) {
+            $message = "😈 CURSED HASH! {$totalPoints} PoW points!";
+        } elseif (str_starts_with($image->hash, 'dead')) {
+            $message = "💀 DEATH HASH! {$totalPoints} PoW points!";
+        }
 
         return response()->json([
             'success' => true,
             'points' => $totalPoints,
             'new_total' => $image->fresh()->total_pow_earned,
-            'message' => "Mined {$totalPoints} PoW points!"
+            'message' => $message,
+            'jackpot' => $jackpot,
+            'hash_pattern' => substr($image->hash, 0, 8),
+            'verified_pow' => $request->has('proof_hash')
         ]);
+    }
+
+    /**
+     * Detect hash pattern for PoW verification
+     */
+    private function detectHashPattern($hash)
+    {
+        $hash = strtolower($hash);
+        if (str_starts_with($hash, '000021e8')) return '000021e8';
+        if (str_starts_with($hash, '21e8000')) return '21e8000';
+        if (str_starts_with($hash, '21e800')) return '21e800';
+        if (str_starts_with($hash, '21e80')) return '21e80';
+        if (str_starts_with($hash, '21e8')) return '21e8';
+        if (str_starts_with($hash, '000')) return '000'; // Special case for legendary
+        if (str_starts_with($hash, '666')) return '666'; // Special case for cursed
+        if (str_starts_with($hash, 'dead')) return 'dead'; // Special case for death
+        return '21';
+    }
+
+    /**
+     * Calculate points for verified image mining
+     */
+    private function calculateImageMiningPoints($hash, $pattern)
+    {
+        $basePoints = [
+            '21' => 1,
+            '21e8' => 5,
+            '21e80' => 25,
+            '21e800' => 125,
+            '21e8000' => 625,
+            '000021e8' => 3125,
+            '000' => 500,  // Legendary
+            '666' => 750,  // Cursed
+            'dead' => 400  // Death
+        ];
+
+        // Image mining gets bonus multiplier for special engagement
+        $points = ($basePoints[$pattern] ?? 1) * 2;
+
+        // Additional bonus for rare image hash patterns
+        return $points + rand(5, 50);
     }
 
     public function upload(Request $request)
     {
         $request->validate([
-            'image' => 'required|image|mimes:jpeg,jpg,png,gif|max:10240', // 10MB max
+            'image' => 'required|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600', // 25MB max
             'auto_dither' => 'boolean'
         ]);
 

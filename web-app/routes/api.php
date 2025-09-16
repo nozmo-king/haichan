@@ -4,18 +4,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\ForumApiController;
 use App\Http\Controllers\Api\AuthApiController;
+use App\Http\Controllers\Api\ProofController;
 
 // API Authentication routes
 Route::post('/auth/challenge', [AuthApiController::class, 'getChallenge'])->middleware('throttle:25,1');
 Route::post('/auth/login', [AuthApiController::class, 'login'])->middleware('throttle:25,1');
 
-// Mining/Proof of Work routes (no auth required)
-Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
-Route::post('/post-bump', [App\Http\Controllers\ProofOfWorkController::class, 'postBump']);
-Route::post('/{boardName}/thread/{threadId}/bump', [App\Http\Controllers\ProofOfWorkController::class, 'bumpThread']);
-Route::get('/mining-stats', [App\Http\Controllers\ProofOfWorkController::class, 'getStats']);
-Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
-Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
+// Unified Proof of Work system (no auth required)
+Route::post('/proof', [ProofController::class, 'submit']);
+Route::get('/proof/stats', [ProofController::class, 'stats']);
 
 // Public subscription routes (requires public key but not auth token)
 Route::post('/subscription/activate-for-key', [App\Http\Controllers\Api\SubscriptionApiController::class, 'activateForPublicKey'])->middleware('throttle:25,1');

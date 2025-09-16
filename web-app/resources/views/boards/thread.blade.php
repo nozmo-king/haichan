@@ -67,9 +67,16 @@
         @endif
 
         <!-- Original Post -->
-        <div id="post{{ $thread->id }}" style="background: #F5F5DC; border: 2px solid #708B75; border-radius: 8px; padding: 30px; margin-bottom: 30px;"
+        <div id="post{{ $thread->id }}" style="background: #F5F5DC; border: 2px solid #708B75; border-radius: 8px; padding: 30px; margin-bottom: 30px; position: relative;"
              data-mine-type="thread" data-mine-target="thread-{{ $thread->id }}" data-mine-weight="60"
              data-thread-id="{{ $thread->id }}" data-thread-title="{{ $thread->title ?: 'Thread #' . $thread->id }}">
+
+            @if($thread->pow_difficulty && $thread->pow_difficulty > 0)
+            <!-- PoW Mining Badge -->
+            <div style="position: absolute; top: -10px; right: 20px; background: linear-gradient(135deg, #708B75, #9AB87A); color: #FFFFEE; padding: 6px 16px; font-size: 12px; border-radius: 15px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.2); border: 3px solid #FFFFEE; z-index: 10;">
+                ⛏️ {{ number_format($thread->pow_difficulty, 2) }}
+            </div>
+            @endif
 
             <!-- Post Header -->
             <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #9AB87A;">
@@ -82,6 +89,23 @@
                         <div><a href="#post{{ $thread->id }}" style="color: #9AB87A; text-decoration: none;">No.{{ $thread->id }}</a></div>
                     </div>
                 </div>
+
+                @if($thread->pow_hash)
+                <!-- Proof of Work Hash Display -->
+                <div style="margin-top: 12px; padding: 8px; background: rgba(154, 184, 122, 0.1); border: 1px solid #9AB87A; border-radius: 4px;">
+                    <div style="font-size: 10px; color: #708B75; font-weight: bold; margin-bottom: 4px;">
+                        ⛏️ PROOF OF WORK • SHA256 HASH
+                    </div>
+                    <div style="font-family: 'Courier New', monospace; font-size: 11px; color: #444B6E; word-break: break-all; line-height: 1.2;">
+                        {{ $thread->pow_hash }}
+                    </div>
+                    @if($thread->pow_difficulty)
+                    <div style="font-size: 9px; color: #9AB87A; margin-top: 4px;">
+                        Difficulty: {{ number_format($thread->pow_difficulty, 2) }}
+                    </div>
+                    @endif
+                </div>
+                @endif
             </div>
 
             <!-- Post Content -->
@@ -157,8 +181,8 @@
 
                 <!-- File Upload -->
                 <div style="margin-bottom: 25px;">
-                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Image (optional)</label>
-                    <input type="file" name="image" accept="image/*"
+                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Media (optional) - Images, WebM, MP4</label>
+                    <input type="file" name="image" accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif"
                            style="width: 100%; padding: 10px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 12px; box-sizing: border-box;">
                 </div>
 

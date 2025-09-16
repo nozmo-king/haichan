@@ -1,33 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Image Library - Haichan</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/css/haichan.css">
-    @vite('resources/js/simple-mining.js')
-    <style>
-        @keyframes strobe {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-        }
-        .strobing-emoji {
-            animation: strobe 2s infinite;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #FFFACD 0%, #F0F8FF 100%);
-            font-family: 'Georgia', serif;
-            min-height: 100vh;
-        }
-    </style>
-</head>
-<body>
+@extends('layout')
+
+@section('title', 'Image Library - Haichan')
+
+@section('content')
 <!-- Japanese Web Aesthetic Container with Homepage Style -->
 <div style="margin: 60px auto; max-width: 900px; background: #F5F5DC; border: 2px solid #708B75; box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);">
     <!-- Header with proper color scheme -->
@@ -44,7 +19,7 @@
 
         <div style="width: 80px; height: 2px; background: linear-gradient(to right, #708B75, #9AB87A); margin: 10px auto;"></div>
 
-        <p class="fade-text" style="color: #708B75; font-size: 12px; line-height: 1.5; margin: 8px 0 0 0; font-weight: 400;" data-en="Mineable image collection" data-jp="マイニング可能な画像コレクション">Mineable image collection</p>
+        <p style="color: #708B75; font-size: 12px; line-height: 1.5; margin: 8px 0 0 0; font-weight: 400;">Proof-of-work sorted image library</p>
     </div>
 
     <!-- Content area -->
@@ -270,11 +245,8 @@ class ImageLibrarySystem {
     }
 
     startShiftingAnimation() {
-        if (this.currentSort === 'shifting') {
-            setInterval(() => {
-                this.performShift();
-            }, 3000 + Math.random() * 2000); // Random interval between 3-5 seconds
-        }
+        // Disabled automatic shifting - images stay in place
+        // Real-time PoW sorting happens only on user action or new uploads
     }
 
     performShift() {
@@ -351,17 +323,45 @@ class ImageLibrarySystem {
     }
 
     async mineImage(imageId) {
-        const btn = document.querySelector(`[data-image-id="${imageId}"]`);
+        const btn = document.querySelector(`.mine-image-btn[data-image-id="${imageId}"]`);
+        const imageElement = btn.parentElement;
         const originalText = btn.textContent;
 
+        // Add mining visual effects
+        imageElement.classList.add('mining-active');
         btn.textContent = 'MINING...';
         btn.disabled = true;
+        btn.style.background = 'linear-gradient(45deg, #FFD700, #FFA500)';
 
-        // Simulate mining process
-        const miningTime = Math.random() * 3000 + 2000; // 2-5 seconds
-        const hashRate = Math.floor(Math.random() * 1000) + 500; // 500-1500 H/s
+        // Simulate mining process with more realistic timing
+        const miningTime = Math.random() * 4000 + 1500; // 1.5-5.5 seconds
+        const hashRate = Math.floor(Math.random() * 1500) + 500; // 500-2000 H/s
+
+        // Show mining progress
+        let progress = 0;
+        const miningInterval = setInterval(() => {
+            progress += Math.random() * 20;
+            if (progress < 100) {
+                btn.textContent = `MINING... ${Math.floor(progress)}%`;
+            }
+        }, 200);
 
         setTimeout(async () => {
+            clearInterval(miningInterval);
+            btn.textContent = 'PROCESSING...';
+
+            // Try to get proof-of-work if simple mining is available
+            let proofData = {};
+            if (window.simpleMiner && typeof window.simpleMiner.getLatestProof === 'function') {
+                const proof = window.simpleMiner.getLatestProof();
+                if (proof && proof.hash && proof.nonce) {
+                    proofData = {
+                        proof_hash: proof.hash,
+                        nonce: proof.nonce
+                    };
+                }
+            }
+
             try {
                 const response = await fetch('/api/image-library/mine', {
                     method: 'POST',
@@ -371,37 +371,231 @@ class ImageLibrarySystem {
                     },
                     body: JSON.stringify({
                         image_id: imageId,
-                        hash_rate: hashRate
+                        hash_rate: hashRate,
+                        ...proofData
                     })
                 });
 
                 const result = await response.json();
 
                 if (result.success) {
-                    btn.textContent = `+${result.points} PoW!`;
-                    btn.style.background = '#4CAF50';
+                    // Remove mining effects
+                    imageElement.classList.remove('mining-active');
 
-                    // Update PoW badge
-                    const badge = btn.parentElement.querySelector('div[style*="position: absolute"]');
+                    // Show exciting message based on what happened!
+                    let buttonColor = '#4CAF50';
+                    let showTime = 3000;
+                    let specialClass = '';
+
+                    if (result.jackpot) {
+                        btn.textContent = '🎰 MEGA JACKPOT!';
+                        buttonColor = '#FFD700';
+                        showTime = 5000;
+                        imageElement.classList.add('jackpot-win');
+                        // Add jackpot particles effect
+                        this.showJackpotEffect(imageElement);
+                    } else if (result.hash_pattern.startsWith('000')) {
+                        btn.textContent = '💎 LEGENDARY!';
+                        buttonColor = '#8A2BE2';
+                        showTime = 4000;
+                        specialClass = 'hash-legendary';
+                    } else if (result.hash_pattern.startsWith('666')) {
+                        btn.textContent = '😈 CURSED!';
+                        buttonColor = '#DC143C';
+                        showTime = 4000;
+                        specialClass = 'hash-cursed';
+                    } else if (result.hash_pattern.startsWith('dead')) {
+                        btn.textContent = '💀 DEATH!';
+                        buttonColor = '#000000';
+                        btn.style.color = '#FFFFFF';
+                        showTime = 4000;
+                        specialClass = 'hash-death';
+                    } else if (result.hash_pattern.startsWith('21e8')) {
+                        btn.textContent = '🚀 BONUS!';
+                        buttonColor = '#FF6347';
+                        showTime = 3500;
+                        specialClass = 'hash-bonus';
+                    } else {
+                        btn.textContent = `+${result.points} PoW!`;
+                    }
+
+                    // Apply special styling
+                    if (specialClass) {
+                        imageElement.classList.add(specialClass);
+                        setTimeout(() => imageElement.classList.remove(specialClass), showTime);
+                    }
+
+                    btn.style.background = buttonColor;
+                    btn.style.fontSize = '8px';
+                    btn.style.fontWeight = 'bold';
+
+                    // Show floating points animation
+                    this.showFloatingPoints(imageElement, result.points, result.message);
+
+                    // Show verified PoW indicator if this was verified
+                    if (result.verified_pow) {
+                        const verifyIcon = document.createElement('div');
+                        verifyIcon.textContent = '✅ VERIFIED';
+                        verifyIcon.style.position = 'absolute';
+                        verifyIcon.style.top = '5px';
+                        verifyIcon.style.left = '5px';
+                        verifyIcon.style.fontSize = '8px';
+                        verifyIcon.style.background = '#4CAF50';
+                        verifyIcon.style.color = 'white';
+                        verifyIcon.style.padding = '2px 4px';
+                        verifyIcon.style.borderRadius = '2px';
+                        verifyIcon.style.zIndex = '999';
+                        imageElement.appendChild(verifyIcon);
+                        setTimeout(() => verifyIcon.remove(), showTime);
+                    }
+
+                    // Update PoW badge with animation
+                    const badge = imageElement.querySelector('div[style*="position: absolute"]');
                     if (badge) {
+                        badge.style.animation = 'pulse 0.5s ease-in-out';
                         badge.textContent = `⛏️${result.new_total}`;
+                        badge.style.background = buttonColor;
                     }
 
                     setTimeout(() => {
                         btn.textContent = originalText;
                         btn.style.background = 'linear-gradient(135deg, #708B75, #9AB87A)';
+                        btn.style.fontSize = '7px';
+                        btn.style.fontWeight = 'normal';
+                        btn.style.color = '';
                         btn.disabled = false;
-                    }, 2000);
+                        imageElement.classList.remove('jackpot-win');
+                        if (badge) {
+                            badge.style.animation = '';
+                            badge.style.background = result.new_total > 100 ? '#CD5C5C' : (result.new_total > 50 ? '#B87333' : '#708B75');
+                        }
+                    }, showTime);
                 }
             } catch (error) {
                 console.error('Mining failed:', error);
-                btn.textContent = 'ERROR';
+                imageElement.classList.remove('mining-active');
+                btn.textContent = 'FAILED!';
+                btn.style.background = '#DC143C';
+                btn.style.color = '#FFFFFF';
+
                 setTimeout(() => {
                     btn.textContent = originalText;
+                    btn.style.background = 'linear-gradient(135deg, #708B75, #9AB87A)';
+                    btn.style.color = '';
                     btn.disabled = false;
                 }, 2000);
             }
         }, miningTime);
+    }
+
+    showJackpotEffect(imageElement) {
+        // Create golden particle explosion
+        for (let i = 0; i < 15; i++) {
+            const particle = document.createElement('div');
+            particle.textContent = ['💰', '💎', '🎰', '⭐', '✨'][Math.floor(Math.random() * 5)];
+            particle.style.position = 'absolute';
+            particle.style.left = '50%';
+            particle.style.top = '50%';
+            particle.style.fontSize = '12px';
+            particle.style.zIndex = '1000';
+            particle.style.pointerEvents = 'none';
+            particle.style.transform = 'translate(-50%, -50%)';
+
+            imageElement.appendChild(particle);
+
+            // Animate particles
+            const angle = (i / 15) * 2 * Math.PI;
+            const distance = 80 + Math.random() * 40;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+
+            particle.animate([
+                { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
+                { transform: `translate(${x}px, ${y}px) scale(1)`, opacity: 1 },
+                { transform: `translate(${x * 1.5}px, ${y * 1.5}px) scale(0.5)`, opacity: 0 }
+            ], {
+                duration: 2000,
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+            }).onfinish = () => particle.remove();
+        }
+    }
+
+    showFloatingPoints(imageElement, points, message) {
+        const floatingText = document.createElement('div');
+        floatingText.textContent = message || `+${points} PoW!`;
+        floatingText.style.position = 'absolute';
+        floatingText.style.left = '50%';
+        floatingText.style.top = '20%';
+        floatingText.style.transform = 'translateX(-50%)';
+        floatingText.style.fontSize = '10px';
+        floatingText.style.fontWeight = 'bold';
+        floatingText.style.color = '#FFD700';
+        floatingText.style.zIndex = '999';
+        floatingText.style.pointerEvents = 'none';
+        floatingText.style.textShadow = '1px 1px 2px rgba(0,0,0,0.8)';
+
+        imageElement.appendChild(floatingText);
+
+        // Animate floating up
+        floatingText.animate([
+            { transform: 'translateX(-50%) translateY(0px)', opacity: 1, fontSize: '10px' },
+            { transform: 'translateX(-50%) translateY(-30px)', opacity: 1, fontSize: '12px' },
+            { transform: 'translateX(-50%) translateY(-60px)', opacity: 0, fontSize: '8px' }
+        ], {
+            duration: 2500,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        }).onfinish = () => floatingText.remove();
+    }
+
+    addNewImageToLibrary(imageData) {
+        const grid = document.getElementById('image-library-grid');
+
+        // Create new image element HTML
+        const imageHTML = `
+            <div class="library-image" style="position: relative; cursor: pointer; border-radius: 5px; overflow: hidden; transition: all 0.3s ease;"
+                 data-image-id="${imageData.id}" data-pow="${imageData.total_pow_earned}" data-usage="${imageData.usage_count}"
+                 data-filename="${imageData.filename}" data-hash="${imageData.hash}"
+                 onclick="openImageModal('${imageData.id}')">
+
+                <img src="/api/image-library/${imageData.id}/thumb" style="width: 100%; height: 150px; object-fit: cover;">
+
+                <!-- PoW Badge -->
+                <div style="position: absolute; top: 5px; right: 5px; background: #708B75; color: #FFFFEE; padding: 2px 6px;
+                           font-size: 8px; border-radius: 10px; font-weight: bold; min-width: 20px; text-align: center;">
+                    ⛏️${imageData.total_pow_earned}
+                </div>
+
+                <!-- Mining Button -->
+                <button class="mine-image-btn" data-image-id="${imageData.id}"
+                        style="position: absolute; bottom: 5px; left: 5px; background: linear-gradient(135deg, #708B75, #9AB87A);
+                               color: #FFFFEE; border: none; padding: 4px 8px; font-size: 7px; border-radius: 3px;
+                               cursor: pointer; font-weight: bold; transition: all 0.2s ease;"
+                        onclick="event.stopPropagation();">MINE ⛏️</button>
+
+                <!-- File info -->
+                <div style="position: absolute; bottom: 5px; right: 5px; background: rgba(0,0,0,0.7); color: #FFFFEE;
+                           padding: 2px 4px; font-size: 6px; border-radius: 2px;">
+                    ${imageData.usage_count} uses
+                </div>
+            </div>
+        `;
+
+        // Insert at the beginning (most recent first)
+        grid.insertAdjacentHTML('afterbegin', imageHTML);
+
+        // Re-setup mining buttons for the new element
+        this.setupMiningButtons();
+
+        // Add entrance animation
+        const newImage = grid.firstElementChild;
+        newImage.style.transform = 'scale(0.8)';
+        newImage.style.opacity = '0';
+
+        setTimeout(() => {
+            newImage.style.transform = 'scale(1)';
+            newImage.style.opacity = '1';
+            newImage.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+        }, 100);
     }
 
     async uploadImage() {
@@ -433,9 +627,15 @@ class ImageLibrarySystem {
 
             if (result.success) {
                 statusDiv.textContent = `✅ Uploaded! Hash: ${result.hash.substring(0, 16)}... | PoW: ${result.pow_points}`;
+                // Add new image to library dynamically instead of reloading page
+                this.addNewImageToLibrary(result.image);
+
+                // Clear form
+                fileInput.value = '';
                 setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                    statusDiv.textContent = '';
+                    statusDiv.style.display = 'none';
+                }, 3000);
             }
         } catch (error) {
             statusDiv.textContent = '❌ Upload failed. Please try again.';
@@ -513,12 +713,32 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- CSS for strobing emojis -->
+<!-- CSS for strobing emojis and mining animations -->
 <style>
 @keyframes strobe {
     0% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.7; transform: scale(1.1); }
     100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+@keyframes mining-glow {
+    0% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.3); }
+    50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), inset 0 0 10px rgba(255, 215, 0, 0.3); }
+    100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.3); }
+}
+
+@keyframes jackpot-spin {
+    0% { transform: rotate(0deg) scale(1); }
+    25% { transform: rotate(90deg) scale(1.1); }
+    50% { transform: rotate(180deg) scale(1.2); }
+    75% { transform: rotate(270deg) scale(1.1); }
+    100% { transform: rotate(360deg) scale(1); }
 }
 
 .strobing-emoji {
@@ -533,6 +753,19 @@ document.addEventListener('DOMContentLoaded', () => {
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(68, 75, 110, 0.3);
 }
+
+.mining-active {
+    animation: mining-glow 1s infinite;
+}
+
+.jackpot-win {
+    animation: jackpot-spin 1s ease-in-out;
+}
+
+/* Special hash pattern styling */
+.hash-legendary { border: 3px solid #8A2BE2 !important; box-shadow: 0 0 15px rgba(138, 43, 226, 0.5); }
+.hash-cursed { border: 3px solid #DC143C !important; box-shadow: 0 0 15px rgba(220, 20, 60, 0.5); }
+.hash-death { border: 3px solid #000 !important; box-shadow: 0 0 15px rgba(0, 0, 0, 0.8); }
+.hash-bonus { border: 3px solid #FF6347 !important; box-shadow: 0 0 15px rgba(255, 99, 71, 0.5); }
 </style>
-</body>
-</html>
+@endsection

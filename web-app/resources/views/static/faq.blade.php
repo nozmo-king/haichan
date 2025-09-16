@@ -3,15 +3,36 @@
 @section('title', 'FAQ - Haichan')
 
 @section('content')
-@include('components.navigation')
-
-<div class="container" style="padding: 20px;">
-    <div class="post-container" style="margin: 0 auto; max-width: 800px;">
-        <div class="post-header">
-            <h2>❓ Frequently Asked Questions</h2>
+<!-- Japanese Web Aesthetic Container with Homepage Style -->
+<div style="margin: 60px auto 40px auto; max-width: 900px; background: #F5F5DC; border: 2px solid #708B75; box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);">
+    <!-- Header with proper color scheme -->
+    <div style="background: linear-gradient(135deg, #FFFACD 0%, #F5F5DC 100%); padding: 25px 40px; border-bottom: 2px solid #708B75; position: relative; text-align: center;">
+        <div style="position: absolute; top: 15px; right: 20px; background: #3D315B; color: #FFFFEE; padding: 4px 12px; font-size: 9px; font-weight: 500; letter-spacing: 0.5px; border-radius: 3px;">
+            β版
         </div>
-        
-        <div class="post-content" style="padding: 20px; line-height: 1.6;">
+
+        <h1 style="font-size: 28px; color: #3D315B; margin: 0 0 12px 0; font-weight: 300; letter-spacing: 1.5px; font-family: 'Nova Cut', serif;">
+            <span style="font-size: 26px; color: #B87333;">❓</span>
+            Frequently Asked Questions
+            <span style="font-size: 26px; color: #CD5C5C;">📚</span>
+        </h1>
+
+        <div style="width: 80px; height: 2px; background: linear-gradient(to right, #708B75, #9AB87A); margin: 15px auto;"></div>
+
+        <p style="color: #708B75; font-size: 13px; line-height: 1.6; margin: 15px 0 0 0; font-weight: 400;">Understanding Haichan's computational proof system</p>
+
+        <!-- Navigation breadcrumb with proper spacing -->
+        <div style="margin-top: 20px; font-size: 11px; color: #444B6E;">
+            <a href="{{ route('boards.index') }}" style="color: #708B75; text-decoration: none; margin-right: 10px;">[Boards]</a>
+            <a href="/" style="color: #708B75; text-decoration: none; margin-right: 10px;">[Home]</a>
+            <span style="color: #9AB87A;">[FAQ]</span>
+        </div>
+    </div>
+
+    <!-- Content area with proper spacing -->
+    <div style="padding: 40px; background: #FFFFEE;">
+
+        <div style="color: #3D315B; font-size: 13px; line-height: 1.8;">
             
             <h3>⛏️ Mining & Proof-of-Work</h3>
             
