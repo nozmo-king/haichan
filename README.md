@@ -329,7 +329,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 - **GitHub Issues**: Report bugs and request features
-- **Documentation**: Check the `web-app/CLAUDE.md` file for development guidance
+- **Documentation**: Check the source code and comments for development guidance
 - **Community**: Join discussions in GitHub Discussions
 
 ---
