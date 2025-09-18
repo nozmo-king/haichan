@@ -49,8 +49,27 @@ class ForumController extends Controller
             })
             ->sortByDesc('accumulated_points') // Auto-bump based on mining energy
             ->take(100);
-        
+
         return view('boards.catalog', ['board' => $boardModel, 'threads' => $threads]);
+    }
+
+    public function showTheMC()
+    {
+        // Get all threads from all boards with their board info
+        $threads = Thread::with(['board'])
+            ->withCount('posts')
+            ->get()
+            ->map(function ($thread) {
+                $thread->accumulated_points = \App\Models\ProofSubmission::getTargetPoints('thread', $thread->id);
+                return $thread;
+            })
+            ->sortByDesc('accumulated_points') // Auto-bump based on mining energy
+            ->take(200); // Show more threads since it's from all boards
+
+        $totalBoards = Board::count();
+        $totalThreads = Thread::count();
+
+        return view('boards.the-mc', compact('threads', 'totalBoards', 'totalThreads'));
     }
 
     public function showThread($board, $threadId)
@@ -176,10 +195,16 @@ class ForumController extends Controller
     public function storeReply(Request $request, $board, $threadId)
     {
         // Log reply submission
-        Log::info('Reply submission', [
+        Log::info('Reply submission received', [
+            'board' => $board,
             'thread_id' => $threadId,
             'content_length' => strlen($request->input('content', '')),
-            'has_image' => $request->hasFile('image')
+            'has_image' => $request->hasFile('image'),
+            'pow_nonce' => $request->input('pow_nonce'),
+            'pow_hash' => $request->input('pow_hash') ? substr($request->input('pow_hash'), 0, 16) . '...' : null,
+            'pow_challenge_id' => $request->input('pow_challenge_id'),
+            'request_method' => $request->method(),
+            'user_agent' => substr($request->userAgent(), 0, 100)
         ]);
 
         $request->validate([

@@ -336,6 +336,14 @@ async function mineReplyProof(threadId, content, pattern) {
                 const formData = new FormData(replyForm);
                 const correctUrl = '/{{ strtolower($board->code) }}/{{ $thread->id }}/reply';
 
+                console.log('🚀 Submitting reply with proof:', {
+                    url: correctUrl,
+                    nonce: nonce,
+                    hash: hashHex,
+                    challenge_id: challengeId,
+                    content_length: formData.get('content') ? formData.get('content').length : 0
+                });
+
                 fetch(correctUrl, {
                     method: 'POST',
                     body: formData,

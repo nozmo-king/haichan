@@ -38,6 +38,9 @@ Route::get('/boards', function () {
 
 // Forum routes
 Route::get('/forum', [App\Http\Controllers\ForumController::class, 'index'])->name('forum.index');
+
+// The MC - shows all threads from all boards
+Route::get('/catalog', [App\Http\Controllers\ForumController::class, 'showTheMC'])->name('the.mc');
 Route::get('/forum/board/{code}', [App\Http\Controllers\ForumController::class, 'showBoard'])->name('forum.board');
 Route::get('/forum/board/{code}/thread/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])->name('forum.thread.alt');
 Route::get('/forum/board/{code}/create', [App\Http\Controllers\ForumController::class, 'createThread'])->name('forum.create');

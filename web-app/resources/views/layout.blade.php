@@ -435,10 +435,16 @@
             // Header seizure effect
             const headerText = document.getElementById('header-text');
             let seizureInterval;
+            let seizureActive = false;
 
             headerText.addEventListener('mouseenter', function() {
+                seizureActive = true;
                 let count = 0;
                 seizureInterval = setInterval(function() {
+                    if (!seizureActive) {
+                        clearInterval(seizureInterval);
+                        return;
+                    }
                     const letters = headerText.textContent.split('').map((letter, i) => {
                         const randomX = (Math.random() - 0.5) * 20;
                         const randomY = (Math.random() - 0.5) * 15;
@@ -451,11 +457,13 @@
                     count++;
                     if (count > 100) { // Prevent infinite seizure
                         clearInterval(seizureInterval);
+                        seizureActive = false;
                     }
                 }, 50); // Very fast seizure effect
             });
 
             headerText.addEventListener('mouseleave', function() {
+                seizureActive = false;
                 clearInterval(seizureInterval);
                 headerText.innerHTML = 'HAICHAN';
                 headerText.style.transform = '';
