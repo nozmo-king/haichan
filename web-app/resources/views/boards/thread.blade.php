@@ -330,7 +330,40 @@ async function mineReplyProof(threadId, content, pattern) {
                 document.getElementById('reply-pow-hash').value = hashHex;
                 replyMiningInProgress = false;
                 statusEl.style.display = 'none';
-                document.getElementById('reply-form-actual').submit();
+
+                // Submit directly via fetch instead of form.submit() to avoid conflicts
+                const replyForm = document.getElementById('reply-form-actual');
+                const formData = new FormData(replyForm);
+                const correctUrl = '/{{ strtolower($board->code) }}/{{ $thread->id }}/reply';
+
+                fetch(correctUrl, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        response.text().then(text => {
+                            console.error('Reply failed with status:', response.status, 'Response:', text);
+                            alert('Reply failed: ' + response.status + ' - Please check console for details.');
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Reply error:', error);
+                    alert('Reply failed: ' + error.message);
+                })
+                .finally(() => {
+                    // Reset the button
+                    document.getElementById('mine-reply-btn').disabled = false;
+                    document.getElementById('mine-reply-btn').textContent = 'Mine & Submit Reply';
+                });
+
                 return;
             }
             nonce++;
@@ -385,36 +418,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const correctAction = '/{{ strtolower($board->code) }}/{{ $thread->id }}/reply';
         replyForm.action = correctAction;
 
-        // Intercept form submission and force correct URL
-        replyForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(replyForm);
-            const correctUrl = '/{{ strtolower($board->code) }}/{{ $thread->id }}/reply';
-
-            fetch(correctUrl, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-            })
-            .then(response => {
-                if (response.ok) {
-                    window.location.reload();
-                } else {
-                    response.text().then(text => {
-                        console.error('Reply failed with status:', response.status, 'Response:', text);
-                        alert('Reply failed: ' + response.status + ' - Please check console for details.');
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Reply error:', error);
-                alert('Reply failed: ' + error.message);
-            });
-        });
+        // Form submission is now handled directly in the mining function
+        // This prevents accidental form submission without mining
     }
 });
 </script>
