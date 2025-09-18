@@ -59,7 +59,7 @@
             <h3>📋 Forum Basics</h3>
             
             <h4>Q: How do I quote posts?</h4>
-            <p>Use >>123456 format where 123456 is the post number, or simply click on post numbers to automatically quote them in your reply.</p>
+            <p>Use >>PostID format where PostID is the post number, or simply click on post numbers to automatically quote them in your reply.</p>
             
             <h4>Q: What is greentext?</h4>
             <p>Lines starting with > appear in green text. This is traditionally used for quoting, storytelling, or creating narrative formats in posts.</p>

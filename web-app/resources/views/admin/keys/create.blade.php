@@ -20,7 +20,7 @@
                    name="public_key" 
                    id="public_key"
                    value="{{ old('public_key') }}"
-                   placeholder="02a1b2c3d4e5f6..."
+                   placeholder="02..."
                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 font-mono text-sm @error('public_key') border-red-500 @enderror">
             @error('public_key')
                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

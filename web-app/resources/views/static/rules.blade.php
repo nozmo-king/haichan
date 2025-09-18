@@ -55,7 +55,7 @@
 
             <h3>🔗 Posting Guidelines</h3>
             <ul>
-                <li><strong>Quoting:</strong> Use >>123456 to reference other posts</li>
+                <li><strong>Quoting:</strong> Use >>PostID to reference other posts</li>
                 <li><strong>Greentext:</strong> Lines starting with > appear in green</li>
                 <li><strong>Thread bumping:</strong> Contribute meaningfully to discussions</li>
                 <li><strong>Sage posts:</strong> Use sage when not contributing to thread topic</li>

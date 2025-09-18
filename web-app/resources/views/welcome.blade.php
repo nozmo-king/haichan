@@ -22,7 +22,7 @@
                 <div style="width: 120px; height: 3px; background: linear-gradient(to right, #708B75, #9AB87A); margin: 20px auto;"></div>
 
                 <p style="color: #708B75; font-size: 16px; line-height: 1.6; margin: 20px 0; font-weight: 500; max-width: 600px; margin-left: auto; margin-right: auto;">
-                    Text requires computational cost. Messages verified through SHA-256. No registration. No tracking.
+                    Text requires computational cost. Messages verified through SHA-256.
                 </p>
             </div>
         </div>

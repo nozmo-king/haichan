@@ -96,7 +96,7 @@
                 max-width: 150px;
                 overflow: hidden;
                 text-overflow: ellipsis;
-            ">21e8000abc123def...</div>
+            ">calculating...</div>
             <div style="color: #FFFFEE;">
                 <span style="color: rgba(255,255,238,0.8);">DIFFICULTY:</span>
                 <span id="current-difficulty" style="color: #FFD8D8; font-weight: bold;">21e8</span>
