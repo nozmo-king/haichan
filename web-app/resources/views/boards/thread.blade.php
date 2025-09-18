@@ -298,7 +298,7 @@ function generateChallengeId() {
 
 async function mineReplyProof(threadId, content, pattern) {
     const challengeId = generateChallengeId();
-    const challengeData = `post:${threadId}:${content}:${challengeId}`;
+    const challengeData = `reply:{{ strtolower($board->code) }}:${threadId}:${challengeId}`;
     let nonce = 0, startTime = Date.now(), hashCount = 0;
 
     document.getElementById('reply-pow-challenge-id').value = challengeId;
@@ -396,19 +396,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 method: 'POST',
                 body: formData,
                 headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 }
             })
             .then(response => {
                 if (response.ok) {
                     window.location.reload();
                 } else {
-                    alert('Reply failed. Please try again.');
+                    response.text().then(text => {
+                        console.error('Reply failed with status:', response.status, 'Response:', text);
+                        alert('Reply failed: ' + response.status + ' - Please check console for details.');
+                    });
                 }
             })
             .catch(error => {
                 console.error('Reply error:', error);
-                alert('Reply failed. Please try again.');
+                alert('Reply failed: ' + error.message);
             });
         });
     }
