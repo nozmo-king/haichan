@@ -301,6 +301,9 @@ async function mineReplyProof(threadId, content, pattern) {
     const challengeData = `reply:{{ strtolower($board->code) }}:${threadId}:${challengeId}`;
     let nonce = 0, startTime = Date.now(), hashCount = 0;
 
+    console.log('⛏️ Mining challenge data:', challengeData);
+    console.log('🎯 Looking for pattern:', pattern);
+
     document.getElementById('reply-pow-challenge-id').value = challengeId;
 
     const hashCountEl = document.getElementById('reply-hash-count');
@@ -326,6 +329,11 @@ async function mineReplyProof(threadId, content, pattern) {
             hashRateEl.textContent = rate.toLocaleString();
 
             if (hashHex.startsWith(pattern.toLowerCase())) {
+                console.log('💎 FOUND VALID PROOF!');
+                console.log('🔗 Hash:', hashHex);
+                console.log('🔢 Nonce:', nonce);
+                console.log('📊 Attempts:', hashCount);
+
                 document.getElementById('reply-pow-nonce').value = nonce;
                 document.getElementById('reply-pow-hash').value = hashHex;
                 replyMiningInProgress = false;
@@ -399,6 +407,9 @@ document.addEventListener('DOMContentLoaded', function() {
         replyMiningInProgress = true;
         document.getElementById('mine-reply-btn').disabled = true;
         document.getElementById('mine-reply-btn').textContent = 'Mining...';
+
+        console.log('🚀 Starting reply mining for thread {{ $thread->id }}');
+        console.log('📝 Content:', content);
 
         await mineReplyProof({{ $thread->id }}, content, '21e8');
     });

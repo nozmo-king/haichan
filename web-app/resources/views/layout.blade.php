@@ -573,8 +573,10 @@
         const profanityWords = [
             'fuck', 'shit', 'damn', 'bitch', 'ass', 'hell', 'crap', 'piss',
             'bastard', 'slut', 'whore', 'cock', 'dick', 'pussy', 'cunt', 'fag',
-            'nigger', 'retard', 'gay', 'homo', 'tranny', 'dyke', 'jew', 'kike',
-            'chink', 'spic', 'wetback', 'gook', 'towelhead', 'sand', 'nigga'
+            'nigger', 'gay', 'homo', 'tranny', 'dyke', 'jew', 'kike',
+            'chink', 'spic', 'wetback', 'gook', 'towelhead', 'sand', 'nigga',
+            'sperg', 'autismo', 'downie', 'mongoloid', 'retardation', 'spastic',
+            'gimp', 'cripple', 'tard'
         ];
 
         function blurProfanity() {
