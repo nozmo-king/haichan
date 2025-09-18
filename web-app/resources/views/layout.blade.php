@@ -339,7 +339,7 @@
     <div class="container" style="margin-top: 50px; margin-bottom: 40px;">
         <div class="header">
             <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
-                <h1><a href="/" style="text-decoration: none; color: inherit; font-family: 'Nova Cut', serif;" id="header-text">HAICHAN</a></h1>
+                <h1><a href="/" style="text-decoration: none; color: #3D315B; font-family: 'Nova Cut', serif; font-size: 28px; font-weight: 300; letter-spacing: 2px;" id="header-text">HAICHAN</a></h1>
             </div>
         </div>
         
@@ -568,6 +568,83 @@
                 btn.style.opacity = btn.classList.contains('theme-active') ? '1' : '0.7';
             });
         }
+
+        // Profanity blur system
+        const profanityWords = [
+            'fuck', 'shit', 'damn', 'bitch', 'ass', 'hell', 'crap', 'piss',
+            'bastard', 'slut', 'whore', 'cock', 'dick', 'pussy', 'cunt', 'fag',
+            'nigger', 'retard', 'gay', 'homo', 'tranny', 'dyke', 'jew', 'kike',
+            'chink', 'spic', 'wetback', 'gook', 'towelhead', 'sand', 'nigga'
+        ];
+
+        function blurProfanity() {
+            const textNodes = [];
+            const walker = document.createTreeWalker(
+                document.body,
+                NodeFilter.SHOW_TEXT,
+                null,
+                false
+            );
+
+            let node;
+            while (node = walker.nextNode()) {
+                if (node.parentNode.tagName !== 'SCRIPT' &&
+                    node.parentNode.tagName !== 'STYLE' &&
+                    !node.parentNode.closest('script, style')) {
+                    textNodes.push(node);
+                }
+            }
+
+            textNodes.forEach(textNode => {
+                let text = textNode.textContent;
+                let modified = false;
+
+                profanityWords.forEach(word => {
+                    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                    if (regex.test(text)) {
+                        const parent = textNode.parentNode;
+                        const wrapper = document.createElement('span');
+                        wrapper.innerHTML = text.replace(regex, `<span class="blurred-profanity">${word}</span>`);
+
+                        while (wrapper.firstChild) {
+                            parent.insertBefore(wrapper.firstChild, textNode);
+                        }
+                        parent.removeChild(textNode);
+                        modified = true;
+                    }
+                });
+            });
+        }
+
+        // Run profanity blur on page load and after dynamic content updates
+        document.addEventListener('DOMContentLoaded', blurProfanity);
+
+        // Add MutationObserver to blur profanity in dynamically added content
+        const observer = new MutationObserver(() => {
+            blurProfanity();
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
     </script>
+
+    <!-- Profanity Blur CSS -->
+    <style>
+        .blurred-profanity {
+            filter: blur(4px);
+            transition: filter 0.3s ease;
+            cursor: pointer;
+            border-radius: 3px;
+            padding: 1px 2px;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .blurred-profanity:hover {
+            filter: blur(0px);
+        }
+    </style>
 </body>
 </html>
