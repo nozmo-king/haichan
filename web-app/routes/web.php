@@ -22,7 +22,7 @@ Route::get('/', function () {
 });
 
 // Authentication routes
-Route::get('/login', [AuthController::class, 'showLogin'])->name('auth.login');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/challenge', [AuthController::class, 'getChallenge'])->middleware('throttle:25,1')->name('auth.challenge');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
 Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');

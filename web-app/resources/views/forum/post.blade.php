@@ -28,7 +28,7 @@
         <input type="hidden" name="pow_hash" id="pow_hash_post_{{ $post->id }}" required>
         <input type="hidden" name="pow_challenge_id" id="pow_challenge_id_post_{{ $post->id }}" required>
 
-        <textarea name="content" rows="3" placeholder="Write your reply..." required maxlength="2000"></textarea>
+        <textarea name="content" rows="3" placeholder="Write your reply..." required maxlength="5000"></textarea>
         <div style="margin: 10px 0;">
             <label for="image-post-{{ $post->id }}" style="font-size: 12px;">Image (optional):</label>
             <input type="file" name="image" id="image-post-{{ $post->id }}" accept="image/*"

@@ -30,6 +30,7 @@ class User extends Authenticatable
         'allowed_public_key_id',
         'last_challenge',
         'challenge_expires_at',
+        'username',
     ];
 
     /**
@@ -187,13 +188,14 @@ class User extends Authenticatable
     public static function findOrCreateForPublicKey(string $publicKey): ?self
     {
         $allowedKey = AllowedPublicKey::active()->where('public_key', $publicKey)->first();
-        
+
         if (!$allowedKey) {
             return null;
         }
-        
+
         return self::firstOrCreate(
-            ['allowed_public_key_id' => $allowedKey->id]
+            ['allowed_public_key_id' => $allowedKey->id],
+            ['username' => 'user_' . substr($publicKey, -8)]
         );
     }
 

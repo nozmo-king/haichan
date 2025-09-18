@@ -71,12 +71,10 @@
              data-mine-type="thread" data-mine-target="thread-{{ $thread->id }}" data-mine-weight="60"
              data-thread-id="{{ $thread->id }}" data-thread-title="{{ $thread->title ?: 'Thread #' . $thread->id }}">
 
-            @if($thread->pow_difficulty && $thread->pow_difficulty > 0)
-            <!-- PoW Mining Badge -->
-            <div style="position: absolute; top: -10px; right: 20px; background: linear-gradient(135deg, #708B75, #9AB87A); color: #FFFFEE; padding: 6px 16px; font-size: 12px; border-radius: 15px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.2); border: 3px solid #FFFFEE; z-index: 10;">
-                ⛏️ {{ number_format($thread->pow_difficulty, 2) }}
+            <!-- PoW Mining Badge - Always show for retroactive mining -->
+            <div id="thread-mining-badge" style="position: absolute; top: -10px; right: 20px; background: linear-gradient(135deg, #708B75, #9AB87A); color: #FFFFEE; padding: 6px 16px; font-size: 12px; border-radius: 15px; font-weight: bold; box-shadow: 0 3px 6px rgba(0,0,0,0.2); border: 3px solid #FFFFEE; z-index: 10;">
+                ⛏️ <span id="thread-pow-number">{{ number_format($thread->accumulated_points ?: 0, 2) }}</span>
             </div>
-            @endif
 
             <!-- Post Header -->
             <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #9AB87A;">
@@ -125,7 +123,7 @@
 
                 <div style="flex-grow: 1;">
                     <div style="color: #3D315B; font-size: 14px; line-height: 1.6; margin-bottom: 15px;">
-                        {!! nl2br(e($thread->content)) !!}
+                        {!! App\Helpers\MarkdownHelper::parseContent($thread->content) !!}
                     </div>
                 </div>
             </div>
@@ -169,7 +167,7 @@
                 <!-- Comment Field -->
                 <div style="margin-bottom: 25px;">
                     <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Comment</label>
-                    <textarea name="content" id="reply-content" required rows="6"
+                    <textarea name="content" id="reply-content" required rows="6" maxlength="5000"
                               style="width: 100%; padding: 15px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 13px; line-height: 1.5; resize: vertical; box-sizing: border-box;"></textarea>
                 </div>
 
@@ -215,8 +213,8 @@
 </div>
 
 <script>
-// Hash calculation system
-class PostHashSystem {
+// Reply Hash Calculation System
+class ReplyHashSystem {
     constructor() {
         this.bumpMultiplier = 10;
     }
@@ -229,7 +227,7 @@ class PostHashSystem {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    async calculatePostHash(postId, content) {
+    async calculateReplyHash(postId, content) {
         try {
             const hash = await this.sha256(content);
             const hashElement = document.querySelector(`#hash-${postId} .hash-value`);
@@ -237,19 +235,17 @@ class PostHashSystem {
 
             if (hashElement) {
                 hashElement.textContent = hash;
-                hashElement.style.fontSize = '9px';
-                hashElement.style.wordBreak = 'break-all';
                 if (hash.startsWith('21e8')) {
                     this.trigger21e8Bump(postId, hash, bumpIndicator);
                 }
             }
         } catch (error) {
-            console.error('Hash calculation failed:', error);
+            console.error('Reply hash calculation failed:', error);
         }
     }
 
     trigger21e8Bump(postId, hash, bumpIndicator) {
-        console.log(`🔥 21e8 BUMP! Post #${postId}: ${hash}`);
+        console.log(`🔥 21e8 BUMP! Reply #${postId}: ${hash}`);
         if (bumpIndicator) bumpIndicator.style.display = 'inline';
 
         const post = document.querySelector(`#post${postId}`);
@@ -277,14 +273,26 @@ class PostHashSystem {
             });
             const result = await response.json();
             if (result.success) {
-                console.log(`✅ Bump applied! Post #${postId} +${result.bump_points} points`);
+                console.log(`✅ Reply bump applied! Post #${postId} +${result.bump_points} points`);
             }
         } catch (error) {
-            console.error('Bump submission failed:', error);
+            console.error('Reply bump submission failed:', error);
         }
     }
 
-    // Removed hash calculation - now using unified PoW system
+    processAllReplies() {
+        // Process all reply posts
+        document.querySelectorAll('.post[data-post-id]').forEach(post => {
+            const postId = post.dataset.postId;
+            const contentEl = post.querySelector('.post-text');
+            if (postId && contentEl) {
+                const content = contentEl.textContent.trim();
+                if (content) {
+                    this.calculateReplyHash(postId, content);
+                }
+            }
+        });
+    }
 }
 
 // Reply mining system
@@ -414,11 +422,12 @@ function submitReplyForm(formData, url) {
     });
 }
 
-// Initialize
-const postHashSystem = new PostHashSystem();
+// Initialize Reply Hash System
+const replyHashSystem = new ReplyHashSystem();
 
 document.addEventListener('DOMContentLoaded', function() {
-    postHashSystem.processAllPosts();
+    // Process all existing replies on page load
+    replyHashSystem.processAllReplies();
 
     document.getElementById('mine-reply-btn').addEventListener('click', async () => {
         const content = document.getElementById('reply-content').value.trim();

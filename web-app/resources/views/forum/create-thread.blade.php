@@ -25,7 +25,7 @@
     
     <div class="form-group">
         <label for="content">Content:</label>
-        <textarea name="content" id="content" rows="8" required maxlength="2000" 
+        <textarea name="content" id="content" rows="8" required maxlength="5000" 
                   style="width: 100%; padding: 5px; margin: 5px 0;">{{ old('content') }}</textarea>
         @error('content')
             <div style="color: red; font-size: 12px;">{{ $message }}</div>

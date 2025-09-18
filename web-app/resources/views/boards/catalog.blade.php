@@ -191,7 +191,7 @@
              data-thread-title="{{ $thread->title }}">
 
             @if($thread->accumulated_points > 0)
-            <div class="catalog-pow-badge">{{ number_format($thread->accumulated_points, 1) }}⚡</div>
+            <div class="catalog-pow-badge" data-pow-value="{{ $thread->accumulated_points }}">{{ number_format($thread->accumulated_points, 1) }}⚡</div>
             @endif
 
             @if($thread->image_path)

@@ -65,7 +65,7 @@
     <div style="margin-top: 25px; text-align: center;">
         <p style="font-size: 14px; color: #666;">
             Already have an account? 
-            <a href="{{ route('auth.login') }}" style="color: #34345c; text-decoration: underline;">
+            <a href="{{ route('login') }}" style="color: #34345c; text-decoration: underline;">
                 Sign in
             </a>
         </p>

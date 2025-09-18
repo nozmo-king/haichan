@@ -208,7 +208,7 @@ class ForumController extends Controller
         ]);
 
         $request->validate([
-            'content' => 'required|max:2000',
+            'content' => 'required|max:5000',
             'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',

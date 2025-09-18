@@ -134,10 +134,6 @@ class SimpleMiner {
         this.hashCount++;
         this.nonce++;
 
-        // Debug: Log some hashes to verify generation
-        if (this.hashCount % 1000 === 0) {
-            console.log(`Debug hash #${this.hashCount}: ${hash.substring(0, 8)}... (looking for ${this.pattern})`);
-        }
 
         if (hash.startsWith(this.pattern)) {
             console.log(`💎 PROOF FOUND! ${hash.substring(0, 16)}... after ${this.hashCount} attempts`);
@@ -198,6 +194,16 @@ class SimpleMiner {
                 this.proofsFound++;
                 localStorage.setItem('haichan_proof_count', this.proofsFound.toString());
                 console.log(`✅ Proof accepted! Total proofs found: ${this.proofsFound}`);
+
+                // Update thread mining badge if we're mining a thread
+                if (this.targetType === 'thread') {
+                    this.updateThreadMiningBadge(result.new_difficulty || result.difficulty);
+
+                    // Check if we're on catalog page and reorder threads
+                    if (window.location.pathname.includes('/catalog')) {
+                        this.reorderCatalogByPoW(this.targetId, result.new_difficulty || result.difficulty);
+                    }
+                }
             } else {
                 console.log('❌ Proof rejected:', result.message);
             }
@@ -434,6 +440,67 @@ class SimpleMiner {
         if (targetEl) {
             targetEl.textContent = customName || this.getDisplayName();
         }
+    }
+
+    updateThreadMiningBadge(newDifficulty) {
+        const threadPowEl = document.getElementById('thread-pow-number');
+        if (threadPowEl && newDifficulty !== undefined) {
+            const formattedDifficulty = Number(newDifficulty).toFixed(2);
+            threadPowEl.textContent = formattedDifficulty;
+
+            // Add a brief flash effect to show the update
+            const badge = document.getElementById('thread-mining-badge');
+            if (badge) {
+                badge.style.animation = 'haichan-seizure 0.3s ease-in-out';
+                setTimeout(() => {
+                    badge.style.animation = '';
+                }, 300);
+            }
+
+            console.log(`🔄 Thread mining badge updated to: ${formattedDifficulty}`);
+        }
+    }
+
+    reorderCatalogByPoW(threadId, newPoW) {
+        const catalogGrid = document.querySelector('.catalog-grid');
+        if (!catalogGrid) return;
+
+        const threads = Array.from(catalogGrid.querySelectorAll('.catalog-thread'));
+
+        // Update the PoW badge for the mined thread
+        const minedThread = threads.find(t => t.dataset.threadId === threadId);
+        if (minedThread) {
+            let powBadge = minedThread.querySelector('.catalog-pow-badge');
+            if (!powBadge) {
+                powBadge = document.createElement('div');
+                powBadge.className = 'catalog-pow-badge';
+                minedThread.appendChild(powBadge);
+            }
+            powBadge.textContent = `${Number(newPoW).toFixed(1)}⚡`;
+            powBadge.dataset.powValue = newPoW;
+
+            // Flash the thread
+            minedThread.style.animation = 'haichan-seizure 0.5s ease-in-out';
+            setTimeout(() => {
+                minedThread.style.animation = '';
+            }, 500);
+        }
+
+        // Sort threads by PoW value (highest first)
+        threads.sort((a, b) => {
+            const aPowBadge = a.querySelector('.catalog-pow-badge');
+            const bPowBadge = b.querySelector('.catalog-pow-badge');
+
+            const aPow = aPowBadge ? parseFloat(aPowBadge.dataset.powValue || aPowBadge.textContent.replace('⚡', '')) || 0 : 0;
+            const bPow = bPowBadge ? parseFloat(bPowBadge.dataset.powValue || bPowBadge.textContent.replace('⚡', '')) || 0 : 0;
+
+            return bPow - aPow; // Descending order
+        });
+
+        // Clear and re-append in new order
+        threads.forEach(thread => catalogGrid.appendChild(thread));
+
+        console.log(`🔄 Catalog reordered! Thread ${threadId} with PoW ${newPoW} moved to position`);
     }
 
     getStats() {

@@ -7,9 +7,12 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "furqansiddiqui/bip39-mnemonic-php": "^0.1.7",
+        "kornrunner/secp256k1": "^0.3.0",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.2",
         "laravel/tinker": "^2.10.1",
+        "league/commonmark": "^2.7",
         "paragonie/ecc": "^2.0",
         "stripe/stripe-php": "^17.5"
     },

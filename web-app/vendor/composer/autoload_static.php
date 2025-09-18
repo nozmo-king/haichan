@@ -19,13 +19,13 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         'a4a119a56e50fbb293281d9a48007e0e' => __DIR__ . '/..' . '/symfony/polyfill-php80/bootstrap.php',
         '35a6ad97d21e794e7e22a17d806652e4' => __DIR__ . '/..' . '/nunomaduro/termwind/src/Functions.php',
         '7b11c4dc42b3b3023073cb14e519683c' => __DIR__ . '/..' . '/ralouphie/getallheaders/src/getallheaders.php',
+        '3109cb1a231dcd04bee1f9f620d46975' => __DIR__ . '/..' . '/paragonie/sodium_compat/autoload.php',
         '2203a247e6fda86070a5e4e07aed533a' => __DIR__ . '/..' . '/symfony/clock/Resources/now.php',
         '09f6b20656683369174dd6fa83b7e5fb' => __DIR__ . '/..' . '/symfony/polyfill-uuid/bootstrap.php',
         'a1105708a18b76903365ca1c4aa61b02' => __DIR__ . '/..' . '/symfony/translation/Resources/functions.php',
         '37a3dc5111fe8f707ab4c132ef1dbc62' => __DIR__ . '/..' . '/guzzlehttp/guzzle/src/functions_include.php',
         '47e1160838b5e5a10346ac4084b58c23' => __DIR__ . '/..' . '/laravel/prompts/src/helpers.php',
         '6124b4c8570aa390c21fafd04a26c69f' => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy/deep_copy.php',
-        '3109cb1a231dcd04bee1f9f620d46975' => __DIR__ . '/..' . '/paragonie/sodium_compat/autoload.php',
         '801c31d8ed748cfa537fa45402288c95' => __DIR__ . '/..' . '/psy/psysh/src/functions.php',
         'e39a8b23c42d4e1452234d762b03835a' => __DIR__ . '/..' . '/ramsey/uuid/src/functions.php',
         '9d2b9fc6db0f153a0a149fefb182415e' => __DIR__ . '/..' . '/symfony/polyfill-php84/bootstrap.php',
@@ -49,6 +49,10 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         'v' => 
         array (
             'voku\\' => 5,
+        ),
+        'k' => 
+        array (
+            'kornrunner\\' => 11,
         ),
         'W' => 
         array (
@@ -154,6 +158,7 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         ),
         'F' => 
         array (
+            'FurqanSiddiqui\\BIP39\\' => 21,
             'Fruitcake\\Cors\\' => 15,
             'Faker\\' => 6,
             'FG\\' => 3,
@@ -192,6 +197,10 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         'voku\\' => 
         array (
             0 => __DIR__ . '/..' . '/voku/portable-ascii/src/voku',
+        ),
+        'kornrunner\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/kornrunner/secp256k1/src',
         ),
         'Whoops\\' => 
         array (
@@ -485,6 +494,10 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         array (
             0 => __DIR__ . '/..' . '/graham-campbell/result-type/src',
         ),
+        'FurqanSiddiqui\\BIP39\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/furqansiddiqui/bip39-mnemonic-php/src',
+        ),
         'Fruitcake\\Cors\\' => 
         array (
             0 => __DIR__ . '/..' . '/fruitcake/php-cors/src',
@@ -555,21 +568,29 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
     );
 
     public static $classMap = array (
-        'App\\Console\\Commands\\AddHaiPosts' => __DIR__ . '/../..' . '/app/Console/Commands/AddHaiPosts.php',
+        'App\\Console\\Commands\\AddAdminKey' => __DIR__ . '/../..' . '/app/Console/Commands/AddAdminKey.php',
         'App\\Console\\Commands\\CheckPaymentStatus' => __DIR__ . '/../..' . '/app/Console/Commands/CheckPaymentStatus.php',
         'App\\Console\\Commands\\CleanupExpiredFriendCodes' => __DIR__ . '/../..' . '/app/Console/Commands/CleanupExpiredFriendCodes.php',
+        'App\\Console\\Commands\\GenerateKeys' => __DIR__ . '/../..' . '/app/Console/Commands/GenerateKeys.php',
         'App\\Console\\Commands\\ProcessSubscriptionRenewals' => __DIR__ . '/../..' . '/app/Console/Commands/ProcessSubscriptionRenewals.php',
+        'App\\Console\\Commands\\SetupAdmin' => __DIR__ . '/../..' . '/app/Console/Commands/SetupAdmin.php',
         'App\\Console\\Commands\\SetupStripeProducts' => __DIR__ . '/../..' . '/app/Console/Commands/SetupStripeProducts.php',
+        'App\\Helpers\\MarkdownHelper' => __DIR__ . '/../..' . '/app/Helpers/MarkdownHelper.php',
         'App\\Http\\Controllers\\AdminController' => __DIR__ . '/../..' . '/app/Http/Controllers/AdminController.php',
         'App\\Http\\Controllers\\Api\\AuthApiController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/AuthApiController.php',
         'App\\Http\\Controllers\\Api\\ForumApiController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/ForumApiController.php',
+        'App\\Http\\Controllers\\Api\\ProofController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/ProofController.php',
+        'App\\Http\\Controllers\\Api\\SubscriptionApiController' => __DIR__ . '/../..' . '/app/Http/Controllers/Api/SubscriptionApiController.php',
         'App\\Http\\Controllers\\AuthController' => __DIR__ . '/../..' . '/app/Http/Controllers/AuthController.php',
         'App\\Http\\Controllers\\BoardController' => __DIR__ . '/../..' . '/app/Http/Controllers/BoardController.php',
         'App\\Http\\Controllers\\Controller' => __DIR__ . '/../..' . '/app/Http/Controllers/Controller.php',
         'App\\Http\\Controllers\\ForumController' => __DIR__ . '/../..' . '/app/Http/Controllers/ForumController.php',
         'App\\Http\\Controllers\\FriendCodeController' => __DIR__ . '/../..' . '/app/Http/Controllers/FriendCodeController.php',
+        'App\\Http\\Controllers\\ImageLibraryController' => __DIR__ . '/../..' . '/app/Http/Controllers/ImageLibraryController.php',
+        'App\\Http\\Controllers\\MiningController' => __DIR__ . '/../..' . '/app/Http/Controllers/MiningController.php',
         'App\\Http\\Controllers\\PaymentController' => __DIR__ . '/../..' . '/app/Http/Controllers/PaymentController.php',
         'App\\Http\\Controllers\\ProofOfWorkController' => __DIR__ . '/../..' . '/app/Http/Controllers/ProofOfWorkController.php',
+        'App\\Http\\Controllers\\SimpleAdminController' => __DIR__ . '/../..' . '/app/Http/Controllers/SimpleAdminController.php',
         'App\\Http\\Controllers\\StripeWebhookController' => __DIR__ . '/../..' . '/app/Http/Controllers/StripeWebhookController.php',
         'App\\Http\\Controllers\\SubscriptionController' => __DIR__ . '/../..' . '/app/Http/Controllers/SubscriptionController.php',
         'App\\Http\\Middleware\\RateLimitAuth' => __DIR__ . '/../..' . '/app/Http/Middleware/RateLimitAuth.php',
@@ -585,6 +606,7 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         'App\\Models\\Post' => __DIR__ . '/../..' . '/app/Models/Post.php',
         'App\\Models\\PowSubmission' => __DIR__ . '/../..' . '/app/Models/PowSubmission.php',
         'App\\Models\\ProofOfWork' => __DIR__ . '/../..' . '/app/Models/ProofOfWork.php',
+        'App\\Models\\ProofSubmission' => __DIR__ . '/../..' . '/app/Models/ProofSubmission.php',
         'App\\Models\\Subscription' => __DIR__ . '/../..' . '/app/Models/Subscription.php',
         'App\\Models\\SubscriptionPlan' => __DIR__ . '/../..' . '/app/Models/SubscriptionPlan.php',
         'App\\Models\\Thread' => __DIR__ . '/../..' . '/app/Models/Thread.php',
@@ -593,6 +615,7 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         'App\\Providers\\AppServiceProvider' => __DIR__ . '/../..' . '/app/Providers/AppServiceProvider.php',
         'App\\Services\\FriendCodeService' => __DIR__ . '/../..' . '/app/Services/FriendCodeService.php',
         'App\\Services\\SubscriptionService' => __DIR__ . '/../..' . '/app/Services/SubscriptionService.php',
+        'App\\View\\Composers\\GlobalStatsComposer' => __DIR__ . '/../..' . '/app/View/Composers/GlobalStatsComposer.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Brick\\Math\\BigDecimal' => __DIR__ . '/..' . '/brick/math/src/BigDecimal.php',
         'Brick\\Math\\BigInteger' => __DIR__ . '/..' . '/brick/math/src/BigInteger.php',
@@ -1499,6 +1522,12 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         'Faker\\ValidGenerator' => __DIR__ . '/..' . '/fakerphp/faker/src/Faker/ValidGenerator.php',
         'Fruitcake\\Cors\\CorsService' => __DIR__ . '/..' . '/fruitcake/php-cors/src/CorsService.php',
         'Fruitcake\\Cors\\Exceptions\\InvalidOptionException' => __DIR__ . '/..' . '/fruitcake/php-cors/src/Exceptions/InvalidOptionException.php',
+        'FurqanSiddiqui\\BIP39\\BIP39' => __DIR__ . '/..' . '/furqansiddiqui/bip39-mnemonic-php/src/BIP39.php',
+        'FurqanSiddiqui\\BIP39\\Exception\\BIP39_Exception' => __DIR__ . '/..' . '/furqansiddiqui/bip39-mnemonic-php/src/Exception/BIP39_Exception.php',
+        'FurqanSiddiqui\\BIP39\\Exception\\MnemonicException' => __DIR__ . '/..' . '/furqansiddiqui/bip39-mnemonic-php/src/Exception/MnemonicException.php',
+        'FurqanSiddiqui\\BIP39\\Exception\\WordListException' => __DIR__ . '/..' . '/furqansiddiqui/bip39-mnemonic-php/src/Exception/WordListException.php',
+        'FurqanSiddiqui\\BIP39\\Mnemonic' => __DIR__ . '/..' . '/furqansiddiqui/bip39-mnemonic-php/src/Mnemonic.php',
+        'FurqanSiddiqui\\BIP39\\WordList' => __DIR__ . '/..' . '/furqansiddiqui/bip39-mnemonic-php/src/WordList.php',
         'GrahamCampbell\\ResultType\\Error' => __DIR__ . '/..' . '/graham-campbell/result-type/src/Error.php',
         'GrahamCampbell\\ResultType\\Result' => __DIR__ . '/..' . '/graham-campbell/result-type/src/Result.php',
         'GrahamCampbell\\ResultType\\Success' => __DIR__ . '/..' . '/graham-campbell/result-type/src/Success.php',
@@ -7321,6 +7350,12 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         'Whoops\\Util\\Misc' => __DIR__ . '/..' . '/filp/whoops/src/Whoops/Util/Misc.php',
         'Whoops\\Util\\SystemFacade' => __DIR__ . '/..' . '/filp/whoops/src/Whoops/Util/SystemFacade.php',
         'Whoops\\Util\\TemplateHelper' => __DIR__ . '/..' . '/filp/whoops/src/Whoops/Util/TemplateHelper.php',
+        'kornrunner\\Secp256k1' => __DIR__ . '/..' . '/kornrunner/secp256k1/src/Secp256k1.php',
+        'kornrunner\\Serializer\\HexPrivateKeySerializer' => __DIR__ . '/..' . '/kornrunner/secp256k1/src/Serializer/HexPrivateKeySerializer.php',
+        'kornrunner\\Serializer\\HexSignatureSerializer' => __DIR__ . '/..' . '/kornrunner/secp256k1/src/Serializer/HexSignatureSerializer.php',
+        'kornrunner\\Signature\\Signature' => __DIR__ . '/..' . '/kornrunner/secp256k1/src/Signature/Signature.php',
+        'kornrunner\\Signature\\SignatureInterface' => __DIR__ . '/..' . '/kornrunner/secp256k1/src/Signature/SignatureInterface.php',
+        'kornrunner\\Signature\\Signer' => __DIR__ . '/..' . '/kornrunner/secp256k1/src/Signature/Signer.php',
         'staabm\\SideEffectsDetector\\SideEffect' => __DIR__ . '/..' . '/staabm/side-effects-detector/lib/SideEffect.php',
         'staabm\\SideEffectsDetector\\SideEffectsDetector' => __DIR__ . '/..' . '/staabm/side-effects-detector/lib/SideEffectsDetector.php',
         'voku\\helper\\ASCII' => __DIR__ . '/..' . '/voku/portable-ascii/src/voku/helper/ASCII.php',
