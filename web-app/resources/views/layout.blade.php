@@ -112,6 +112,7 @@
                 cursor: pointer;
             " onchange="if(this.value) window.location.href=this.value">
                 <option value="">🌐 Navigate</option>
+                <option value="/catalog">🎯 The MC</option>
                 <option value="/library">🖼️ Image Library</option>
                 <option value="/mining">⛏️ Mining Dashboard</option>
                 <option value="/faq">❓ FAQ & Help</option>
@@ -171,6 +172,18 @@
             <div style="color: rgba(255,255,238,0.9);">Target: <span id="toolbar-target" style="color: #FFD8D8; font-weight: bold;">None</span></div>
 
             <!-- Navigation Links in Bottom Toolbar -->
+            <a href="/catalog" style="
+                background: rgba(255,255,238,0.1);
+                color: #E8FFE8;
+                text-decoration: none;
+                padding: 2px 6px;
+                border-radius: 3px;
+                font-size: 8px;
+                font-weight: bold;
+                border: 1px solid rgba(255,255,238,0.2);
+                transition: all 0.2s ease;
+            " title="The MC" onmouseover="this.style.background='rgba(255,255,238,0.2)'" onmouseout="this.style.background='rgba(255,255,238,0.1)'">🎯 MC</a>
+
             <a href="/library" style="
                 background: rgba(255,255,238,0.1);
                 color: #E8FFE8;
