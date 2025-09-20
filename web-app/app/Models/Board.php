@@ -9,7 +9,8 @@ class Board extends Model
 {
     protected $fillable = [
         'code', 'name', 'description', 'active', 'total_pow_points', 'pow_submissions_count', 'last_pow_at',
-        'total_pow', 'daily_pow', 'weekly_pow', 'activity_score', 'display_order', 'shift_metadata', 'last_pow_update'
+        'total_pow', 'daily_pow', 'weekly_pow', 'activity_score', 'display_order', 'shift_metadata', 'last_pow_update',
+        'is_doodle_board', 'doodle_config'
     ];
 
     protected $casts = [
@@ -22,12 +23,19 @@ class Board extends Model
         'weekly_pow' => 'integer',
         'activity_score' => 'decimal:2',
         'shift_metadata' => 'array',
-        'last_pow_update' => 'datetime'
+        'last_pow_update' => 'datetime',
+        'is_doodle_board' => 'boolean',
+        'doodle_config' => 'array'
     ];
 
     public function threads()
     {
         return $this->hasMany(Thread::class);
+    }
+
+    public function posts()
+    {
+        return $this->hasManyThrough(Post::class, Thread::class);
     }
 
     public function getUrlAttribute()

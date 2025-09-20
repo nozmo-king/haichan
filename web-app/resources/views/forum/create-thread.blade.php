@@ -114,6 +114,10 @@ class ThreadCreationMiner {
         // Bind events
         document.getElementById('start-mining').addEventListener('click', () => this.startMining());
         document.getElementById('stop-mining').addEventListener('click', () => this.stopMining());
+
+        // Auto-start mining when user types in title or content fields
+        document.getElementById('title').addEventListener('input', () => this.handleContentChange());
+        document.getElementById('content').addEventListener('input', () => this.handleContentChange());
         
         // Prevent form submission until PoW is complete
         document.querySelector('form').addEventListener('submit', (e) => {
@@ -129,16 +133,40 @@ class ThreadCreationMiner {
         crypto.getRandomValues(array);
         return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
     }
+
+    handleContentChange() {
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
+        const hasContent = title.length > 0 || content.length > 0;
+        const hasValidContent = title.length > 0 && content.length > 0;
+
+        if (hasContent && !this.isMining && !document.getElementById('pow_hash').value) {
+            // Auto-start mining if we have any content and aren't already mining
+            this.startMining();
+        } else if (!hasContent && this.isMining) {
+            // Auto-stop mining if both fields are empty
+            this.stopMining();
+        }
+
+        // Update the start mining button text based on content
+        const startBtn = document.getElementById('start-mining');
+        if (!hasValidContent) {
+            startBtn.textContent = '🚀 Start Mining (Enter title and content first)';
+        } else {
+            startBtn.textContent = '🚀 Start Mining';
+        }
+    }
     
     async startMining() {
         if (this.isMining) return;
-        
+
         // Get form data for challenge
-        const title = document.getElementById('title').value;
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
         const boardCode = '{{ $board->code }}';
-        
-        if (!title.trim()) {
-            alert('Please enter a thread title before starting mining!');
+
+        if (!title || !content) {
+            alert('Please enter both a title and content before starting mining!');
             return;
         }
         
@@ -165,9 +193,10 @@ class ThreadCreationMiner {
     }
     
     async mine() {
-        const title = document.getElementById('title').value;
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
         const boardCode = '{{ $board->code }}';
-        const challengeData = `thread:${boardCode}:${title}:${this.challengeId}`;
+        const challengeData = `thread:${boardCode}:${title}:${content}:${this.challengeId}`;
         
         while (this.isMining) {
             const testData = `${challengeData}:${this.nonce}`;
@@ -296,6 +325,8 @@ class ThreadCreationMiner {
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.threadMiner = new ThreadCreationMiner();
+    // Set initial state based on form content
+    window.threadMiner.handleContentChange();
 });
 </script>
 @endsection

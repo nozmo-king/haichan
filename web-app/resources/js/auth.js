@@ -50,21 +50,39 @@ window.authModule = {
             const publicKeyBytes = secp256k1.getPublicKey(privateKeyBytes, true); // compressed
             const publicKeyHex = secp256k1.etc.bytesToHex(publicKeyBytes);
 
-            // Get challenge from server
-            const challengeResponse = await fetch('/challenge', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({
-                    public_key: publicKeyHex
-                })
-            });
+            // Get challenge from server with timeout
+            const challengeResponse = await Promise.race([
+                fetch('/challenge', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({
+                        public_key: publicKeyHex
+                    })
+                }),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Challenge request timed out')), 15000)
+                )
+            ]);
 
             if (!challengeResponse.ok) {
-                const errorData = await challengeResponse.json();
-                throw new Error(errorData.error || 'Failed to get challenge');
+                let errorMessage = 'Failed to get challenge';
+                try {
+                    const errorData = await challengeResponse.json();
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch (parseError) {
+                    const errorText = await challengeResponse.text();
+                    errorMessage = errorText || errorMessage;
+                }
+
+                // Special handling for unauthorized public keys
+                if (challengeResponse.status === 403 || errorMessage.includes('not authorized')) {
+                    throw new Error('Public key not authorized. Please register first with a friend code or use an existing authorized key.');
+                }
+
+                throw new Error(errorMessage);
             }
 
             const challengeData = await challengeResponse.json();
@@ -87,28 +105,45 @@ window.authModule = {
     },
 
     submitLogin(authData, csrfToken) {
-        // Create and submit form
-        const loginForm = document.createElement('form');
-        loginForm.method = 'POST';
-        loginForm.action = '/login';
+        try {
+            console.log('Submitting login form with data:', authData);
 
-        const fields = {
-            '_token': csrfToken,
-            'user_id': authData.user_id,
-            'challenge': authData.challenge,
-            'signature': authData.signature
-        };
+            // Create and submit form
+            const loginForm = document.createElement('form');
+            loginForm.method = 'POST';
+            loginForm.action = '/login';
 
-        Object.entries(fields).forEach(([name, value]) => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = name;
-            input.value = value;
-            loginForm.appendChild(input);
-        });
+            const fields = {
+                '_token': csrfToken,
+                'user_id': authData.user_id,
+                'challenge': authData.challenge,
+                'signature': authData.signature
+            };
 
-        document.body.appendChild(loginForm);
-        loginForm.submit();
+            Object.entries(fields).forEach(([name, value]) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                loginForm.appendChild(input);
+            });
+
+            document.body.appendChild(loginForm);
+
+            // Add a timeout fallback in case form submission hangs
+            setTimeout(() => {
+                if (document.body.contains(loginForm)) {
+                    console.error('Form submission appears to have failed - removing form');
+                    loginForm.remove();
+                    throw new Error('Login form submission timed out');
+                }
+            }, 10000);
+
+            loginForm.submit();
+        } catch (error) {
+            console.error('Error submitting login form:', error);
+            throw error;
+        }
     }
 };
 

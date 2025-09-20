@@ -103,6 +103,12 @@ class ForumController extends Controller
     public function createThread($boardCode)
     {
         $board = Board::where('code', $boardCode)->firstOrFail();
+
+        // Check if this is a doodle board
+        if ($board->is_doodle_board) {
+            return view('forum.create-doodle', compact('board'));
+        }
+
         return view('forum.create-thread', compact('board'));
     }
 
@@ -111,25 +117,39 @@ class ForumController extends Controller
         // Skip authentication for now - create anonymous posts
         $anonymousUser = 'Anonymous#' . substr(hash('sha256', $request->ip() . time()), 0, 8);
         
+        $boardModel = Board::where('code', $board)->firstOrFail();
+
         // Simple validation - accept either title or subject
         $title = $request->input('title') ?: $request->input('subject');
         if (!$title) {
             return back()->withErrors(['title' => 'Title is required'])->withInput();
         }
-        
-        if (!$request->filled('content')) {
-            return back()->withErrors(['content' => 'Content is required'])->withInput();
+
+        // For doodle boards, content is optional but doodle data is required
+        if ($boardModel->is_doodle_board) {
+            if (!$request->filled('doodle_data')) {
+                return back()->withErrors(['doodle' => 'Doodle is required'])->withInput();
+            }
+        } else {
+            if (!$request->filled('content')) {
+                return back()->withErrors(['content' => 'Content is required'])->withInput();
+            }
         }
 
         // Validate PoW and image upload
-        $request->validate([
+        $validationRules = [
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
             'pow_challenge_id' => 'required|string|size:32',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600'
-        ]);
+        ];
 
-        $boardModel = Board::where('code', $board)->firstOrFail();
+        if ($boardModel->is_doodle_board) {
+            $validationRules['doodle_data'] = 'required|string';
+        } else {
+            $validationRules['image'] = 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600';
+        }
+
+        $request->validate($validationRules);
 
         // Generate proper challenge data and verify PoW
         $challengeData = "thread:{$boardModel->code}:{$title}:{$request->pow_challenge_id}";
@@ -155,7 +175,7 @@ class ForumController extends Controller
         $threadData = [
             'board_id' => $boardModel->id,
             'title' => $title,
-            'content' => $request->content,
+            'content' => $boardModel->is_doodle_board ? 'Doodle' : $request->content,
             'user_id' => null, // No auth for now
             'author_name' => $anonymousUser,
             'pow_nonce' => $request->pow_nonce,
@@ -166,12 +186,31 @@ class ForumController extends Controller
             'pow_verified_at' => now()
         ];
 
-        // Handle image upload
-        if ($request->hasFile('image')) {
+        // Handle doodle data for doodle boards
+        if ($boardModel->is_doodle_board && $request->filled('doodle_data')) {
+            // Convert base64 canvas data to PNG image
+            $doodleData = $request->doodle_data;
+
+            // Remove data URL prefix (data:image/png;base64,)
+            $doodleData = preg_replace('/^data:image\/[^;]+;base64,/', '', $doodleData);
+            $imageData = base64_decode($doodleData);
+
+            if ($imageData !== false) {
+                $filename = 'doodle_' . time() . '_' . uniqid() . '.png';
+                $path = 'forum/doodles/' . $filename;
+
+                Storage::disk('public')->put($path, $imageData);
+
+                $threadData['image_path'] = $path;
+                $threadData['image_filename'] = $filename;
+            }
+        }
+        // Handle regular image upload for non-doodle boards
+        else if (!$boardModel->is_doodle_board && $request->hasFile('image')) {
             $image = $request->file('image');
             $filename = time() . '_' . $image->getClientOriginalName();
             $path = $image->storeAs('forum/images', $filename, 'public');
-            
+
             $threadData['image_path'] = $path;
             $threadData['image_filename'] = $image->getClientOriginalName();
         }

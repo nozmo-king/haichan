@@ -58,19 +58,65 @@
                            style="width: 100%; padding: 12px 15px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 13px; box-sizing: border-box;">
                 </div>
 
-                <!-- Comment Field -->
-                <div style="margin-bottom: 25px;">
-                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Comment</label>
-                    <textarea name="content" required rows="8"
-                              style="width: 100%; padding: 15px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 13px; line-height: 1.5; resize: vertical; box-sizing: border-box;"></textarea>
-                </div>
+                @if($board->is_doodle_board)
+                    <!-- Doodle Canvas for Doodle Boards -->
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">🎨 Draw your doodle</label>
 
-                <!-- File Upload -->
-                <div style="margin-bottom: 25px;">
-                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Image (optional)</label>
-                    <input type="file" name="image" accept="image/*"
-                           style="width: 100%; padding: 10px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 12px; box-sizing: border-box;">
-                </div>
+                        <!-- Color Palette -->
+                        <div class="color-palette" style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+                            @php
+                                $colors = $board->doodle_config['colors'] ?? [
+                                    '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'
+                                ];
+                            @endphp
+                            @foreach($colors as $index => $color)
+                                <div class="color-btn {{ $index === 0 ? 'active' : '' }}"
+                                     data-color="{{ $color }}"
+                                     style="width: 35px; height: 35px; background: {{ $color }}; border: 3px solid {{ $index === 0 ? '#333' : '#ccc' }}; border-radius: 50%; cursor: pointer; transition: all 0.2s;">
+                                </div>
+                            @endforeach
+                        </div>
+
+                        <!-- Canvas Controls -->
+                        <div class="canvas-controls" style="margin-bottom: 15px; display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                            <button type="button" id="clear-canvas" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; font-size: 11px;">🗑️ Clear</button>
+                            <button type="button" id="redo-btn" style="padding: 6px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 11px;" disabled>↶ Redo (0/3)</button>
+                            <span style="color: #666; font-size: 12px;">Size:</span>
+                            <input type="range" id="brush-size" min="2" max="15" value="4" style="width: 60px;">
+                            <span id="brush-size-display" style="color: #666; font-size: 12px;">4px</span>
+                        </div>
+
+                        <!-- Canvas -->
+                        <div class="canvas-wrapper" style="background: white; border: 2px solid #708B75; border-radius: 4px; overflow: hidden; display: flex; justify-content: center;">
+                            <canvas id="doodle-canvas"
+                                    style="display: block; cursor: crosshair; touch-action: none; max-width: 100%;"
+                                    width="600"
+                                    height="400">
+                                Your browser doesn't support canvas.
+                            </canvas>
+                        </div>
+
+                        <input type="hidden" name="doodle_data" id="doodle_data" required>
+                        <div style="color: #666; font-size: 11px; margin-top: 8px; text-align: center;">
+                            Draw with your mouse or finger. Select colors above.
+                        </div>
+                    </div>
+                @else
+                    <!-- Comment Field for Regular Boards -->
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Comment</label>
+                        <textarea name="content" required rows="8"
+                                  style="width: 100%; padding: 15px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 13px; line-height: 1.5; resize: vertical; box-sizing: border-box;"></textarea>
+                    </div>
+
+                    <!-- File Upload for Regular Boards -->
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Image (optional)</label>
+                        <input type="file" name="image" accept="image/*"
+                               style="width: 100%; padding: 10px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 12px; box-sizing: border-box;">
+                    </div>
+                @endif
 
                 <!-- Proof of Work Mining -->
                 <div style="margin-bottom: 25px; padding: 20px; background: #FFFACD; border: 1px solid #9AB87A; border-radius: 5px;">
@@ -219,7 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
         currentChallenge = generateChallengeId();
         document.getElementById('thread-pow-challenge-id').value = currentChallenge;
 
-        const challengeData = `thread:{{ $board->code }}:${title}:${currentChallenge}`;
+        const challengeData = `thread:{{ $board->code }}:${title}:${content}:${currentChallenge}`;
         const targetPattern = '21e8';
 
         mineProof(challengeData, targetPattern);
@@ -285,15 +331,42 @@ document.addEventListener('DOMContentLoaded', function() {
         await mineStep();
     }
 
-    titleInput.addEventListener('input', () => setTimeout(startMining, 500));
-    contentInput.addEventListener('input', () => setTimeout(startMining, 500));
-
-    form.addEventListener('submit', function(e) {
-        if (!document.getElementById('thread-pow-hash').value) {
-            e.preventDefault();
-            alert('Mining is required before submitting!');
+    @if($board->is_doodle_board)
+        // Doodle Canvas Setup for Doodle Boards
+        if (document.getElementById('doodle-canvas')) {
+            initializeDoodleCanvas();
         }
-    });
+
+        form.addEventListener('submit', function(e) {
+            if (!document.getElementById('thread-pow-hash').value) {
+                e.preventDefault();
+                alert('Mining is required before submitting!');
+                return;
+            }
+
+            // Save doodle data before submission
+            if (window.doodleCanvas) {
+                const doodleData = window.doodleCanvas.getCanvasDataURL();
+                document.getElementById('doodle_data').value = doodleData;
+
+                if (!doodleData || doodleData === 'data:,') {
+                    e.preventDefault();
+                    alert('Please create a doodle before submitting!');
+                    return;
+                }
+            }
+        });
+    @else
+        titleInput.addEventListener('input', () => setTimeout(startMining, 500));
+        contentInput.addEventListener('input', () => setTimeout(startMining, 500));
+
+        form.addEventListener('submit', function(e) {
+            if (!document.getElementById('thread-pow-hash').value) {
+                e.preventDefault();
+                alert('Mining is required before submitting!');
+            }
+        });
+    @endif
 
     // Auto-refresh threads
     setInterval(() => {
@@ -317,6 +390,157 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(err => console.log('Refresh failed:', err));
     }, 15000);
+
+    @if($board->is_doodle_board)
+    // Doodle Canvas Implementation
+    function initializeDoodleCanvas() {
+        const canvas = document.getElementById('doodle-canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let currentColor = '#000000';
+        let brushSize = 4;
+        let lastX = 0;
+        let lastY = 0;
+        let redoStack = [];
+        const maxRedoSteps = 3;
+
+        // Setup canvas
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.imageSmoothingEnabled = true;
+
+        // Initialize with white background
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        saveState();
+
+        // Mouse/Touch event handlers
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function getTouchPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const touch = e.touches[0];
+            return {
+                x: (touch.clientX - rect.left) * scaleX,
+                y: (touch.clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const pos = e.touches ? getTouchPos(e) : getMousePos(e);
+            [lastX, lastY] = [pos.x, pos.y];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = e.touches ? getTouchPos(e) : getMousePos(e);
+
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = brushSize;
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+
+            [lastX, lastY] = [pos.x, pos.y];
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                saveState();
+            }
+        }
+
+        function saveState() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            redoStack.push(imageData);
+            if (redoStack.length > maxRedoSteps) {
+                redoStack.shift();
+            }
+            updateRedoButton();
+        }
+
+        function updateRedoButton() {
+            const redoBtn = document.getElementById('redo-btn');
+            const availableRedos = Math.max(0, redoStack.length - 1);
+            redoBtn.disabled = availableRedos === 0;
+            redoBtn.textContent = `↶ Redo (${availableRedos}/${maxRedoSteps})`;
+            redoBtn.style.background = availableRedos > 0 ? '#6c757d' : '#ccc';
+        }
+
+        // Events
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startDrawing(e);
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            draw(e);
+        });
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            stopDrawing();
+        });
+
+        // Color palette
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.style.border = '3px solid #ccc';
+                });
+                btn.classList.add('active');
+                btn.style.border = '3px solid #333';
+                currentColor = btn.dataset.color;
+            });
+        });
+
+        // Controls
+        document.getElementById('clear-canvas').addEventListener('click', () => {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            saveState();
+        });
+
+        document.getElementById('redo-btn').addEventListener('click', () => {
+            if (redoStack.length > 1) {
+                redoStack.pop();
+                const previousState = redoStack[redoStack.length - 1];
+                ctx.putImageData(previousState, 0, 0);
+                updateRedoButton();
+            }
+        });
+
+        document.getElementById('brush-size').addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            document.getElementById('brush-size-display').textContent = brushSize + 'px';
+        });
+
+        // Store canvas reference globally
+        window.doodleCanvas = {
+            getCanvasDataURL: () => canvas.toDataURL('image/png')
+        };
+    }
+    @endif
 });
 </script>
 @endsection

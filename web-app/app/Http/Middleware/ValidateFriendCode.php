@@ -20,7 +20,7 @@ class ValidateFriendCode
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $friendCode = $request->input('friend_code') ?? $request->route('friend_code');
+        $friendCode = $request->input('friend_code') ?? $request->route('friendCode');
 
         if (!$friendCode) {
             return $this->redirectWithError('Friend code is required for registration.');

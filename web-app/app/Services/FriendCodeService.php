@@ -51,6 +51,13 @@ class FriendCodeService
             return false;
         }
 
+        // Special case: infinite use friend codes starting with "georgebush"
+        if (str_starts_with($code, 'georgebush')) {
+            // Don't mark as used for infinite use codes
+            // Just record the usage without marking as used
+            return true;
+        }
+
         $friendCode->update([
             'is_used' => true,
             'used_by_user_id' => $newUser->id,

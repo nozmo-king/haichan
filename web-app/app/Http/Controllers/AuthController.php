@@ -9,7 +9,6 @@ use App\Services\FriendCodeService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
-use kornrunner\Secp256k1;
 
 class AuthController extends Controller
 {
@@ -25,141 +24,117 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function getChallenge(Request $request)
-    {
-        Log::info('Challenge request received', [
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent()
-        ]);
-
-        $request->validate([
-            'public_key' => 'required|string|size:66' // compressed secp256k1 public key
-        ]);
-
-        Log::info('Challenge request for public key', [
-            'public_key' => $request->public_key,
-            'ip' => $request->ip()
-        ]);
-
-        // Check if public key is allowed
-        if (!AllowedPublicKey::isAllowed($request->public_key)) {
-            Log::warning('Unauthorized public key attempted access', [
-                'public_key' => $request->public_key,
-                'ip' => $request->ip(),
-                'user_agent' => $request->userAgent()
-            ]);
-            return response()->json(['error' => 'Public key not authorized'], 403);
-        }
-
-        Log::info('Public key authorized, finding user', [
-            'public_key' => $request->public_key
-        ]);
-
-        // Find or create user for this public key
-        $user = User::findOrCreateForPublicKey($request->public_key);
-        if (!$user) {
-            Log::error('Failed to find or create user for authorized public key', [
-                'public_key' => $request->public_key
-            ]);
-            return response()->json(['error' => 'Public key not authorized'], 403);
-        }
-
-        Log::info('User found/created, generating challenge', [
-            'user_id' => $user->id,
-            'public_key' => $request->public_key
-        ]);
-
-        // Generate challenge
-        $challenge = $user->generateChallenge();
-        
-        Log::info('Challenge generated successfully', [
-            'user_id' => $user->id,
-            'challenge_length' => strlen($challenge)
-        ]);
-        
-        return response()->json([
-            'challenge' => $challenge,
-            'user_id' => $user->id
-        ]);
-    }
 
     public function login(Request $request)
     {
         Log::info('Login attempt received', [
-            'user_id' => $request->user_id,
-            'has_challenge' => !empty($request->challenge),
-            'has_signature' => !empty($request->signature),
+            'has_private_key' => !empty($request->private_key),
             'ip' => $request->ip()
         ]);
 
         $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'challenge' => 'required|string',
-            'signature' => 'required|string'
+            'private_key' => 'required|string|size:64|regex:/^[a-fA-F0-9]{64}$/'
         ]);
 
         try {
-            $user = User::findOrFail($request->user_id);
-            
-            Log::info('User found for login attempt', [
-                'user_id' => $user->id,
-                'public_key' => $user->allowedPublicKey->public_key,
-                'challenge_length' => strlen($request->challenge),
-                'signature_length' => strlen($request->signature)
+            $privateKeyHex = $request->private_key;
+
+            // Generate public key from private key using mdanter/ecc
+            $generator = \Mdanter\Ecc\EccFactory::getSecgCurves()->generator256k1();
+            $privateKeyInt = gmp_init($privateKeyHex, 16);
+            $publicKeyPoint = $generator->mul($privateKeyInt);
+
+            // Get compressed public key format (33 bytes: 02/03 prefix + 32 bytes x coordinate)
+            $x = $publicKeyPoint->getX();
+            $y = $publicKeyPoint->getY();
+            $prefix = gmp_strval(gmp_mod($y, 2)) == '0' ? '02' : '03';
+            $xHex = str_pad(gmp_strval($x, 16), 64, '0', STR_PAD_LEFT);
+            $publicKeyHex = $prefix . $xHex;
+
+            Log::info('Generated public key from private key', [
+                'public_key' => $publicKeyHex,
+                'ip' => $request->ip()
             ]);
-            
-            // Verify signature
-            if (!$user->verifySignature($request->signature, $request->challenge)) {
-                Log::warning('Failed signature verification', [
-                    'user_id' => $user->id,
-                    'public_key' => $user->allowedPublicKey->public_key,
-                    'challenge' => $request->challenge,
-                    'signature' => $request->signature,
+
+            // Check if this public key is allowed
+            if (!AllowedPublicKey::isAllowed($publicKeyHex)) {
+                Log::warning('Unauthorized public key attempted access', [
+                    'public_key' => $publicKeyHex,
                     'ip' => $request->ip(),
                     'user_agent' => $request->userAgent()
                 ]);
-                return back()->withErrors(['signature' => 'Invalid signature']);
+                return back()->withErrors(['authentication' => 'This private key is not authorized. Please register first with a friend code.']);
             }
-            
-            Log::info('Signature verification successful', [
-                'user_id' => $user->id
+
+            // Find or create user for this public key
+            $user = User::findOrCreateForPublicKey($publicKeyHex);
+
+            if (!$user) {
+                Log::error('Failed to find or create user for authorized public key', [
+                    'public_key' => $publicKeyHex
+                ]);
+                return back()->withErrors(['authentication' => 'Authentication failed. Please try again.']);
+            }
+
+            Log::info('User found/created for authentication', [
+                'user_id' => $user->id,
+                'public_key' => $publicKeyHex
             ]);
-            
-            // Clear challenge to prevent replay
-            $user->clearChallenge();
-            
-            // Login user
-            Auth::login($user);
-            
+
+            // Login user and store public key in session
+            Auth::login($user, true); // Remember user
+
+            // Store the public key in session for easy access
+            session(['authenticated_public_key' => $user->allowedPublicKey->public_key]);
+            session(['user_id' => $user->id]);
+
             Log::info('Successful authentication', [
                 'user_id' => $user->id,
                 'public_key' => $user->allowedPublicKey->public_key,
                 'ip' => $request->ip()
             ]);
-            
-            return redirect()->intended(route('forum.index'));
+
+            return redirect()->intended(route('dashboard'));
+
         } catch (\Exception $e) {
             Log::error('Login exception', [
                 'error' => $e->getMessage(),
-                'user_id' => $request->user_id,
+                'trace' => $e->getTraceAsString(),
                 'ip' => $request->ip()
             ]);
-            return back()->withErrors(['signature' => 'Authentication failed']);
+            return back()->withErrors(['authentication' => 'Authentication failed. Please check your private key and try again.']);
         }
     }
 
     public function logout(Request $request)
     {
+        // Clear session data
+        $request->session()->forget(['authenticated_public_key', 'user_id']);
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        
-        return redirect()->route('auth.login');
+
+        return redirect()->route('login');
     }
 
     public function showRegisterForm()
     {
         return view('auth.register-form');
+    }
+
+    public function validateFriendCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|size:32'
+        ]);
+
+        $friendCode = $this->friendCodeService->validateFriendCode($request->code);
+
+        return response()->json([
+            'valid' => (bool) $friendCode,
+            'message' => $friendCode ? 'Friend code is valid' : 'Invalid or expired friend code'
+        ]);
     }
 
     public function showRegister(Request $request)
@@ -214,10 +189,100 @@ class AuthController extends Controller
         $this->friendCodeService->generateFriendCode($user);
 
         // Automatically log in the user after registration
-        Auth::login($user);
+        Auth::login($user, true); // Remember user
 
-        return redirect()->route('subscription.plans')
-            ->with('success', 'Account created successfully! You are now logged in. Please choose a subscription plan to continue.')
-            ->with('registered_public_key', $request->public_key);
+        // Store the public key in session for easy access
+        session(['authenticated_public_key' => $user->allowedPublicKey->public_key]);
+        session(['user_id' => $user->id]);
+
+        return redirect()->route('dashboard')
+            ->with('success', 'Account created successfully! You are now logged in. Welcome to Haichan!');
+    }
+
+    /**
+     * Web-based cryptographic login using challenge-response
+     * This endpoint supports sessions for web browsers
+     */
+    public function cryptographicLogin(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|integer',
+            'challenge' => 'required|string',
+            'signature' => 'required|string'
+        ]);
+
+        Log::info('Web cryptographic login attempt', [
+            'user_id' => $request->user_id,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent()
+        ]);
+
+        $user = User::find($request->user_id);
+
+        if (!$user) {
+            Log::warning('User not found for web login', [
+                'requested_user_id' => $request->user_id,
+                'ip' => $request->ip()
+            ]);
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        Log::info('User found for web login attempt', [
+            'user_id' => $user->id,
+            'has_allowed_public_key' => !empty($user->allowedPublicKey),
+            'public_key' => $user->allowedPublicKey->public_key ?? 'not_loaded'
+        ]);
+
+        // Verify signature using the same method as API
+        $signatureValid = $user->verifySignature($request->signature, $request->challenge);
+
+        Log::info('Web signature verification completed', [
+            'user_id' => $user->id,
+            'signature_valid' => $signatureValid
+        ]);
+
+        if (!$signatureValid) {
+            Log::warning('Web authentication failed - invalid signature', [
+                'user_id' => $user->id,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ]);
+            return response()->json(['error' => 'Invalid signature'], 401);
+        }
+
+        // Clear the challenge to prevent replay attacks
+        $user->clearChallenge();
+
+        // Create web session (this is the key difference from API)
+        Auth::login($user, true); // Remember user
+
+        // Store additional session data
+        session(['authenticated_public_key' => $user->allowedPublicKey->public_key]);
+        session(['user_id' => $user->id]);
+
+        // Regenerate session ID for security
+        $request->session()->regenerate();
+
+        Log::info('Web authentication successful', [
+            'user_id' => $user->id,
+            'session_id' => session()->getId(),
+            'auth_check' => Auth::check(),
+            'auth_user_id' => Auth::id(),
+            'session_data' => [
+                'authenticated_public_key' => session('authenticated_public_key'),
+                'user_id' => session('user_id')
+            ],
+            'ip' => $request->ip()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'session_created' => true,
+            'user' => [
+                'id' => $user->id,
+                'public_key' => $user->allowedPublicKey->public_key
+            ],
+            'redirect_url' => route('dashboard')
+        ]);
     }
 }

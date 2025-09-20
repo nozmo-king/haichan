@@ -15,7 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'require.auth' => \App\Http\Middleware\RequireAuth::class,
             'validate.friend.code' => \App\Http\Middleware\ValidateFriendCode::class,
-            'require.subscription' => \App\Http\Middleware\RequireActiveSubscription::class,
+            'unified.auth' => \App\Http\Middleware\UnifiedAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

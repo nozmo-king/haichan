@@ -5,7 +5,7 @@
     <a href="{{ route('forum.index') }}">Forum</a> > Register with Friend Code
 </div>
 
-<div style="max-width: 600px; margin: 0 auto; background-color: #f9f9f9; border: 1px solid #ccc; padding: 30px;">
+<div style="max-width: 600px; margin: 0 auto; background-color: #FFFFEE; border: 1px solid #ccc; padding: 30px;">
     <h2 style="text-align: center; margin-bottom: 20px;">Register with Friend Code</h2>
     
     @if ($errors->any())
@@ -18,7 +18,7 @@
         </div>
     @endif
 
-    <form action="{{ route('auth.register.submit') }}" method="POST" id="registerForm">
+    <form action="{{ route('auth.register.store') }}" method="POST" id="registerForm">
         @csrf
         
         <div style="margin-bottom: 20px;">
@@ -116,7 +116,10 @@
     </div>
 </div>
 
-<!-- Use Web Crypto API for key generation -->
+<!-- Load key generation module -->
+<script src="/js/secp256k1-keygen.js"></script>
+
+<!-- Use proper secp256k1 key generation -->
 <script>
 let generatedPrivateKeyBytes = null;
 
@@ -127,37 +130,36 @@ async function generateKeyPair() {
         button.textContent = 'Generating...';
         button.disabled = true;
 
-        // Generate a cryptographically secure random private key using Web Crypto API
-        const privateKeyArray = new Uint8Array(32);
-        crypto.getRandomValues(privateKeyArray);
-        
-        // Store the private key bytes
-        generatedPrivateKeyBytes = privateKeyArray;
-        const privateKeyHex = Array.from(privateKeyArray)
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-        
-        // For the public key, we'll generate a mock one that follows the correct format
-        // In a real implementation, you'd derive this from the private key using secp256k1
-        // But for registration purposes, we just need a valid format
-        const publicKeyPrefix = Math.random() > 0.5 ? '02' : '03'; // Random compressed prefix
-        const publicKeyBody = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-        const publicKeyHex = publicKeyPrefix + publicKeyBody;
-        
+        // Check if the key generation module is available
+        if (typeof window.Secp256k1KeyGen === 'undefined') {
+            throw new Error('Key generation module not loaded. Please refresh the page.');
+        }
+
+        // Generate the keypair using our module
+        const keyPair = await window.Secp256k1KeyGen.generateKeyPair();
+
+        // Validate the generated keys
+        if (!window.Secp256k1KeyGen.isValidPrivateKey(keyPair.privateKey)) {
+            throw new Error('Generated invalid private key');
+        }
+
+        if (!window.Secp256k1KeyGen.isValidPublicKey(keyPair.publicKey)) {
+            throw new Error('Generated invalid public key');
+        }
+
         // Display the keys
-        document.getElementById('generatedPrivateKey').value = privateKeyHex;
-        document.getElementById('generatedPublicKey').value = publicKeyHex;
+        document.getElementById('generatedPrivateKey').value = keyPair.privateKey;
+        document.getElementById('generatedPublicKey').value = keyPair.publicKey;
         document.getElementById('generatedKeys').style.display = 'block';
-        
+
         // Restore button
         button.textContent = originalText;
         button.disabled = false;
-        
+
         showNotification('Key pair generated successfully! Please save your private key securely.', 'success');
     } catch (error) {
         console.error('Key generation error:', error);
+        const button = event.target;
         button.textContent = originalText;
         button.disabled = false;
         showNotification('Error generating key pair: ' + error.message, 'error');

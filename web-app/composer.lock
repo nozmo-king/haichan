@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "20842d8cf33e13056f9fd406d163181a",
+    "content-hash": "3870161ea46fa68f9774ff9e0bf61d7c",
     "packages": [
         {
             "name": "brick/math",
@@ -579,48 +579,6 @@
                 }
             ],
             "time": "2023-10-12T05:21:21+00:00"
-        },
-        {
-            "name": "furqansiddiqui/bip39-mnemonic-php",
-            "version": "0.1.7",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/furqansiddiqui/bip39-mnemonic-php.git",
-                "reference": "673d19ef6b771dd69810df86d607e10cd41641e9"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/furqansiddiqui/bip39-mnemonic-php/zipball/673d19ef6b771dd69810df86d607e10cd41641e9",
-                "reference": "673d19ef6b771dd69810df86d607e10cd41641e9",
-                "shasum": ""
-            },
-            "require": {
-                "ext-mbstring": "*",
-                "php-64bit": "^8.1"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "FurqanSiddiqui\\BIP39\\": [
-                        "src"
-                    ]
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "description": "BIP39 Mnemonics implementation in PHP",
-            "keywords": [
-                "BIP-0039",
-                "bip39",
-                "mnemonics"
-            ],
-            "support": {
-                "issues": "https://github.com/furqansiddiqui/bip39-mnemonic-php/issues",
-                "source": "https://github.com/furqansiddiqui/bip39-mnemonic-php/tree/0.1.7"
-            },
-            "time": "2023-02-13T13:54:02+00:00"
         },
         {
             "name": "genkgo/php-asn1",

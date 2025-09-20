@@ -43,10 +43,10 @@ class RequireAuth
                 'session_id' => session()->getId(),
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
-                'redirect_to' => route('auth.login'),
+                'redirect_to' => route('login'),
                 'timestamp' => now()->toDateTimeString()
             ]);
-            return redirect()->route('auth.login');
+            return redirect()->route('login');
         }
         
         \Log::info('=== RequireAuth middleware PASSED - proceeding to next ===', [

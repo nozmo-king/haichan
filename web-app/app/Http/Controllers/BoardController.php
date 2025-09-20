@@ -132,11 +132,11 @@ class BoardController extends Controller
         $originalName = $file->getClientOriginalName();
         $size = $file->getSize();
 
-        // Store original image
-        $file->storeAs('public/images', $filename);
+        // Store original image using the public disk
+        $file->storeAs('images', $filename, 'public');
 
         // Create simple thumbnail (copy for now)
-        $file->storeAs('public/thumbs', $filename);
+        $file->storeAs('thumbs', $filename, 'public');
 
         return [
             'filename' => $filename,

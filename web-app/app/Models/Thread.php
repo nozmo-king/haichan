@@ -8,7 +8,7 @@ class Thread extends Model
 {
     protected $fillable = [
         'board_id', 'title', 'content', 'user_id', 'author_name',
-        'image_path', 'image_filename',
+        'image_path', 'image_filename', 'image_original_name', 'image_size',
         'sticky', 'locked', 'reply_count', 'image_count',
         'bump_score', 'bumped_at', 'ip_address', 'poster_hash',
         'pow_nonce', 'pow_hash', 'pow_challenge_id', 'pow_pattern', 'pow_difficulty', 'pow_verified_at'
@@ -19,6 +19,7 @@ class Thread extends Model
         'locked' => 'boolean',
         'reply_count' => 'integer',
         'image_count' => 'integer',
+        'image_size' => 'integer',
         'bump_score' => 'integer',
         'bumped_at' => 'datetime',
         'pow_nonce' => 'integer',

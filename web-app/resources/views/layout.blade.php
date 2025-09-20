@@ -211,6 +211,41 @@
         <div style="display: flex; align-items: center; gap: 15px;">
             <div style="color: rgba(255,255,238,0.8); font-size: 8px;">Power: <span id="toolbar-power" style="color: #FFE8C8;">IDLE</span></div>
 
+            @auth
+            <!-- User Info -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="color: rgba(255,255,238,0.8); font-size: 8px;">User:</span>
+                <span style="
+                    color: #FFE8C8;
+                    font-weight: bold;
+                    font-size: 7px;
+                    font-family: 'Courier New', monospace;
+                    background: rgba(255,255,238,0.1);
+                    padding: 2px 4px;
+                    border-radius: 2px;
+                    border: 1px solid rgba(255,255,238,0.2);
+                " title="Public Key: {{ session('authenticated_public_key') }}">
+                    {{ substr(session('authenticated_public_key'), 0, 7) }}...
+                </span>
+                <form method="POST" action="{{ route('auth.logout') }}" style="margin: 0; display: inline;">
+                    @csrf
+                    <button type="submit" style="
+                        background: rgba(255,255,238,0.1);
+                        color: #E8FFE8;
+                        border: 1px solid rgba(255,255,238,0.2);
+                        padding: 2px 6px;
+                        font-size: 7px;
+                        border-radius: 3px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        transition: all 0.2s ease;
+                    " title="Logout" onmouseover="this.style.background='rgba(255,255,238,0.2)'" onmouseout="this.style.background='rgba(255,255,238,0.1)'">
+                        LOGOUT
+                    </button>
+                </form>
+            </div>
+            @endauth
+
             <!-- Theme Switcher -->
             <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="color: rgba(255,255,238,0.8); font-size: 8px;">Theme:</span>
