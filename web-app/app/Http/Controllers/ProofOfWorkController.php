@@ -23,7 +23,7 @@ class ProofOfWorkController extends Controller
             'hash' => 'required|string|size:64',
             'nonce' => 'required|integer|min:0',
             'data' => 'required|string',
-            'pattern' => 'required|string|in:21,21e8,21e80,21e800,21e8000,000021e8,000,666,dead',
+            'pattern' => 'required|string|in:21,21e,21e8,21e80,21e800,21e8000,000021e8,000,111,222,333,444,555,666,777,888,999,aaa,bbb,ccc,ddd,eee,fff,ace,bad,cab,dad,ded,fab,fed,beef,cafe,face,babe,fade,dead,deed,feed,c0de,b00b,1337,pwnd,rekt,epic,Chad,deadbeef',
             'target_type' => 'nullable|string',
             'target_id' => 'nullable|string'
         ]);
@@ -183,94 +183,86 @@ class ProofOfWorkController extends Controller
             'hashes_match' => $serverHash === $submittedHash
         ]);
 
-        // If hashes don't match exactly, it might be using fallback hash
-        // In that case, we'll allow it but with reduced points and additional logging
+        // Strict hash validation - no fallback allowed in production
         if ($serverHash !== $submittedHash) {
-            Log::warning('HASH MISMATCH - LIKELY FALLBACK HASH', [
+            Log::error('HASH VERIFICATION FAILED', [
                 'server_sha256' => $serverHash,
                 'client_submitted' => $submittedHash,
-                'pattern_valid' => str_starts_with(strtolower($submittedHash), strtolower($pattern))
+                'data' => $data
             ]);
-            
-            // Additional validation for fallback hashes
-            if (!$this->validateFallbackHash($data, $submittedHash, $pattern)) {
-                return ['valid' => false, 'error' => 'Invalid fallback hash computation'];
-            }
+            return ['valid' => false, 'error' => 'Hash verification failed - server computed: ' . $serverHash];
         }
 
         Log::info('PROOF VERIFIED SUCCESSFULLY', [
             'hash' => $submittedHash,
-            'verification_type' => $serverHash === $submittedHash ? 'SHA256' : 'FALLBACK'
+            'verification_type' => 'SHA256'
         ]);
         
         return ['valid' => true];
     }
 
-    private function validateFallbackHash($data, $submittedHash, $pattern)
-    {
-        // Additional validation for fallback hashes
-        // Check if the hash has reasonable entropy and follows expected patterns
-        
-        $hashLower = strtolower($submittedHash);
-        
-        // Must be 64 characters hex
-        if (!preg_match('/^[a-f0-9]{64}$/', $hashLower)) {
-            return false;
-        }
-        
-        // Must start with the required pattern
-        if (!str_starts_with($hashLower, strtolower($pattern))) {
-            return false;
-        }
-        
-        // Additional entropy check - hash shouldn't be too predictable
-        $uniqueChars = count(array_unique(str_split($hashLower)));
-        if ($uniqueChars < 8) {
-            Log::warning('FALLBACK HASH REJECTED - LOW ENTROPY', [
-                'hash' => $submittedHash,
-                'unique_chars' => $uniqueChars
-            ]);
-            return false;
-        }
-        
-        // Check for obvious patterns that indicate manipulation
-        $consecutiveCount = 0;
-        $maxConsecutive = 0;
-        $lastChar = '';
-        
-        foreach (str_split($hashLower) as $char) {
-            if ($char === $lastChar) {
-                $consecutiveCount++;
-                $maxConsecutive = max($maxConsecutive, $consecutiveCount);
-            } else {
-                $consecutiveCount = 1;
-            }
-            $lastChar = $char;
-        }
-        
-        if ($maxConsecutive > 8) {
-            Log::warning('FALLBACK HASH REJECTED - TOO MANY CONSECUTIVE CHARS', [
-                'hash' => $submittedHash,
-                'max_consecutive' => $maxConsecutive
-            ]);
-            return false;
-        }
-        
-        return true;
-    }
 
     private function calculatePoints($pattern)
     {
         $points = [
+            // Standard patterns
             '21' => 0.1, // Idle pattern - very low points
+            '21e' => 0.5, // Easy pattern for replies
             '21e8' => 1,
             '21e80' => 5,
             '21e800' => 25,
-            '21e8000' => 125,
+            '21e8000' => 100,
             '000021e8' => 625,
-            '000' => 250,  // Legendary pattern
-            '666' => 375,  // Cursed pattern
-            'dead' => 200  // Death pattern
+
+            // Legendary patterns
+            '000' => 500,  // Triple zero
+            '111' => 400,  // Triple one
+            '222' => 300,
+            '333' => 350,
+            '444' => 300,
+            '555' => 450,  // Lucky fives
+            '666' => 666,  // Devil number - high value
+            '777' => 777,  // Lucky sevens - highest
+            '888' => 400,  // Lucky eights
+            '999' => 350,
+
+            // Hex letter patterns
+            'aaa' => 250,
+            'bbb' => 250,
+            'ccc' => 250,
+            'ddd' => 250,
+            'eee' => 250,
+            'fff' => 300,  // All F's
+
+            // 3-letter vanity words
+            'ace' => 150,  // Ace
+            'bad' => 100,  // Bad
+            'cab' => 80,   // Cab
+            'dad' => 120,  // Dad
+            'ded' => 200,  // Ded (dead misspelled)
+            'fab' => 100,  // Fab
+            'fed' => 90,   // Fed
+
+            // 4-letter vanity words
+            'beef' => 300,  // Beef
+            'cafe' => 250,  // Cafe
+            'face' => 200,  // Face
+            'babe' => 180,  // Babe
+            'fade' => 150,  // Fade
+            'dead' => 400,  // Dead
+            'deed' => 250,  // Deed
+            'feed' => 200,  // Feed
+
+            // Internet culture
+            'deadbeef' => 3133, // DEADBEEF - legendary 8-char hex pattern
+            'c0de' => 1337, // Code - elite value
+            'b00b' => 800,  // Boob - high meme value
+            '1337' => 1337, // Leet - ultimate
+            'pwnd' => 500,  // Pwned
+            'rekt' => 400,  // Rekt
+            'epic' => 300,  // Epic
+            'chad' => 250,  // Chad (case insensitive)
+            'Chad' => 250   // Chad (proper case)
         ];
         return $points[$pattern] ?? 0.1;
     }
@@ -371,10 +363,43 @@ class ProofOfWorkController extends Controller
 
     public function getStats()
     {
+        // Get real network statistics
+        $totalProofs = ProofOfWork::count();
+        $recentProofs = ProofOfWork::where('created_at', '>', now()->subHours(24))->count();
+        $activeSessions = \App\Models\MiningSession::where('updated_at', '>', now()->subMinutes(10))->count();
+
+        // Top patterns found recently
+        $topPatterns = ProofOfWork::select('pattern', \DB::raw('count(*) as count'), \DB::raw('sum(points) as total_points'))
+            ->where('created_at', '>', now()->subDays(7))
+            ->groupBy('pattern')
+            ->orderBy('total_points', 'desc')
+            ->limit(5)
+            ->get();
+
         return response()->json([
-            'total_proofs' => ProofOfWork::count(),
-            'top_miners' => []
+            'total_proofs' => $totalProofs,
+            'recent_proofs_24h' => $recentProofs,
+            'active_miners' => max(1, $activeSessions), // At least show 1 (the current user)
+            'session_proofs' => ProofOfWork::where('ip_address', request()->ip())
+                ->where('created_at', '>', now()->subHours(1))
+                ->count(),
+            'top_patterns' => $topPatterns,
+            'network_hashrate' => $this->estimateNetworkHashrate(),
+            'total_points_awarded' => ProofOfWork::sum('points')
         ]);
+    }
+
+    private function estimateNetworkHashrate()
+    {
+        // Estimate network hashrate based on recent proof submissions
+        $recentProofs = ProofOfWork::where('created_at', '>', now()->subMinutes(10))->count();
+
+        // Rough estimate: if we got X proofs in 10 minutes,
+        // and average proof takes ~256 hashes, then hashrate is approximately:
+        $estimatedHashes = $recentProofs * 256; // Average for '21e8' pattern
+        $estimatedHashrate = $estimatedHashes / 600; // 600 seconds = 10 minutes
+
+        return round($estimatedHashrate);
     }
 
     public function startMiningSession(Request $request)

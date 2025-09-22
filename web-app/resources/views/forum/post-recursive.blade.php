@@ -8,11 +8,24 @@
 
     <div class="post-header">
         <span class="poster-info">
+            @if($board->code === 'pol' && $post->country_flag)
+                <span style="font-size: 18px; margin-right: 5px; vertical-align: middle;">{{ $post->country_flag }}</span>
+            @endif
             Anonymous {{ $post->created_at->format('m/d/y H:i:s') }} No.{{ $post->id }}
+            @if($post->user_id)
+                @include('components.admin-badge', ['user' => $post->bitcoinUser])
+            @endif
             @if($post->parent_id)
                 <a href="#post{{ $post->parent_id }}" class="quote-link">&gt;&gt;{{ $post->parent_id }}</a>
             @endif
-            <a href="#reply-form">[Reply]</a>
+            <a href="javascript:void(0)" onclick="quotePost({{ $post->id }})" class="reply-link">[Reply]</a>
+            @if(session('bitcoin_auth_id') && ($post->user_id === session('bitcoin_auth_id') || (session('bitcoin_auth_user') && session('bitcoin_auth_user')->is_admin)))
+                <form method="POST" action="{{ route('posts.delete.user', $post->id) }}" style="display: inline; margin-left: 10px;" onsubmit="return confirm('Delete this post?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" style="background: none; border: none; color: #F44336; cursor: pointer; font-size: 12px;">[Delete]</button>
+                </form>
+            @endif
         </span>
     </div>
 
@@ -33,7 +46,8 @@
                 File: {{ $post->image_original_name }}
             </div>
             <img src="{{ route('post.image', $post->id) }}" class="thumbnail"
-                 onclick="this.style.maxWidth = this.style.maxWidth === 'none' ? '125px' : 'none'">
+                 style="max-width: 125px; max-height: 125px; cursor: pointer; border: 1px solid #ccc;"
+                 onclick="expandImage(this)" alt="Post image {{ $post->id }}">
         </div>
         @endif
 

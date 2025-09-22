@@ -31,30 +31,13 @@ class SimpleMiner {
     detectMiningTarget() {
         const path = window.location.pathname;
 
-        // Special pages - should use global mining
-        if (path.match(/^\/boards\/?$/) || path.match(/^\/mining\/?$/) || path.match(/^\/faq\/?$/) || path.match(/^\/rules\/?$/)) {
-            this.targetType = 'global';
-            this.targetId = 'haichan';
-        } else if (path.match(/^\/library\/?$/)) {
-            this.targetType = 'images';
-            this.targetId = 'library';
-        } else if (path.match(/^\/(\w+)\/(\d+)$/)) {
-            // Thread pages like /gen/123
+        if (path.match(/^\/(\w+)\/(\d+)$/)) {
+            // Thread pages like /gen/123 - allow thread mining
             const matches = path.match(/^\/(\w+)\/(\d+)$/);
             this.targetType = 'thread';
             this.targetId = matches[2];
-        } else if (path.match(/^\/(\w+)\/catalog$/)) {
-            // Catalog pages like /gen/catalog
-            const matches = path.match(/^\/(\w+)\/catalog$/);
-            this.targetType = 'board';
-            this.targetId = matches[1];
-        } else if (path.match(/^\/(gen|tech|biz|film|x|lit|meta|mu)\/?$/)) {
-            // Individual board pages - only match actual board codes
-            const matches = path.match(/^\/(gen|tech|biz|film|x|lit|meta|mu)\/?$/);
-            this.targetType = 'board';
-            this.targetId = matches[1];
         } else {
-            // Default to global for everything else (homepage, etc.)
+            // Everything else defaults to global mining
             this.targetType = 'global';
             this.targetId = 'haichan';
         }
@@ -307,10 +290,6 @@ class SimpleMiner {
             return `🧵 Thread #${this.targetId}`;
         } else if (this.targetType === 'reply') {
             return `💬 Reply #${this.targetId}`;
-        } else if (this.targetType === 'board') {
-            return `📋 Board /${this.targetId}/`;
-        } else if (this.targetType === 'images') {
-            return `🖼️ Image Library`;
         } else {
             return `🌐 Global Mining`;
         }
@@ -342,7 +321,7 @@ class SimpleMiner {
             font-family: 'Courier New', monospace;
             font-size: 10px;
             z-index: 9999;
-            display: none;
+            display: block;
             box-shadow: 0 4px 12px rgba(68, 75, 110, 0.3);
         `;
 
@@ -367,20 +346,20 @@ class SimpleMiner {
                 <div style="margin-bottom: 10px;">
                     <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Mining Power:</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 5px;">
-                        <button id="simple-off-btn" data-mode="off" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer;">OFF</button>
+                        <button id="simple-off-btn" data-mode="off" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer; background: #CD5C5C; color: white;">OFF</button>
                         <button id="simple-idle-btn" data-mode="idle" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer;">IDLE</button>
                         <button id="simple-active-btn" data-mode="active" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer;">ACTIVE</button>
                         <button id="simple-hyper-btn" data-mode="hyper" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer;">HYPER</button>
                     </div>
                 </div>
 
-                <div>
+                <div style="margin-bottom: 10px;">
                     <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Current Hash:</div>
                     <div id="simple-current-hash" style="font-size: 8px; color: #888; word-break: break-all; background: #FAFAFA; padding: 3px; border: 1px solid #DDD;">calculating...</div>
                 </div>
 
-                <div style="border-top: 1px solid #CCCCCC; padding-top: 8px; text-align: center; margin-top: 10px;">
-                    <a href="/mining" style="color: #0066CC; text-decoration: underline; font-size: 10px;">🎯 Open Full Dashboard</a>
+                <div style="border-top: 1px solid #CCCCCC; padding-top: 8px; text-align: center; font-size: 8px; color: #666;">
+                    Hover + SPACE/ENTER to mine
                 </div>
             </div>
         `;
@@ -397,34 +376,17 @@ class SimpleMiner {
         document.getElementById('simple-active-btn').addEventListener('click', () => this.setMode('active'));
         document.getElementById('simple-hyper-btn').addEventListener('click', () => this.setMode('hyper'));
 
-        // Show dashboard by default
-        dashboard.style.display = 'block';
-
-        // Add toggle functionality
-        const toggleBtn = document.getElementById('mini-dash-toggle');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', () => {
-                dashboard.style.display = dashboard.style.display === 'none' ? 'block' : 'none';
-            });
-        }
-
-        // Keyboard shortcut
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'd') {
-                e.preventDefault();
-                dashboard.style.display = dashboard.style.display === 'none' ? 'block' : 'none';
-            }
-        });
-
         // Update dashboard displays
         setInterval(() => {
             const hashrateEl = document.getElementById('simple-hashrate');
             const proofsEl = document.getElementById('simple-proofs');
             const hashEl = document.getElementById('simple-current-hash');
+            const targetEl = document.getElementById('simple-target');
 
             if (hashrateEl) hashrateEl.textContent = `${this.getHashRate()} H/s`;
             if (proofsEl) proofsEl.textContent = this.proofsFound.toLocaleString();
             if (hashEl) hashEl.textContent = this.currentHash ? this.currentHash.substring(0, 24) + '...' : 'calculating...';
+            if (targetEl) targetEl.textContent = this.getDisplayName();
         }, 1000);
     }
 

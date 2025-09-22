@@ -18,6 +18,48 @@
         .strobing-emoji {
             animation: strobe 2s infinite;
         }
+
+        /* Mining Animations */
+        @keyframes mine-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes mine-glow {
+            0%, 100% { text-shadow: 0 0 5px #ff6b35; }
+            50% { text-shadow: 0 0 20px #ff6b35, 0 0 30px #ff6b35; }
+        }
+        @keyframes mine-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+        @keyframes hash-pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+        @keyframes progress-fill {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .mining-active {
+            animation: mine-spin 1s linear infinite;
+        }
+        .mining-glow {
+            animation: mine-glow 1.5s ease-in-out infinite;
+        }
+        .mining-shake {
+            animation: mine-shake 0.5s ease-in-out infinite;
+        }
+        .hash-calculating {
+            animation: hash-pulse 0.8s ease-in-out infinite;
+        }
+        .progress-animated {
+            background: linear-gradient(90deg, #708B75, #9AB87A, #708B75);
+            background-size: 200% 100%;
+            animation: progress-fill 2s linear infinite;
+        }
+
         body {
             margin: 0;
             padding: 0;
@@ -36,11 +78,27 @@
             β版
         </div>
 
+        <!-- Home Button -->
+        <div style="position: absolute; top: 20px; left: 20px;">
+            <a href="/" style="background: #708B75; color: white; padding: 8px 12px; border-radius: 5px; text-decoration: none; font-size: 16px; display: inline-block;">
+                🏠
+            </a>
+        </div>
+
         <h1 style="font-size: 24px; color: #3D315B; margin: 0 0 12px 0; font-weight: 300; letter-spacing: 1.5px; font-family: 'Nova Cut', serif;">
             <span class="strobing-emoji" style="font-size: 22px; color: #B87333;">💬</span>
             {{ $thread->title ?: 'Thread #' . $thread->id }}
             <span class="strobing-emoji" style="font-size: 22px; color: #CD5C5C;">⚡</span>
         </h1>
+
+        <!-- Reply Sort Controls -->
+        <div style="margin: 10px 0; display: flex; justify-content: center; align-items: center; gap: 10px;">
+            <label style="font-size: 12px; color: #666;">Sort replies by:</label>
+            <select id="reply-sort" onchange="changeSort()" style="padding: 4px 8px; background: #F5F5DC; border: 1px solid #708B75; border-radius: 3px; color: #3D315B; font-size: 11px;">
+                <option value="chronological" {{ request('sort') === 'chronological' || !request('sort') ? 'selected' : '' }}>📅 Chronological</option>
+                <option value="pow" {{ request('sort') === 'pow' ? 'selected' : '' }}>⛏️ By PoW</option>
+            </select>
+        </div>
 
         <div style="width: 80px; height: 2px; background: linear-gradient(to right, #708B75, #9AB87A); margin: 15px auto;"></div>
 
@@ -83,8 +141,25 @@
                         {{ $thread->title ?: 'No Subject' }}
                     </h2>
                     <div style="color: #708B75; font-size: 11px; text-align: right;">
-                        <div>Anonymous • {{ $thread->created_at->format('M d, Y H:i') }}</div>
-                        <div><a href="#post{{ $thread->id }}" style="color: #9AB87A; text-decoration: none;">No.{{ $thread->id }}</a></div>
+                        <div>
+                            @if($board->code === 'pol' && $thread->country_flag)
+                                <span style="font-size: 18px; margin-right: 5px; vertical-align: middle;">{{ $thread->country_flag }}</span>
+                            @endif
+                            Anonymous • {{ $thread->created_at->format('M d, Y H:i') }}
+                            @if($thread->user_id)
+                                @include('components.admin-badge', ['user' => $thread->bitcoinUser])
+                            @endif
+                        </div>
+                        <div>
+                            <a href="#post{{ $thread->id }}" style="color: #9AB87A; text-decoration: none;">No.{{ $thread->id }}</a>
+                            @if(session('bitcoin_auth_id') && ($thread->user_id === session('bitcoin_auth_id') || (session('bitcoin_auth_user') && session('bitcoin_auth_user')->is_admin)))
+                                <form method="POST" action="{{ route('threads.delete.user', $thread->id) }}" style="display: inline; margin-left: 15px;" onsubmit="return confirm('Delete this entire thread and all replies?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" style="background: none; border: none; color: #F44336; cursor: pointer; font-size: 11px;">[Delete Thread]</button>
+                                </form>
+                            @endif
+                        </div>
                     </div>
                 </div>
 
@@ -112,7 +187,11 @@
                 <div style="flex-shrink: 0;">
                     <div style="margin-bottom: 8px; font-size: 10px; color: #708B75;">
                         File: {{ $thread->image_filename ?: 'image' }}
-                        ({{ number_format(filesize(storage_path('app/public/' . $thread->image_path)) / 1024, 1) }} KB)
+                        @php
+                            $imagePath = storage_path('app/public/' . $thread->image_path);
+                            $filesize = file_exists($imagePath) ? filesize($imagePath) : 0;
+                        @endphp
+                        ({{ number_format($filesize / 1024, 1) }} KB)
                     </div>
                     <img src="{{ route('thread.image', $thread->id) }}"
                          style="max-width: 200px; max-height: 200px; border: 1px solid #708B75; border-radius: 5px; cursor: pointer;"
@@ -147,9 +226,17 @@
         </div>
         @endif
 
-        <!-- Reply Form -->
+        <!-- Quick Reply Button (Imageboard Style) -->
         @if(!$thread->locked)
-        <div style="background: #F5F5DC; border: 2px solid #708B75; border-radius: 8px; padding: 30px;" id="reply-form">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button onclick="toggleQuickReply()" id="quick-reply-btn"
+                    style="background: #708B75; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                💬 Quick Reply
+            </button>
+        </div>
+
+        <!-- Reply Form (Initially Hidden) -->
+        <div style="background: #F5F5DC; border: 2px solid #708B75; border-radius: 8px; padding: 30px; display: none;" id="reply-form">
             <div style="text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #708B75;">
                 <h3 style="color: #444B6E; font-size: 16px; margin: 0; font-weight: 400; letter-spacing: 1px;">
                     <span class="strobing-emoji">✍️</span> Post Reply <span class="strobing-emoji">💫</span>
@@ -178,11 +265,21 @@
                            style="width: 100%; padding: 10px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 12px; box-sizing: border-box;">
                 </div>
 
+                <!-- Anonymous posting option for registered users -->
+                @if(session('bitcoin_auth_id'))
+                <div style="margin-bottom: 25px;">
+                    <label style="display: flex; align-items: center; gap: 8px; color: #444B6E; font-size: 12px;">
+                        <input type="checkbox" name="post_anonymous" value="1" style="margin: 0;">
+                        Post as Anonymous (hide admin badge and username)
+                    </label>
+                </div>
+                @endif
+
                 <!-- Mining Status -->
                 <div id="reply-mining-status" style="display: none; margin-bottom: 25px; padding: 20px; background: #FFFACD; border: 1px solid #9AB87A; border-radius: 5px;">
                     <div style="font-family: monospace; font-size: 11px; color: #666;">
                         <div style="margin-bottom: 10px;">⛏️ Mining proof of work...</div>
-                        <div>Pattern: <strong>21e8</strong></div>
+                        <div>Pattern: <strong>21e</strong></div>
                         <div>Hashes: <span id="reply-hash-count">0</span></div>
                         <div>Rate: <span id="reply-hash-rate">0</span> H/s</div>
                         <div style="margin-top: 15px;">
@@ -234,10 +331,22 @@ class ReplyHashSystem {
             const bumpIndicator = document.querySelector(`#hash-${postId} .hash-bump-indicator`);
 
             if (hashElement) {
-                hashElement.textContent = hash;
-                if (hash.startsWith('21e8')) {
-                    this.trigger21e8Bump(postId, hash, bumpIndicator);
-                }
+                // Add calculating animation
+                hashElement.classList.add('hash-calculating');
+
+                setTimeout(() => {
+                    hashElement.textContent = hash;
+                    hashElement.classList.remove('hash-calculating');
+
+                    if (hash.startsWith('21e8')) {
+                        hashElement.classList.add('mining-glow');
+                        this.trigger21e8Bump(postId, hash, bumpIndicator);
+
+                        setTimeout(() => {
+                            hashElement.classList.remove('mining-glow');
+                        }, 3000);
+                    }
+                }, 500);
             }
         } catch (error) {
             console.error('Reply hash calculation failed:', error);
@@ -320,6 +429,11 @@ async function mineReplyProof(threadId, content, pattern) {
     const hashRateEl = document.getElementById('reply-hash-rate');
     const statusEl = document.getElementById('reply-mining-status');
     statusEl.style.display = 'block';
+
+    // Add visual mining effects
+    statusEl.classList.add('mining-shake');
+    const patternEl = statusEl.querySelector('strong');
+    if (patternEl) patternEl.classList.add('mining-glow');
 
     async function mineStep() {
         if (!replyMiningInProgress) return;
@@ -417,8 +531,10 @@ function submitReplyForm(formData, url) {
     })
     .finally(() => {
         // Reset the button
-        document.getElementById('mine-reply-btn').disabled = false;
-        document.getElementById('mine-reply-btn').textContent = 'Mine & Submit Reply';
+        const btn = document.getElementById('mine-reply-btn');
+        btn.disabled = false;
+        btn.innerHTML = '⚡ Mine & Submit Reply';
+        btn.classList.remove('mining-shake', 'mining-glow');
     });
 }
 
@@ -437,21 +553,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         replyMiningInProgress = true;
-        document.getElementById('mine-reply-btn').disabled = true;
-        document.getElementById('mine-reply-btn').textContent = 'Mining...';
+        const btn = document.getElementById('mine-reply-btn');
+        btn.disabled = true;
+        btn.innerHTML = '⛏️ <span class="mining-active">⚡</span> Mining...';
+        btn.classList.add('mining-shake', 'mining-glow');
 
         console.log('🚀 Starting reply mining for thread {{ $thread->id }}');
         console.log('📝 Content:', content);
 
-        // Try with easier pattern first (21e0 instead of 21e8)
-        await mineReplyProof({{ $thread->id }}, content, '21e0');
+        // Intermediate difficulty for replies
+        await mineReplyProof({{ $thread->id }}, content, '21e');
     });
 
     document.getElementById('stop-reply-mining').addEventListener('click', () => {
         replyMiningInProgress = false;
         document.getElementById('reply-mining-status').style.display = 'none';
-        document.getElementById('mine-reply-btn').disabled = false;
-        document.getElementById('mine-reply-btn').textContent = 'Mine & Submit Reply';
+        const btn = document.getElementById('mine-reply-btn');
+        btn.disabled = false;
+        btn.innerHTML = '⚡ Mine & Submit Reply';
+        btn.classList.remove('mining-shake', 'mining-glow');
     });
 
     // Initialize mining target
@@ -464,6 +584,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     initThreadMining();
 
+    // Sort functionality
+    function changeSort() {
+        const sortValue = document.getElementById('reply-sort').value;
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('sort', sortValue);
+        window.location = currentUrl.toString();
+    }
+
     // Force form action to stay lowercase
     const replyForm = document.getElementById('reply-form-actual');
     if (replyForm) {
@@ -474,6 +602,89 @@ document.addEventListener('DOMContentLoaded', function() {
         // This prevents accidental form submission without mining
     }
 });
+
+// Quick Reply Functions (Imageboard Style)
+function toggleQuickReply() {
+    const replyForm = document.getElementById('reply-form');
+    const quickBtn = document.getElementById('quick-reply-btn');
+
+    if (replyForm.style.display === 'none' || !replyForm.style.display) {
+        replyForm.style.display = 'block';
+        replyForm.scrollIntoView({ behavior: 'smooth' });
+        quickBtn.textContent = '❌ Hide Reply';
+        quickBtn.style.background = '#dc3545';
+    } else {
+        replyForm.style.display = 'none';
+        quickBtn.textContent = '💬 Quick Reply';
+        quickBtn.style.background = '#708B75';
+    }
+}
+
+// Dynamic PoW Difficulty based on thread size
+function getDynamicPoWPattern() {
+    const replyCount = {{ count($posts ?? []) }};
+
+    if (replyCount <= 10) {
+        return '21e';     // Easy for small threads
+    } else if (replyCount <= 50) {
+        return '21e8';    // Medium for growing threads
+    } else if (replyCount <= 100) {
+        return '21e80';   // Hard for large threads
+    } else {
+        return '21e800';  // Very hard for huge threads
+    }
+}
+
+// Update the mining function to use dynamic difficulty
+const originalMineReplyProof = mineReplyProof;
+async function mineReplyProof(threadId, content, staticPattern) {
+    const dynamicPattern = getDynamicPoWPattern();
+    console.log(`⚡ Dynamic PoW difficulty: ${dynamicPattern} (${{{ count($posts ?? []) }}} replies)`);
+    return originalMineReplyProof(threadId, content, dynamicPattern);
+}
+
+// Imageboard-style post quoting
+function quotePost(postId) {
+    const replyForm = document.getElementById('reply-form');
+    const textarea = document.getElementById('reply-content');
+
+    // Show reply form if hidden
+    if (replyForm.style.display === 'none' || !replyForm.style.display) {
+        toggleQuickReply();
+    }
+
+    // Add quote to textarea
+    const quote = `>>${postId}\n`;
+    const currentValue = textarea.value;
+
+    if (!currentValue.includes(quote)) {
+        textarea.value = currentValue + quote;
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+}
+
+// Image expansion (imageboard style)
+function expandImage(img) {
+    if (img.style.maxWidth === 'none') {
+        // Collapse to thumbnail
+        img.style.maxWidth = '125px';
+        img.style.maxHeight = '125px';
+        img.style.position = 'static';
+        img.style.zIndex = 'auto';
+        img.style.boxShadow = 'none';
+    } else {
+        // Expand to full size
+        img.style.maxWidth = 'none';
+        img.style.maxHeight = 'none';
+        img.style.position = 'relative';
+        img.style.zIndex = '999';
+        img.style.boxShadow = '0 4px 20px rgba(0,0,0,0.5)';
+
+        // Scroll into view if needed
+        img.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
 </script>
 </body>
 </html>

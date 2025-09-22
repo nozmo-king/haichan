@@ -1,675 +1,304 @@
-@extends('layout')
+<!DOCTYPE html>
+<html lang="en" data-theme="classic">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Login - Haichan</title>
+    <link rel="stylesheet" href="/css/haichan.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
+    <style>
+        .glow-text {
+            color: #9AB87A;
+            text-shadow:
+                0 0 5px #9AB87A,
+                0 0 10px #9AB87A,
+                0 0 15px #9AB87A,
+                0 0 20px #9AB87A;
+            animation: glow-pulse 2s ease-in-out infinite alternate;
+        }
 
-@section('content')
-<div class="breadcrumb">
-    Haichan > Login
-</div>
+        @keyframes glow-pulse {
+            from {
+                text-shadow:
+                    0 0 5px #9AB87A,
+                    0 0 10px #9AB87A,
+                    0 0 15px #9AB87A,
+                    0 0 20px #9AB87A;
+            }
+            to {
+                text-shadow:
+                    0 0 2px #9AB87A,
+                    0 0 5px #9AB87A,
+                    0 0 8px #9AB87A,
+                    0 0 12px #9AB87A;
+            }
+        }
+    </style>
+</head>
+<body>
 
-<div style="max-width: 600px; margin: 0 auto; background-color: #FFFFEE; border: 1px solid #ccc; padding: 30px;">
-    <h2 style="text-align: center; margin-bottom: 20px;">Proof of Work Authentication</h2>
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--secondary-bg), var(--primary-bg));">
+    <div style="background: var(--primary-bg); padding: 40px; border-radius: 12px; border: 3px solid var(--border-color); max-width: 500px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
 
-    <div style="margin-bottom: 25px; text-align: center;">
-        <p style="color: #666; margin-bottom: 15px;">
-            Prove ownership of an allowed secp256k1 private key to access the forum.
-        </p>
-    </div>
-
-    @if ($errors->any())
-        <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; margin-bottom: 20px; border-radius: 3px;">
-            <ul style="margin: 0; padding-left: 20px;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <form id="auth-form" method="POST" action="/login">
-        @csrf
-
-        <div style="margin-bottom: 20px;">
-            <label for="private_key" style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">
-                Private Key (secp256k1) *
-            </label>
-            <input
-                type="password"
-                id="private_key"
-                name="private_key"
-                placeholder="Enter your 64-character hex private key"
-                required
-                minlength="64"
-                maxlength="64"
-                pattern="[a-fA-F0-9]{64}"
-                autocomplete="off"
-                style="width: 100%; padding: 12px; border: 1px solid #ccc; font-family: 'Courier New', monospace; font-size: 14px; background-color: #fff; box-sizing: border-box;"
-            >
-            <p style="margin-top: 8px; font-size: 12px; color: #666;">
-                64-character hexadecimal private key (e.g., 4585a3c70eba6f3d6880b59670174489...)
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="font-family: 'Nova Cut', serif; font-size: 32px; color: var(--text-primary); margin: 0 0 10px 0;">
+                🔐 HAICHAN LOGIN
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 14px;">
+                If you want the love, you have to <span class="glow-text">log in</span>.
             </p>
         </div>
 
-        <button
-            type="submit"
-            id="auth-btn"
-            style="width: 100%; background-color: #789922; color: white; padding: 12px; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; margin-bottom: 10px;"
-        >
-            Authenticate
-        </button>
-    </form>
+        <!-- Error Messages -->
+        @if($errors->any())
+        <div style="background: #FFE6E6; border: 2px solid #FF6B6B; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+            @foreach($errors->all() as $error)
+                <div style="color: #D63031; font-size: 13px; margin: 5px 0;">• {{ $error }}</div>
+            @endforeach
+        </div>
+        @endif
 
-    <!-- Debug Login Button -->
-    <button
-        type="button"
-        id="debug-login-btn"
-        onclick="performDebugLogin()"
-        style="width: 100%; background-color: #dc3545; color: white; padding: 12px; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; margin-bottom: 10px;"
-    >
-        🐛 Debug Login (iOS Client Flow)
-    </button>
+        @if(session('success'))
+        <div style="background: #E8F5E8; border: 2px solid #4CAF50; padding: 15px; margin-bottom: 20px; border-radius: 8px; color: #2E7D32; font-size: 13px;">
+            {{ session('success') }}
+        </div>
+        @endif
 
-    <!-- Comparison Test Button -->
-    <button
-        type="button"
-        id="compare-test-btn"
-        onclick="performComparisonTest()"
-        style="width: 100%; background-color: #6f42c1; color: white; padding: 12px; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; margin-bottom: 20px;"
-    >
-        🔍 Send Website Data for Comparison
-    </button>
+        <!-- Login Form -->
+        <form method="POST" action="/auth/login" style="margin-bottom: 30px;">
+            @csrf
 
-    <!-- Key Generation Section -->
-    <div style="margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
-        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 12px; color: #333;">Don't have a secp256k1 key pair?</h3>
-        <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
-            Generate a new key pair here for testing purposes. In production, use a proper wallet.
-        </p>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
+                    📍 Bitcoin Address
+                </label>
+                <input type="text" name="address" required
+                       placeholder="Enter your Bitcoin address..."
+                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
+            </div>
 
-        <button
-            type="button"
-            onclick="generateKeyPair()"
-            style="width: 100%; background-color: #666; color: white; padding: 10px; border: none; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; margin-bottom: 15px;"
-        >
-            🔑 Generate Test Key Pair
-        </button>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
+                    🔑 Password
+                </label>
+                <input type="password" name="password" required
+                       placeholder="Enter your password..."
+                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
+            </div>
 
-        <div id="generatedKeys" style="display: none; padding: 15px; background-color: #cce7ff; border: 1px solid #9fc3ff; border-radius: 3px;">
-            <p style="font-size: 14px; font-weight: bold; color: #0056b3; margin-bottom: 8px;">Generated Test Keys:</p>
-            <div style="margin-bottom: 10px;">
-                <label style="display: block; font-size: 12px; font-weight: bold; color: #0056b3;">Private Key (save this!):</label>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="text" id="generatedPrivateKey" readonly style="flex: 1; font-size: 11px; font-family: 'Courier New', monospace; background-color: #fff; border: 1px solid #9fc3ff; border-radius: 3px; padding: 4px;">
-                    <button type="button" onclick="copyPrivateKey()" style="font-size: 11px; background-color: #0056b3; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer;">Copy</button>
+            <button type="submit" style="width: 100%; background: linear-gradient(135deg, var(--border-color), var(--accent-color)); color: var(--text-primary); border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+                🚀 LOGIN TO HAICHAN
+            </button>
+        </form>
+
+        <!-- Backup Login -->
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button onclick="toggleBackupLogin()" style="background: var(--secondary-bg); color: var(--text-secondary); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+                🔑 Use Private Key (Backup Login)
+            </button>
+        </div>
+
+        <!-- Backup Private Key Login Form -->
+        <form id="backup-login-form" method="POST" action="/auth/login-backup" style="margin-bottom: 30px; display: none;">
+            @csrf
+            <div style="background: var(--secondary-bg); padding: 20px; border-radius: 8px; border: 2px solid var(--accent-color);">
+                <div style="color: var(--text-primary); font-weight: bold; margin-bottom: 15px; text-align: center;">
+                    🆘 BACKUP LOGIN
                 </div>
-            </div>
-            <div style="margin-bottom: 10px;">
-                <label style="display: block; font-size: 12px; font-weight: bold; color: #0056b3;">Public Key:</label>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="text" id="generatedPublicKey" readonly style="flex: 1; font-size: 11px; font-family: 'Courier New', monospace; background-color: #fff; border: 1px solid #9fc3ff; border-radius: 3px; padding: 4px;">
-                    <button type="button" onclick="copyPublicKey()" style="font-size: 11px; background-color: #0056b3; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer;">Copy</button>
+                <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 15px; text-align: center;">
+                    Use this only if you lost access to your password
                 </div>
-            </div>
-            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                <button type="button" onclick="useGeneratedKey()" style="font-size: 12px; background-color: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 3px; cursor: pointer;">
-                    Use This Private Key
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
+                        🔑 Private Key
+                    </label>
+                    <input type="password" name="private_key"
+                           placeholder="Enter your 64-character private key..."
+                           style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
+                </div>
+
+                <button type="submit" style="width: 100%; background: var(--highlight-color); color: white; border: none; padding: 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">
+                    🆘 BACKUP LOGIN
                 </button>
-                <button type="button" onclick="addKeyToAllowed()" style="font-size: 12px; background-color: #007bff; color: white; padding: 6px 12px; border: none; border-radius: 3px; cursor: pointer;">
-                    Allow This Key
+            </div>
+        </form>
+
+        <!-- Registration & Friend Codes -->
+        <div style="text-align: center; padding-top: 20px; border-top: 2px solid var(--border-color);">
+            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;">
+                Need access? Get a <strong>Friend Code</strong>!
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                <a href="/auth/register" style="background: var(--content-bg); color: var(--text-primary); text-decoration: none; padding: 12px; border-radius: 6px; border: 2px solid var(--accent-color); font-size: 13px; font-weight: bold; transition: all 0.3s ease; text-align: center;">
+                    📝 REGISTER
+                </a>
+
+                <button onclick="generateNewKeys()" style="background: var(--highlight-color); color: white; border: none; padding: 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+                    🔧 GEN KEYS
                 </button>
             </div>
-            <div style="margin-top: 10px; padding: 8px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 3px;">
-                <p style="font-size: 11px; color: #856404;">⚠️ These are test keys only. Save the private key - you'll need it to sign in!</p>
+
+            <!-- Friend Code Section -->
+            <div style="background: var(--content-bg); padding: 20px; border-radius: 8px; border: 2px solid var(--accent-color);">
+                <div style="color: var(--text-primary); font-weight: bold; margin-bottom: 10px; font-size: 14px;">
+                    🤝 FRIEND CODE SYSTEM
+                </div>
+                <div style="color: var(--text-secondary); font-size: 12px; line-height: 1.4; margin-bottom: 15px;">
+                    • Each user gets 5 friend codes to share<br>
+                    • Friend codes are required for registration<br>
+                    • Invite friends and earn mining bonuses<br>
+                    • Build your network, increase your power
+                </div>
+                <div id="friend-code-demo" style="background: var(--secondary-bg); padding: 10px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-primary); text-align: center; cursor: pointer;" onclick="generateDemoCode()">
+                    DEMO12345678
+                </div>
+                <div style="color: var(--text-secondary); font-size: 10px; margin-top: 5px;">
+                    ↑ Click for a new demo code
+                </div>
             </div>
         </div>
-    </div>
 
-    <div style="margin-top: 25px; border-top: 1px solid #ddd; padding-top: 20px;">
-        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 12px; color: #333;">How it works:</h3>
-        <ul style="font-size: 14px; color: #666; line-height: 1.6;">
-            <li style="margin-bottom: 8px;">• Your private key generates a secp256k1 public key</li>
-            <li style="margin-bottom: 8px;">• Only pre-approved public keys are allowed access</li>
-            <li style="margin-bottom: 8px;">• Authentication uses cryptographic signature verification</li>
-            <li style="margin-bottom: 8px;">• Your private key never leaves your browser</li>
-        </ul>
-    </div>
-
-    <div style="margin-top: 25px; text-align: center;">
-        <p style="font-size: 14px; color: #666;">
-            Don't have an account?
-            <a href="{{ route('auth.register.form') }}" style="color: #34345c; text-decoration: underline;">
-                Register with friend code
-            </a>
-        </p>
+        <!-- User Status -->
+        <div id="user-status" style="margin-top: 25px; padding: 15px; background: var(--content-bg); border-radius: 8px; text-align: center;">
+            <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 8px;">HAICHAN STATUS</div>
+            <div id="status-display" style="color: var(--text-primary); font-weight: bold;">Loading...</div>
+        </div>
     </div>
 </div>
 
-<!-- Load key generation module -->
-<script src="/js/secp256k1-keygen.js"></script>
+<!-- Key Generation Modal -->
+<div id="key-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
+    <div style="background: var(--primary-bg); padding: 30px; border-radius: 12px; border: 3px solid var(--border-color); max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="color: var(--text-primary); margin: 0 0 10px 0;">🔧 KEY GENERATION</h2>
+            <p style="color: var(--text-secondary); font-size: 13px;">Your cryptographic credentials for Haichan</p>
+        </div>
+
+        <div id="generated-keys">
+            <!-- Keys will be displayed here -->
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="closeKeyModal()" style="background: var(--border-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
 
 <script>
+async function generateNewKeys() {
+    document.getElementById('key-modal').style.display = 'flex';
+    document.getElementById('generated-keys').innerHTML = '<div style="text-align: center; color: var(--text-secondary);">🔄 Generating keys...</div>';
+
+    try {
+        const response = await fetch('/auth/generate-keys');
+        const keys = await response.json();
+
+        document.getElementById('generated-keys').innerHTML = `
+            <div style="background: var(--content-bg); padding: 20px; border-radius: 8px;">
+                <div style="color: #FF6B35; font-weight: bold; margin-bottom: 15px; text-align: center;">
+                    ⚠️ SAVE THESE CREDENTIALS IMMEDIATELY ⚠️
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 5px;">Private Key (Keep Secret):</label>
+                    <input type="text" value="${keys.private_key}" readonly onclick="this.select()"
+                           style="width: 100%; padding: 10px; background: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; box-sizing: border-box;">
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 5px;">Public Key:</label>
+                    <input type="text" value="${keys.public_key}" readonly onclick="this.select()"
+                           style="width: 100%; padding: 10px; background: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; box-sizing: border-box;">
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 5px;">Address (Your Login ID):</label>
+                    <input type="text" value="${keys.address}" readonly onclick="this.select()"
+                           style="width: 100%; padding: 10px; background: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; box-sizing: border-box;">
+                </div>
+
+                <div style="background: #FFF3CD; border: 2px solid #FFC107; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                    <div style="color: #856404; font-size: 13px;">
+                        🔒 <strong>Login with Address + Password</strong><br>
+                        • Use your ADDRESS to login normally<br>
+                        • Create a PASSWORD during registration<br>
+                        • PRIVATE KEY is your backup login method<br>
+                        • Keep all credentials safe - we cannot recover lost accounts
+                    </div>
+                </div>
+            </div>
+        `;
+
+    } catch (error) {
+        document.getElementById('generated-keys').innerHTML = `<div style="color: #FF6B35; text-align: center;">❌ Error: ${error.message}</div>`;
+    }
+}
+
+function closeKeyModal() {
+    document.getElementById('key-modal').style.display = 'none';
+}
+
+function toggleBackupLogin() {
+    const backupForm = document.getElementById('backup-login-form');
+    const isVisible = backupForm.style.display === 'block';
+    backupForm.style.display = isVisible ? 'none' : 'block';
+}
+
+function generateDemoCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = 'DEMO';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('friend-code-demo').textContent = code;
+}
+
+// Load user status
+async function loadUserStatus() {
+    try {
+        const response = await fetch('/auth/invite-status');
+        const status = await response.json();
+
+        const slotsColor = status.remaining_slots > 50 ? 'var(--success-color)' :
+                          status.remaining_slots > 10 ? 'var(--warning-color)' : 'var(--highlight-color)';
+
+        document.getElementById('status-display').innerHTML = `
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; font-size: 11px;">
+                <div>
+                    <div style="color: var(--accent-color); font-size: 14px; font-weight: bold;">${status.current_users}</div>
+                    <div>USERS</div>
+                </div>
+                <div>
+                    <div style="color: ${slotsColor}; font-size: 14px; font-weight: bold;">${status.remaining_slots}</div>
+                    <div>SLOTS LEFT</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-primary); font-size: 14px; font-weight: bold;">256</div>
+                    <div>MAX</div>
+                </div>
+            </div>
+            <div style="margin-top: 10px; font-size: 10px; color: var(--text-secondary);">
+                ${status.remaining_slots > 0 ? '✅ Registration OPEN' : '🚫 Registration FULL'}
+            </div>
+        `;
+    } catch (error) {
+        document.getElementById('status-display').textContent = 'Status unavailable';
+    }
+}
+
+// Initialize
 document.addEventListener('DOMContentLoaded', function() {
-    const authForm = document.getElementById('auth-form');
-    const authBtn = document.getElementById('auth-btn');
-    const privateKeyInput = document.getElementById('private_key');
-
-    authForm.addEventListener('submit', async function(e) {
-        e.preventDefault(); // Always prevent form submission - we'll handle it via API
-
-        const privateKeyHex = privateKeyInput.value.trim();
-
-        if (!/^[a-fA-F0-9]{64}$/.test(privateKeyHex)) {
-            showError('Private key must be 64 hexadecimal characters');
-            return;
-        }
-
-        // Show loading state
-        authBtn.disabled = true;
-        authBtn.textContent = 'Authenticating...';
-
-        try {
-            await performCryptographicLogin(privateKeyHex);
-        } catch (error) {
-            console.error('Login failed:', error);
-            showError(error.message || 'Authentication failed. Please try again.');
-            authBtn.disabled = false;
-            authBtn.textContent = 'Authenticate';
-        }
-    });
-
-    function showError(message) {
-        // Remove existing error messages
-        const existingError = document.querySelector('.error-message');
-        if (existingError) {
-            existingError.remove();
-        }
-
-        // Create new error message
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-message';
-        errorDiv.style.cssText = 'background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; margin-bottom: 20px; border-radius: 3px;';
-        errorDiv.textContent = message;
-
-        // Insert before the form
-        const form = document.getElementById('auth-form');
-        form.parentNode.insertBefore(errorDiv, form);
-
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            errorDiv.remove();
-        }, 5000);
-    }
+    loadUserStatus();
+    setInterval(loadUserStatus, 30000); // Update every 30 seconds
 });
-
-// Key generation functions
-async function generateKeyPair() {
-    try {
-        const button = event.target;
-        const originalText = button.textContent;
-        button.textContent = 'Generating...';
-        button.disabled = true;
-
-        // Check if the key generation module is available
-        if (typeof window.Secp256k1KeyGen === 'undefined') {
-            throw new Error('Key generation module not loaded. Please refresh the page.');
-        }
-
-        // Generate the keypair using our module
-        const keyPair = await window.Secp256k1KeyGen.generateKeyPair();
-
-        // Validate the generated keys
-        if (!window.Secp256k1KeyGen.isValidPrivateKey(keyPair.privateKey)) {
-            throw new Error('Generated invalid private key');
-        }
-
-        if (!window.Secp256k1KeyGen.isValidPublicKey(keyPair.publicKey)) {
-            throw new Error('Generated invalid public key');
-        }
-
-        // Display the keys
-        document.getElementById('generatedPrivateKey').value = keyPair.privateKey;
-        document.getElementById('generatedPublicKey').value = keyPair.publicKey;
-        document.getElementById('generatedKeys').style.display = 'block';
-
-        // Restore button
-        button.textContent = originalText;
-        button.disabled = false;
-
-        showNotification('Test key pair generated! Save the private key securely.', 'success');
-    } catch (error) {
-        console.error('Key generation error:', error);
-        const button = event.target;
-        button.textContent = '🔑 Generate Test Key Pair';
-        button.disabled = false;
-        showNotification('Error generating key pair: ' + error.message, 'error');
-    }
-}
-
-function copyPrivateKey() {
-    const privateKey = document.getElementById('generatedPrivateKey').value;
-    copyToClipboard(privateKey, 'Private key copied to clipboard!');
-}
-
-function copyPublicKey() {
-    const publicKey = document.getElementById('generatedPublicKey').value;
-    copyToClipboard(publicKey, 'Public key copied to clipboard!');
-}
-
-function useGeneratedKey() {
-    const privateKey = document.getElementById('generatedPrivateKey').value;
-    document.getElementById('private_key').value = privateKey;
-    showNotification('Private key loaded into login form!', 'success');
-}
-
-async function addKeyToAllowed() {
-    try {
-        const publicKey = document.getElementById('generatedPublicKey').value;
-        if (!publicKey) {
-            showNotification('No public key to add', 'error');
-            return;
-        }
-
-        const button = event.target;
-        const originalText = button.textContent;
-        button.textContent = 'Adding...';
-        button.disabled = true;
-
-        const response = await fetch('/api/dev/add-public-key', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                public_key: publicKey
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            showNotification('Public key added to allowed list! You can now login.', 'success');
-        } else {
-            showNotification(data.message || 'Failed to add public key', 'error');
-        }
-
-        button.textContent = originalText;
-        button.disabled = false;
-
-    } catch (error) {
-        console.error('Error adding key to allowed list:', error);
-        showNotification('Error adding key: ' + error.message, 'error');
-
-        const button = event.target;
-        button.textContent = 'Allow This Key';
-        button.disabled = false;
-    }
-}
-
-function copyToClipboard(text, message) {
-    navigator.clipboard.writeText(text).then(function() {
-        showNotification(message, 'success');
-    }, function(err) {
-        showNotification('Failed to copy to clipboard', 'error');
-    });
-}
-
-function showNotification(message, type) {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 px-4 py-3 rounded shadow-lg z-50 ${
-        type === 'success' ? 'bg-green-100 border border-green-400 text-green-700' :
-        type === 'error' ? 'bg-red-100 border border-red-400 text-red-700' :
-        'bg-blue-100 border border-blue-400 text-blue-700'
-    }`;
-    notification.textContent = message;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.remove();
-    }, 4000);
-}
-
-// Main Login Function - Uses Cryptographic Proof (same as iOS)
-async function performCryptographicLogin(privateKeyHex) {
-    console.log('🔐 [LOGIN] Starting cryptographic authentication...');
-    console.log('🔐 [LOGIN] Private Key (first 8 chars):', privateKeyHex.substring(0, 8) + '...');
-
-    // Step 1: Generate public key from private key
-    if (typeof window.Secp256k1KeyGen === 'undefined') {
-        throw new Error('Key generation module not loaded');
-    }
-
-    const publicKey = await window.Secp256k1KeyGen.privateKeyToPublicKey(privateKeyHex);
-    console.log('🔐 [LOGIN] Generated Public Key:', publicKey);
-
-    // Step 2: Get challenge from server
-    console.log('🔐 [LOGIN] Requesting challenge from server...');
-    const challengeResponse = await fetch('/api/auth/challenge', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            public_key: publicKey
-        })
-    });
-
-    if (!challengeResponse.ok) {
-        const errorData = await challengeResponse.json();
-        throw new Error(`Challenge request failed: ${errorData.error || 'Unknown error'}`);
-    }
-
-    const challengeData = await challengeResponse.json();
-    console.log('🔐 [LOGIN] Challenge received:', challengeData.challenge);
-
-    // Step 3: Sign the challenge
-    console.log('🔐 [LOGIN] Signing challenge...');
-    const signature = await window.Secp256k1KeyGen.signMessage(privateKeyHex, challengeData.challenge);
-    console.log('🔐 [LOGIN] Signature generated:', signature);
-
-    // Step 4: Authenticate with server using web endpoint (with session support)
-    console.log('🔐 [LOGIN] Authenticating with server...');
-    const loginResponse = await fetch('/login/cryptographic', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-        },
-        body: JSON.stringify({
-            user_id: challengeData.user_id,
-            challenge: challengeData.challenge,
-            signature: signature
-        })
-    });
-
-    if (!loginResponse.ok) {
-        const errorData = await loginResponse.json();
-        throw new Error(`Authentication failed: ${errorData.error || 'Invalid signature'}`);
-    }
-
-    const loginData = await loginResponse.json();
-    console.log('🔐 [LOGIN] ✅ Authentication successful!', loginData);
-
-    // Step 5: Handle response and redirect
-    if (loginData.session_created) {
-        // Web browser session-based authentication
-        console.log('🔐 [LOGIN] Session created, redirecting...');
-        showNotification('Authentication successful! Redirecting...', 'success');
-
-        // Use the provided redirect URL or default to dashboard
-        const redirectUrl = loginData.redirect_url || '/dashboard';
-        setTimeout(() => {
-            window.location.href = redirectUrl;
-        }, 1000);
-    } else if (loginData.token) {
-        // API token-based authentication (fallback)
-        localStorage.setItem('auth_token', loginData.token);
-        console.log('🔐 [LOGIN] Token stored, redirecting...');
-        window.location.href = '/dashboard';
-    } else {
-        // Generic success case
-        console.log('🔐 [LOGIN] Authentication completed, redirecting...');
-        window.location.href = '/dashboard';
-    }
-}
-
-// Debug Login Function - Mimics iOS Client Flow
-async function performDebugLogin() {
-    try {
-        const privateKeyInput = document.getElementById('private_key');
-        const privateKeyHex = privateKeyInput.value.trim();
-
-        if (!/^[a-fA-F0-9]{64}$/.test(privateKeyHex)) {
-            showNotification('Please enter a valid 64-character hex private key first', 'error');
-            return;
-        }
-
-        const debugBtn = document.getElementById('debug-login-btn');
-        debugBtn.disabled = true;
-        debugBtn.textContent = '🐛 Debug Login - Step 1: Generating Public Key...';
-
-        console.log('=== DEBUG LOGIN START ===');
-        console.log('Private Key:', privateKeyHex);
-
-        // Step 1: Generate public key from private key (same as iOS would do)
-        if (typeof window.Secp256k1KeyGen === 'undefined') {
-            throw new Error('Key generation module not loaded');
-        }
-
-        const publicKey = await window.Secp256k1KeyGen.privateKeyToPublicKey(privateKeyHex);
-        console.log('Generated Public Key:', publicKey);
-
-        debugBtn.textContent = '🐛 Debug Login - Step 2: Getting Challenge...';
-
-        // Step 2: Get challenge from server (same API call as iOS)
-        const challengeResponse = await fetch('/api/auth/challenge', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                public_key: publicKey
-            })
-        });
-
-        if (!challengeResponse.ok) {
-            const errorData = await challengeResponse.json();
-            throw new Error(`Challenge request failed: ${errorData.error || 'Unknown error'}`);
-        }
-
-        const challengeData = await challengeResponse.json();
-        console.log('Challenge Data:', challengeData);
-
-        // Use the actual challenge from server (no more hardcoded challenges)
-        const actualChallenge = challengeData.challenge;
-        console.log('Using Server Challenge:', actualChallenge);
-
-        debugBtn.textContent = '🐛 Debug Login - Step 3: Signing Challenge...';
-
-        // Step 3: Sign the challenge (this should match iOS signing)
-        const signature = await window.Secp256k1KeyGen.signMessage(privateKeyHex, actualChallenge);
-        console.log('Generated Signature:', signature);
-
-        // Log signature components for debugging
-        if (signature.length === 128) {
-            const r = signature.substring(0, 64);
-            const s = signature.substring(64, 128);
-            console.log('Signature R:', r);
-            console.log('Signature S:', s);
-        }
-
-        debugBtn.textContent = '🐛 Debug Login - Step 4: Hash Analysis...';
-
-        // Step 4: Show hash analysis (same as server does)
-        const challengeHashBinary = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(actualChallenge));
-        const challengeHashHex = Array.from(new Uint8Array(challengeHashBinary))
-            .map(b => b.toString(16).padStart(2, '0')).join('');
-
-        console.log('Challenge Hash (Client - Binary):', challengeHashHex);
-
-        // Also try direct hex hash (alternative method)
-        const textEncoder = new TextEncoder();
-        const challengeBytes = textEncoder.encode(actualChallenge);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', challengeBytes);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        console.log('Challenge Hash (Alternative):', hashHex);
-
-        debugBtn.textContent = '🐛 Debug Login - Step 5: Testing with Server...';
-
-        // Step 5: Test signature verification with debug endpoint
-        const debugResponse = await fetch('/api/debug/signature', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                user_id: challengeData.user_id,
-                challenge: actualChallenge,
-                signature: signature
-            })
-        });
-
-        const debugResult = await debugResponse.json();
-        console.log('Debug Verification Result:', debugResult);
-
-        debugBtn.textContent = '🐛 Debug Login - Complete!';
-        debugBtn.disabled = false;
-
-        // Show results
-        const resultMessage = debugResult.verification_result ?
-            '✅ DEBUG SUCCESS: Signature verified!' :
-            '❌ DEBUG FAILED: Signature verification failed - check console logs';
-
-        showNotification(resultMessage, debugResult.verification_result ? 'success' : 'error');
-
-        console.log('=== DEBUG LOGIN COMPLETE ===');
-        console.log('Final Result:', debugResult.verification_result);
-        console.log('Check server logs for detailed verification process');
-
-    } catch (error) {
-        console.error('Debug login error:', error);
-        const debugBtn = document.getElementById('debug-login-btn');
-        debugBtn.disabled = false;
-        debugBtn.textContent = '🐛 Debug Login (iOS Client Flow)';
-        showNotification('Debug login failed: ' + error.message, 'error');
-    }
-}
-
-// Comparison Test Function - Sends detailed website data for comparison with iOS
-async function performComparisonTest() {
-    try {
-        const privateKeyInput = document.getElementById('private_key');
-        const privateKeyHex = privateKeyInput.value.trim();
-
-        if (!/^[a-fA-F0-9]{64}$/.test(privateKeyHex)) {
-            showNotification('Please enter a valid 64-character hex private key first', 'error');
-            return;
-        }
-
-        const compareBtn = document.getElementById('compare-test-btn');
-        compareBtn.disabled = true;
-        compareBtn.textContent = '🔍 Gathering Website Data...';
-
-        console.log('=== WEBSITE COMPARISON TEST START ===');
-
-        // Step 1: Generate public key
-        if (typeof window.Secp256k1KeyGen === 'undefined') {
-            throw new Error('Key generation module not loaded');
-        }
-
-        const publicKey = await window.Secp256k1KeyGen.privateKeyToPublicKey(privateKeyHex);
-        console.log('🔍 [COMPARE] Public Key:', publicKey);
-
-        // Step 2: Get challenge
-        compareBtn.textContent = '🔍 Getting Challenge...';
-        const challengeResponse = await fetch('/api/auth/challenge', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                public_key: publicKey
-            })
-        });
-
-        if (!challengeResponse.ok) {
-            const errorData = await challengeResponse.json();
-            throw new Error(`Challenge request failed: ${errorData.error || 'Unknown error'}`);
-        }
-
-        const challengeData = await challengeResponse.json();
-        const challenge = challengeData.challenge;
-        console.log('🔍 [COMPARE] Challenge:', challenge);
-
-        // Step 3: Hash challenge
-        compareBtn.textContent = '🔍 Hashing Challenge...';
-        const challengeHashBinary = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(challenge));
-        const challengeHash = Array.from(new Uint8Array(challengeHashBinary))
-            .map(b => b.toString(16).padStart(2, '0')).join('');
-        console.log('🔍 [COMPARE] Challenge Hash:', challengeHash);
-
-        // Step 4: Generate signature
-        compareBtn.textContent = '🔍 Generating Signature...';
-        const signature = await window.Secp256k1KeyGen.signMessage(privateKeyHex, challenge);
-        console.log('🔍 [COMPARE] Signature:', signature);
-
-        // Extract R and S components
-        const rHex = signature.substring(0, 64);
-        const sHex = signature.substring(64, 128);
-        console.log('🔍 [COMPARE] R:', rHex);
-        console.log('🔍 [COMPARE] S:', sHex);
-
-        // Step 5: Check S-value normalization (simulate what website does)
-        compareBtn.textContent = '🔍 Analyzing S-value...';
-
-        // secp256k1 curve order and half order (same as website uses)
-        const curveOrderHex = 'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141';
-        const halfOrderHex = '7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0';
-
-        // Compare S with half order (simplified comparison)
-        const sIsHigh = sHex > halfOrderHex; // Simple hex string comparison for this test
-        const sNormalized = sIsHigh ? 'normalized_on_client' : sHex; // Website normalizes during signing
-
-        console.log('🔍 [COMPARE] S is high:', sIsHigh);
-        console.log('🔍 [COMPARE] S normalized:', sNormalized);
-
-        // Step 6: Send comparison data
-        compareBtn.textContent = '🔍 Sending Comparison Data...';
-
-        const comparisonData = {
-            platform: 'website',
-            private_key: privateKeyHex,
-            public_key: publicKey,
-            challenge: challenge,
-            challenge_hash: challengeHash,
-            signature_r: rHex,
-            signature_s: sHex,
-            signature_full: signature,
-            s_was_high: sIsHigh,
-            s_normalized: sNormalized
-        };
-
-        console.log('🔍 [COMPARE] Sending data:', comparisonData);
-
-        const comparisonResponse = await fetch('/api/debug/compare', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(comparisonData)
-        });
-
-        if (!comparisonResponse.ok) {
-            throw new Error('Comparison request failed');
-        }
-
-        const comparisonResult = await comparisonResponse.json();
-        console.log('🔍 [COMPARE] Server Response:', comparisonResult);
-
-        compareBtn.textContent = '🔍 Comparison Complete!';
-        compareBtn.disabled = false;
-
-        // Show results
-        const summary = comparisonResult.summary;
-        const allOk = summary.public_key_ok && summary.challenge_hash_ok && summary.s_normalization_ok && summary.signature_verifies;
-
-        const resultMessage = allOk ?
-            '✅ WEBSITE DATA: All checks passed!' :
-            `❌ WEBSITE DATA: Issues found - Check console for details`;
-
-        showNotification(resultMessage, allOk ? 'success' : 'error');
-
-        console.log('=== WEBSITE COMPARISON TEST COMPLETE ===');
-        console.log('Summary:', summary);
-        console.log('Now run the same test on iOS and compare results!');
-
-    } catch (error) {
-        console.error('Comparison test failed:', error);
-        const compareBtn = document.getElementById('compare-test-btn');
-        compareBtn.disabled = false;
-        compareBtn.textContent = '🔍 Send Website Data for Comparison';
-        showNotification('Comparison test failed: ' + error.message, 'error');
-    }
-}
 </script>
-@endsection
+
+</body>
+</html>

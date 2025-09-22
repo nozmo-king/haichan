@@ -4,10 +4,36 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\AllowedPublicKey;
+use App\Models\BitcoinAuth;
+use App\Models\Thread;
+use App\Models\Post;
+use App\Models\InviteCode;
 
 class AdminController extends Controller
 {
     public function index()
+    {
+        // Check if user is admin
+        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+            return redirect('/')->with('error', 'Admin access required');
+        }
+
+        $totalUsers = \App\Models\BitcoinAuth::count();
+        $remainingSlots = 256 - $totalUsers;
+        $totalProofs = \App\Models\ProofSubmission::count() ?? 0;
+        $networkHashrate = \App\Models\ProofSubmission::where('created_at', '>', now()->subMinutes(5))->count() * 12;
+        $totalThreads = \App\Models\Thread::count() ?? 0;
+        $totalPosts = \App\Models\Post::count() ?? 0;
+        $activeInvites = \App\Models\InviteCode::where('uses_remaining', '>', 0)->count();
+        $totalUses = \App\Models\InviteCode::where('uses_remaining', '>', 0)->sum('uses_remaining');
+
+        return view('admin.dashboard', compact(
+            'totalUsers', 'remainingSlots', 'totalProofs', 'networkHashrate',
+            'totalThreads', 'totalPosts', 'activeInvites', 'totalUses'
+        ));
+    }
+
+    public function keys()
     {
         $allowedKeys = AllowedPublicKey::with('users')->orderBy('created_at', 'desc')->paginate(20);
         return view('admin.keys.index', compact('allowedKeys'));
@@ -64,5 +90,175 @@ class AdminController extends Controller
     {
         $allowedKey->delete();
         return redirect()->route('admin.keys.index')->with('success', 'Public key removed successfully');
+    }
+
+    // User Management
+    public function users(Request $request)
+    {
+        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+            return redirect('/')->with('error', 'Admin access required');
+        }
+
+        $query = BitcoinAuth::query();
+
+        switch ($request->get('filter')) {
+            case 'admins':
+                $query->where('admin_level', '>', 0);
+                break;
+            case 'banned':
+                $query->where('is_banned', true);
+                break;
+            case 'recent':
+                $query->where('created_at', '>', now()->subDays(7));
+                break;
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->get();
+
+        return view('admin.users', compact('users'));
+    }
+
+    public function banUser($id)
+    {
+        $user = BitcoinAuth::findOrFail($id);
+        $user->update(['is_banned' => true, 'banned_until' => null, 'ban_reason' => 'Banned by admin']);
+        return back()->with('success', 'User banned successfully');
+    }
+
+    public function unbanUser($id)
+    {
+        $user = BitcoinAuth::findOrFail($id);
+        $user->update(['is_banned' => false, 'banned_until' => null, 'ban_reason' => null]);
+        return back()->with('success', 'User unbanned successfully');
+    }
+
+    public function promoteUser($id)
+    {
+        $user = BitcoinAuth::findOrFail($id);
+        $newLevel = min(5, $user->admin_level + 1);
+        $user->update(['admin_level' => $newLevel, 'is_admin' => $newLevel > 0]);
+        return back()->with('success', 'User promoted successfully');
+    }
+
+    public function demoteUser($id)
+    {
+        $user = BitcoinAuth::findOrFail($id);
+        $newLevel = max(0, $user->admin_level - 1);
+        $user->update(['admin_level' => $newLevel, 'is_admin' => $newLevel > 0]);
+        return back()->with('success', 'User demoted successfully');
+    }
+
+    // Forum Moderation
+    public function forum(Request $request)
+    {
+        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+            return redirect('/')->with('error', 'Admin access required');
+        }
+
+        $stats = [
+            'threads' => Thread::count(),
+            'posts' => Post::count(),
+            'pinned' => Thread::where('sticky', true)->count(),
+            'locked' => Thread::where('locked', true)->count()
+        ];
+
+        $threads = Thread::with(['board', 'bitcoinUser'])
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        $posts = Post::with(['thread.board', 'bitcoinUser'])
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        return view('admin.forum', compact('stats', 'threads', 'posts'));
+    }
+
+    public function pinThread($id)
+    {
+        $thread = Thread::findOrFail($id);
+        $thread->update(['sticky' => true]);
+        return back()->with('success', 'Thread pinned successfully');
+    }
+
+    public function lockThread($id)
+    {
+        $thread = Thread::findOrFail($id);
+        $thread->update(['locked' => true]);
+        return back()->with('success', 'Thread locked successfully');
+    }
+
+    public function deleteThread($id)
+    {
+        $thread = Thread::findOrFail($id);
+        // Also delete related posts
+        Post::where('thread_id', $id)->delete();
+        $thread->delete();
+        return back()->with('success', 'Thread deleted successfully');
+    }
+
+    public function deletePost($id)
+    {
+        $post = Post::findOrFail($id);
+        $post->delete();
+        return back()->with('success', 'Post deleted successfully');
+    }
+
+    // Genesis Code Management
+    public function createGenesisCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string|max:32|unique:invite_codes,code',
+            'uses' => 'required|integer|min:1|max:50'
+        ]);
+
+        InviteCode::create([
+            'code' => strtoupper($request->code),
+            'max_uses' => $request->uses,
+            'uses_remaining' => $request->uses,
+            'created_by' => session('bitcoin_auth_id')
+        ]);
+
+        return back()->with('success', 'Genesis code created successfully');
+    }
+
+    // API endpoint for activity feed
+    public function getActivity()
+    {
+        $activities = [];
+
+        // Recent registrations
+        $recentUsers = BitcoinAuth::where('created_at', '>', now()->subHours(24))
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        foreach ($recentUsers as $user) {
+            $activities[] = [
+                'description' => "New user registered: {$user->username}",
+                'time' => $user->created_at->diffForHumans()
+            ];
+        }
+
+        // Recent threads
+        $recentThreads = Thread::where('created_at', '>', now()->subHours(24))
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        foreach ($recentThreads as $thread) {
+            $activities[] = [
+                'description' => "New thread: " . Str::limit($thread->title, 40),
+                'time' => $thread->created_at->diffForHumans()
+            ];
+        }
+
+        // Sort by time
+        usort($activities, function($a, $b) {
+            return strcmp($b['time'], $a['time']);
+        });
+
+        return response()->json(array_slice($activities, 0, 10));
     }
 }

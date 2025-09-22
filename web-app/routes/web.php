@@ -3,14 +3,36 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 
-// Public authentication routes
+Route::get('/', function () {
+    try {
+        $boards = \App\Models\Board::getActiveBoards();
+        return view('boards.index', compact('boards'));
+    } catch (Exception $e) {
+        return response()->json(['error' => $e->getMessage()]);
+    }
+});
+
+// Public authentication routes - both mobile and web support
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('auth.login');
+Route::get('/auth/register', [AuthController::class, 'showRegister'])->name('register');
+Route::get('/auth/generate-keys', [AuthController::class, 'generateKeys']);
+Route::get('/auth/invite-status', function() {
+    return response()->json(\App\Models\InviteCode::getInviteStatus());
+});
+
+// Challenge endpoint for mobile cryptographic auth
 Route::post('/challenge', [AuthController::class, 'getChallenge'])->middleware('throttle:25,1')->name('auth.challenge');
-// New cryptographic login route for web browsers (with session support)
+
+// Login routes - supporting both mobile cryptographic and web auth
 Route::post('/login/cryptographic', [AuthController::class, 'cryptographicLogin'])->middleware('throttle:25,1')->name('auth.cryptographic.login');
-// Commented out old login route - now using cryptographic authentication
-// Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
+Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
+Route::post('/auth/login-backup', [AuthController::class, 'backupLogin'])->middleware('throttle:10,1');
+Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+
+// Logout routes - supporting both paths
 Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->middleware('auth');
+Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout.alt');
 
 // Registration routes (public)
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('auth.register.form');
@@ -56,6 +78,39 @@ Route::middleware('auth')->group(function () {
     Route::get('/forum/board/{code}/thread/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])->name('forum.thread.alt');
     Route::get('/forum/board/{code}/create', [App\Http\Controllers\ForumController::class, 'createThread'])->name('forum.create');
     Route::post('/forum/board/{code}/create', [App\Http\Controllers\ForumController::class, 'storeThread'])->name('forum.store');
+
+    // User post management
+    Route::delete('/posts/{postId}/delete', [App\Http\Controllers\ForumController::class, 'deleteUserPost'])
+         ->name('posts.delete.user')
+         ->where('postId', '[0-9]+');
+    Route::delete('/threads/{threadId}/delete', [App\Http\Controllers\ForumController::class, 'deleteUserThread'])
+         ->name('threads.delete.user')
+         ->where('threadId', '[0-9]+');
+
+    // Board catalog (specific path, must come before {board})
+    Route::get('/{board}/catalog', [App\Http\Controllers\ForumController::class, 'showCatalog'])
+         ->name('board.catalog')
+         ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+
+    // Thread creation (specific path, must come before {board})
+    Route::get('/{board}/create', [App\Http\Controllers\ForumController::class, 'createThread'])
+         ->name('board.create')
+         ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+
+    // Thread view (specific path, must come before {board})
+    Route::get('/{board}/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])
+         ->name('forum.thread')
+         ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
+
+    // Thread creation POST (specific path)
+    Route::post('/{board}/create', [App\Http\Controllers\ForumController::class, 'storeThread'])
+         ->name('board.store')
+         ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+
+    // Thread creation (less specific, comes after specific paths)
+    Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])
+         ->name('board.store.alt')
+         ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
 
     // Dynamic board routes - supports all boards: gen, tech, biz, film, x, lit, meta, mu
     Route::group([], function () {
@@ -113,13 +168,36 @@ Route::middleware('auth')->group(function () {
         return view('static.faq');
     });
 
-    // Admin routes
+    // Admin routes (requires Bitcoin auth)
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [App\Http\Controllers\AdminController::class, 'index'])->name('index');
+
+        // User Management
+        Route::get('/users', [App\Http\Controllers\AdminController::class, 'users'])->name('users');
+        Route::post('/users/{id}/ban', [App\Http\Controllers\AdminController::class, 'banUser'])->name('users.ban');
+        Route::post('/users/{id}/unban', [App\Http\Controllers\AdminController::class, 'unbanUser'])->name('users.unban');
+        Route::post('/users/{id}/promote', [App\Http\Controllers\AdminController::class, 'promoteUser'])->name('users.promote');
+        Route::post('/users/{id}/demote', [App\Http\Controllers\AdminController::class, 'demoteUser'])->name('users.demote');
+
+        // Forum Moderation
+        Route::get('/forum', [App\Http\Controllers\AdminController::class, 'forum'])->name('forum');
+        Route::post('/threads/{id}/pin', [App\Http\Controllers\AdminController::class, 'pinThread'])->name('threads.pin');
+        Route::post('/threads/{id}/lock', [App\Http\Controllers\AdminController::class, 'lockThread'])->name('threads.lock');
+        Route::delete('/threads/{id}/delete', [App\Http\Controllers\AdminController::class, 'deleteThread'])->name('threads.delete');
+        Route::delete('/posts/{id}/delete', [App\Http\Controllers\AdminController::class, 'deletePost'])->name('posts.delete');
+
+        // Genesis Code Management
+        Route::post('/genesis-codes', [App\Http\Controllers\AdminController::class, 'createGenesisCode'])->name('genesis-codes.store');
+
+        // API endpoints
+        Route::get('/api/activity', [App\Http\Controllers\AdminController::class, 'getActivity'])->name('api.activity');
+
+        // Legacy keys management
+        Route::get('/keys', [App\Http\Controllers\AdminController::class, 'keys'])->name('keys');
         Route::resource('keys', App\Http\Controllers\AdminController::class, [
             'except' => ['show'],
             'names' => [
-                'index' => 'keys.index',
+                'keys.index' => 'keys.index',
                 'create' => 'keys.create',
                 'store' => 'keys.store',
                 'edit' => 'keys.edit',

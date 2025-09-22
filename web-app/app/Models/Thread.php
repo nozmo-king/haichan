@@ -37,6 +37,11 @@ class Thread extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function bitcoinUser()
+    {
+        return $this->belongsTo(BitcoinAuth::class, 'user_id');
+    }
+
     public function posts()
     {
         return $this->hasMany(Post::class)->orderBy('created_at', 'asc');
@@ -49,21 +54,46 @@ class Thread extends Model
 
     public function getTotalPowAttribute()
     {
-        return $this->proofOfWork()->sum('points');
+        return $this->proofOfWork()->sum('points') + $this->bump_score;
+    }
+
+    public function getAccumulatedPointsAttribute()
+    {
+        // Real-time calculation of all PoW for this thread
+        $threadPoW = ProofOfWork::where('thread_id', $this->id)->sum('points');
+        $bumpScore = $this->bump_score ?? 0;
+        $threadCreatePoW = $this->pow_difficulty ?? 1;
+
+        return $threadPoW + $bumpScore + $threadCreatePoW;
+    }
+
+    public function getRealTimeHashrateAttribute()
+    {
+        // Calculate hashrate based on recent PoW submissions
+        $recentProofs = ProofOfWork::where('thread_id', $this->id)
+            ->where('created_at', '>', now()->subMinutes(5))
+            ->count();
+
+        return $recentProofs * 256; // Estimated hashes based on 21e8 difficulty
     }
 
     public function getCalculatedPowAttribute()
     {
-        // Calculate PoW points based on pattern difficulty
+        // REAL PoW calculation - no fake numbers
         $patternValues = [
-            '21' => 0.1, // Idle pattern
+            '21' => 0.1,
+            '21e' => 0.5,
             '21e8' => 1,
             '21e80' => 5,
             '21e800' => 25,
-            '21e8000' => 125,
-            '000021e8' => 625
+            '21e8000' => 100,
+            '000' => 500,
+            '666' => 666,
+            '777' => 777,
+            'deadbeef' => 3133,
+            '1337' => 1337
         ];
-        
+
         $totalPoints = 0;
         foreach ($patternValues as $pattern => $points) {
             $count = $this->proofOfWork()
@@ -71,7 +101,7 @@ class Thread extends Model
                 ->count();
             $totalPoints += $count * $points;
         }
-        
+
         return $totalPoints;
     }
 
@@ -165,11 +195,11 @@ class Thread extends Model
     {
         $difficulties = [
             '21' => 0.1,
-            '21e8' => 1.0,
-            '21e80' => 5.0,
-            '21e800' => 25.0,
-            '21e8000' => 125.0,
-            '000021e8' => 625.0
+            '21e8' => 1,
+            '21e80' => 5,
+            '21e800' => 25,
+            '21e8000' => 100,
+            '21e80000' => 500
         ];
         
         return $difficulties[$pattern] ?? 1.0;

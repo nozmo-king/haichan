@@ -83,6 +83,9 @@
                 </div>
                 <div style="color: #708B75; font-weight: bold;">
                     by {{ $thread->author_name ?: 'Anonymous' }}
+                    @if($thread->user_id)
+                        @include('components.admin-badge', ['user' => $thread->bitcoinUser])
+                    @endif
                 </div>
             </div>
 

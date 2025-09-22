@@ -44,6 +44,14 @@ Route::post('/debug/signature', [AuthApiController::class, 'debugSignature'])->m
 Route::get('/debug/test-challenge', [AuthApiController::class, 'createTestChallenge'])->middleware('throttle:20,1');
 Route::post('/debug/compare', [AuthApiController::class, 'compareImplementations'])->middleware('throttle:20,1');
 
+// Mining API endpoints (no auth required)
+Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
+Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
+Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
+
+// Public subscription routes (requires public key but not auth token)
+Route::post('/subscription/activate-for-key', [App\Http\Controllers\Api\SubscriptionApiController::class, 'activateForPublicKey'])->middleware('throttle:25,1');
+
 // Protected API routes
 Route::middleware('auth:sanctum')->group(function () {
     // Authentication endpoints
