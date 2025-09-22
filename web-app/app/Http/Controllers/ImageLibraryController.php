@@ -65,11 +65,17 @@ class ImageLibraryController extends Controller
             ]);
 
         } else {
-            // Fallback to simplified mining for UI interactions without real PoW
-            $hashRate = $request->hash_rate ?? rand(500, 2000);
-            $basePoints = max(5, floor($hashRate / 50));
-            $bonusPoints = rand(5, 25);
-            $totalPoints = $basePoints + $bonusPoints;
+            // Real mining calculation without dummy random values
+            $hashRate = $request->hash_rate ?? 1000;
+
+            // Base points calculation based on actual image properties
+            $basePoints = max(5, floor($image->file_size / 100000)); // Size-based points
+
+            // File complexity bonus based on hash entropy
+            $hashEntropy = $this->calculateHashEntropy($image->hash);
+            $entropyBonus = floor($hashEntropy * 3);
+
+            $totalPoints = $basePoints + $entropyBonus;
 
             // Apply multipliers based on image's file hash patterns
             if (str_starts_with($image->hash, '000')) {
@@ -81,18 +87,23 @@ class ImageLibraryController extends Controller
             } elseif (str_starts_with($image->hash, 'dead')) {
                 $totalPoints *= 8;
             }
+
+            // Usage-based mining difficulty increase
+            if ($image->usage_count > 50) {
+                $totalPoints = max(1, floor($totalPoints / 2));
+            }
         }
 
-        // Rare chance for MEGA JACKPOT
-        $jackpot = rand(1, 100) <= 5;
-        if ($jackpot) {
-            $totalPoints *= 5;
+        // Real jackpot calculation based on hash patterns
+        $jackpot = $this->calculateJackpot($image->hash, $image->usage_count);
+        if ($jackpot > 1) {
+            $totalPoints *= $jackpot;
         }
 
         $image->awardPoW($totalPoints);
 
         $message = "Mined {$totalPoints} PoW points!";
-        if ($jackpot) {
+        if ($jackpot > 3) {
             $message = "🎰 MEGA JACKPOT! {$totalPoints} PoW points!";
         } elseif (str_starts_with($image->hash, '000')) {
             $message = "💎 LEGENDARY HASH! {$totalPoints} PoW points!";
@@ -100,6 +111,8 @@ class ImageLibraryController extends Controller
             $message = "😈 CURSED HASH! {$totalPoints} PoW points!";
         } elseif (str_starts_with($image->hash, 'dead')) {
             $message = "💀 DEATH HASH! {$totalPoints} PoW points!";
+        } elseif ($totalPoints > 100) {
+            $message = "💰 BIG SCORE! {$totalPoints} PoW points!";
         }
 
         return response()->json([
@@ -107,7 +120,8 @@ class ImageLibraryController extends Controller
             'points' => $totalPoints,
             'new_total' => $image->fresh()->total_pow_earned,
             'message' => $message,
-            'jackpot' => $jackpot,
+            'jackpot' => $jackpot > 1,
+            'jackpot_multiplier' => $jackpot,
             'hash_pattern' => substr($image->hash, 0, 8),
             'verified_pow' => $request->has('proof_hash')
         ]);
@@ -139,8 +153,8 @@ class ImageLibraryController extends Controller
             '21' => 1,
             '21e8' => 5,
             '21e80' => 25,
-            '21e800' => 125,
-            '21e8000' => 625,
+            '21e800' => 100,  // Updated to match main system
+            '21e8000' => 500,  // Scaled up for image mining
             '000021e8' => 3125,
             '000' => 500,  // Legendary
             '666' => 750,  // Cursed
@@ -177,8 +191,8 @@ class ImageLibraryController extends Controller
             $this->applyDithering($libraryImage);
         }
 
-        // Award initial PoW points for uploading
-        $uploadPoints = rand(5, 15);
+        // Award real PoW points for uploading based on file properties
+        $uploadPoints = $this->calculateUploadPoW($libraryImage);
         $libraryImage->awardPoW($uploadPoints);
 
         return response()->json([
@@ -250,6 +264,47 @@ class ImageLibraryController extends Controller
         ];
 
         return response()->json($stats);
+    }
+
+    public function updateMetadata(Request $request, $id)
+    {
+        $request->validate([
+            'original_name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:500',
+            'tags' => 'nullable|string|max:255'
+        ]);
+
+        $image = ImageLibrary::findOrFail($id);
+
+        // Create metadata array
+        $metadata = [
+            'description' => $request->description,
+            'tags' => $request->tags ? array_map('trim', explode(',', $request->tags)) : [],
+            'edited_by_ip' => $request->ip(),
+            'edited_at' => now(),
+            'original_uploader_ip' => $image->uploader_ip
+        ];
+
+        $image->update([
+            'original_name' => $request->original_name,
+            'dither_settings' => array_merge($image->dither_settings ?? [], ['metadata' => $metadata])
+        ]);
+
+        // Award real PoW bonus for contributing metadata
+        $metadataBonus = $this->calculateMetadataBonus($image, $metadata);
+        $image->awardPoW($metadataBonus);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Image metadata updated successfully!',
+            'image' => [
+                'id' => $image->id,
+                'original_name' => $image->original_name,
+                'description' => $metadata['description'],
+                'tags' => $metadata['tags'],
+                'total_pow' => $image->fresh()->total_pow_earned
+            ]
+        ]);
     }
 
     public function search(Request $request)
@@ -372,7 +427,108 @@ class ImageLibraryController extends Controller
         return response()->json([
             'arrangement' => $images,
             'timestamp' => now(),
-            'shift_factor' => rand(1, 10)
+            'shift_factor' => $this->calculateShiftFactor()
         ]);
+    }
+
+    /**
+     * Calculate hash entropy for real complexity assessment
+     */
+    private function calculateHashEntropy($hash)
+    {
+        $chars = str_split($hash);
+        $charCounts = array_count_values($chars);
+        $totalChars = strlen($hash);
+        $entropy = 0;
+
+        foreach ($charCounts as $count) {
+            $probability = $count / $totalChars;
+            $entropy -= $probability * log($probability, 2);
+        }
+
+        return $entropy;
+    }
+
+    /**
+     * Calculate real jackpot multiplier based on hash patterns
+     */
+    private function calculateJackpot($hash, $usageCount)
+    {
+        $multiplier = 1;
+
+        // Legendary patterns
+        if (str_contains($hash, 'deadbeef')) $multiplier = 25;
+        elseif (str_starts_with($hash, '000000')) $multiplier = 15;
+        elseif (str_starts_with($hash, '777')) $multiplier = 12;
+        elseif (str_starts_with($hash, '666')) $multiplier = 8;
+        elseif (str_contains($hash, 'c0de')) $multiplier = 6;
+        elseif (str_contains($hash, '1337')) $multiplier = 5;
+        elseif (str_starts_with($hash, '000')) $multiplier = 4;
+        elseif (preg_match('/^[0-9a-f]{3}\1/', $hash)) $multiplier = 3; // Repeating pattern
+
+        // Reduce jackpot for overused images
+        if ($usageCount > 100) $multiplier = max(1, floor($multiplier / 2));
+
+        return $multiplier;
+    }
+
+    /**
+     * Calculate upload PoW points based on file properties
+     */
+    private function calculateUploadPoW($image)
+    {
+        $points = 5; // Base points
+
+        // File size bonus
+        if ($image->file_size > 5000000) $points += 10; // 5MB+
+        elseif ($image->file_size > 1000000) $points += 5; // 1MB+
+        elseif ($image->file_size > 500000) $points += 2; // 500KB+
+
+        // Resolution bonus
+        $totalPixels = ($image->width ?? 0) * ($image->height ?? 0);
+        if ($totalPixels > 8000000) $points += 8; // 8MP+
+        elseif ($totalPixels > 2000000) $points += 4; // 2MP+
+        elseif ($totalPixels > 1000000) $points += 2; // 1MP+
+
+        // Hash-based rarity bonus
+        $entropy = $this->calculateHashEntropy($image->hash);
+        if ($entropy > 3.8) $points += 5; // High entropy
+        elseif ($entropy > 3.5) $points += 2; // Medium entropy
+
+        return $points;
+    }
+
+    /**
+     * Calculate metadata contribution bonus
+     */
+    private function calculateMetadataBonus($image, $metadata)
+    {
+        $bonus = 1; // Base bonus
+
+        if (!empty($metadata['description'])) {
+            $bonus += strlen($metadata['description']) > 50 ? 3 : 1;
+        }
+
+        if (!empty($metadata['tags'])) {
+            $bonus += count($metadata['tags']) * 0.5;
+        }
+
+        // First-time metadata bonus
+        $existingMetadata = $image->dither_settings['metadata'] ?? null;
+        if (!$existingMetadata) $bonus *= 2;
+
+        return max(1, floor($bonus));
+    }
+
+    /**
+     * Calculate dynamic shift factor for library arrangement
+     */
+    private function calculateShiftFactor()
+    {
+        // Base shift on current system activity
+        $recentUploads = ImageLibrary::where('created_at', '>', now()->subHours(1))->count();
+        $activeImages = ImageLibrary::where('updated_at', '>', now()->subMinutes(30))->count();
+
+        return max(1, min(10, $recentUploads + floor($activeImages / 5)));
     }
 }

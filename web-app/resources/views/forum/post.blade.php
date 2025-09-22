@@ -34,6 +34,12 @@
             <input type="file" name="image" id="image-post-{{ $post->id }}" accept="image/*"
                    style="width: 100%; padding: 5px; margin: 5px 0;">
             <small style="color: #666; font-size: 11px;">Max 2MB. JPEG, PNG, JPG, GIF</small>
+            <div style="margin-top: 5px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 11px;">
+                    <input type="checkbox" name="dither" value="1">
+                    <span style="color: #666;">🎨 Dither</span>
+                </label>
+            </div>
         </div>
         <button type="submit">Post Reply</button>
     </form>

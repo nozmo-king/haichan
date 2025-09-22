@@ -1,0 +1,286 @@
+/* HAICHAN THEME SYSTEM */
+
+/* Theme Variables */
+:root {
+  /* Default Theme (Classic) */
+  --primary-bg: #F5F5DC;
+  --secondary-bg: #FFFACD;
+  --content-bg: #FFFFEE;
+  --border-color: #708B75;
+  --accent-color: #9AB87A;
+  --text-primary: #3D315B;
+  --text-secondary: #708B75;
+  --text-muted: #444B6E;
+  --highlight-color: #CD5C5C;
+  --success-color: #4CAF50;
+  --warning-color: #FF6B35;
+}
+
+/* Dark Cyberpunk Theme */
+[data-theme="cyberpunk"] {
+  --primary-bg: #0D1117;
+  --secondary-bg: #161B22;
+  --content-bg: #21262D;
+  --border-color: #00FFFF;
+  --accent-color: #FF00FF;
+  --text-primary: #00FFFF;
+  --text-secondary: #FFFFFF;
+  --text-muted: #8B949E;
+  --highlight-color: #FF00FF;
+  --success-color: #00FF00;
+  --warning-color: #FFFF00;
+}
+
+/* Vaporwave Theme */
+[data-theme="vaporwave"] {
+  --primary-bg: #2D1B69;
+  --secondary-bg: #FF006E;
+  --content-bg: #8338EC;
+  --border-color: #00F5FF;
+  --accent-color: #FFBE0B;
+  --text-primary: #FFFFFF;
+  --text-secondary: #FF006E;
+  --text-muted: #C77DFF;
+  --highlight-color: #FFBE0B;
+  --success-color: #00F5FF;
+  --warning-color: #FF006E;
+}
+
+/* Matrix Green Theme */
+[data-theme="matrix"] {
+  --primary-bg: #000000;
+  --secondary-bg: #001100;
+  --content-bg: #003300;
+  --border-color: #00FF00;
+  --accent-color: #33FF33;
+  --text-primary: #00FF00;
+  --text-secondary: #66FF66;
+  --text-muted: #009900;
+  --highlight-color: #FFFF00;
+  --success-color: #00FF00;
+  --warning-color: #FF0000;
+}
+
+/* Retro Terminal Theme */
+[data-theme="terminal"] {
+  --primary-bg: #1E1E1E;
+  --secondary-bg: #2D2D30;
+  --content-bg: #252526;
+  --border-color: #00AA00;
+  --accent-color: #FFFF00;
+  --text-primary: #00AA00;
+  --text-secondary: #FFFFFF;
+  --text-muted: #808080;
+  --highlight-color: #FFFF00;
+  --success-color: #00FF00;
+  --warning-color: #FF8800;
+}
+
+/* Neon Synthwave Theme */
+[data-theme="synthwave"] {
+  --primary-bg: #1a0033;
+  --secondary-bg: #330066;
+  --content-bg: #4d0099;
+  --border-color: #ff0080;
+  --accent-color: #00ffff;
+  --text-primary: #ffffff;
+  --text-secondary: #ff0080;
+  --text-muted: #cc00ff;
+  --highlight-color: #00ffff;
+  --success-color: #00ff80;
+  --warning-color: #ff8000;
+}
+
+/* Ocean Deep Theme */
+[data-theme="ocean"] {
+  --primary-bg: #001f3f;
+  --secondary-bg: #003366;
+  --content-bg: #004080;
+  --border-color: #0099cc;
+  --accent-color: #00ccff;
+  --text-primary: #ffffff;
+  --text-secondary: #66ccff;
+  --text-muted: #3399cc;
+  --highlight-color: #ff6600;
+  --success-color: #00cc99;
+  --warning-color: #ff9933;
+}
+
+/* Volcanic Theme */
+[data-theme="volcanic"] {
+  --primary-bg: #331100;
+  --secondary-bg: #4d1a00;
+  --content-bg: #662200;
+  --border-color: #ff6600;
+  --accent-color: #ff9933;
+  --text-primary: #ffffff;
+  --text-secondary: #ffcc99;
+  --text-muted: #ff6600;
+  --highlight-color: #ffff00;
+  --success-color: #66ff66;
+  --warning-color: #ff3300;
+}
+
+/* Arctic Theme */
+[data-theme="arctic"] {
+  --primary-bg: #e6f3ff;
+  --secondary-bg: #ccebff;
+  --content-bg: #ffffff;
+  --border-color: #0066cc;
+  --accent-color: #3399ff;
+  --text-primary: #003366;
+  --text-secondary: #0066cc;
+  --text-muted: #336699;
+  --highlight-color: #ff3366;
+  --success-color: #00cc66;
+  --warning-color: #ff6600;
+}
+
+/* Apply theme variables to all elements */
+body {
+  background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--primary-bg) 100%) !important;
+  color: var(--text-primary) !important;
+  transition: all 0.3s ease;
+}
+
+/* Container styling */
+.main-container,
+div[style*="background: #F5F5DC"],
+div[style*="background: #FFFACD"],
+div[style*="background: #FFFFEE"] {
+  background: var(--primary-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Text colors */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary) !important;
+}
+
+p, div, span {
+  color: var(--text-secondary) !important;
+}
+
+/* Links */
+a {
+  color: var(--accent-color) !important;
+}
+
+a:hover {
+  color: var(--highlight-color) !important;
+}
+
+/* Buttons */
+button, input[type="submit"] {
+  background: linear-gradient(135deg, var(--border-color), var(--accent-color)) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+button:hover {
+  background: var(--highlight-color) !important;
+  box-shadow: 0 0 15px var(--accent-color) !important;
+}
+
+/* Form inputs */
+input, textarea, select {
+  background: var(--content-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 10px var(--accent-color) !important;
+}
+
+/* Thread and post containers */
+.thread-container, .post-container {
+  background: var(--content-bg) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Special cyberpunk effects */
+[data-theme="cyberpunk"] .strobing-emoji {
+  text-shadow: 0 0 10px var(--accent-color);
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+[data-theme="cyberpunk"] img {
+  filter: drop-shadow(0 0 5px var(--border-color));
+}
+
+/* Matrix theme effects */
+[data-theme="matrix"] body {
+  font-family: 'Courier New', monospace !important;
+}
+
+[data-theme="matrix"]::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 0, 0.03) 2px,
+    rgba(0, 255, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Synthwave glow effects */
+[data-theme="synthwave"] h1,
+[data-theme="synthwave"] h2,
+[data-theme="synthwave"] h3 {
+  text-shadow: 0 0 20px var(--accent-color);
+}
+
+[data-theme="synthwave"] .main-container {
+  box-shadow: 0 0 30px var(--border-color) !important;
+}
+
+/* Vaporwave grid effect */
+[data-theme="vaporwave"] {
+  background-image:
+    linear-gradient(var(--border-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Theme transition animations */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 5px var(--accent-color);
+  }
+  to {
+    text-shadow: 0 0 20px var(--accent-color), 0 0 30px var(--accent-color);
+  }
+}
+
+/* Theme Selector Dropdown Styles */
+#theme-selector {
+  background: var(--content-bg) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+  transition: all 0.3s ease;
+}
+
+#theme-selector:hover {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 5px var(--accent-color) !important;
+}
+
+#theme-selector option {
+  background: var(--content-bg);
+  color: var(--text-primary);
+  padding: 5px;
+}

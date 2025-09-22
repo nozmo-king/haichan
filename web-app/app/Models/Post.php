@@ -30,6 +30,11 @@ class Post extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function bitcoinUser()
+    {
+        return $this->belongsTo(BitcoinAuth::class, 'user_id');
+    }
+
     public function parent()
     {
         return $this->belongsTo(Post::class, 'parent_id');
@@ -128,11 +133,11 @@ class Post extends Model
     {
         $difficulties = [
             '21' => 0.1,
-            '21e8' => 1.0,
-            '21e80' => 5.0,
-            '21e800' => 25.0,
-            '21e8000' => 125.0,
-            '000021e8' => 625.0
+            '21e8' => 1,
+            '21e80' => 5,
+            '21e800' => 25,
+            '21e8000' => 100,
+            '21e80000' => 500
         ];
         
         return $difficulties[$pattern] ?? 1.0;

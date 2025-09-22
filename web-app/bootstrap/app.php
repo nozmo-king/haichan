@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'require.auth' => \App\Http\Middleware\RequireAuth::class,
             'validate.friend.code' => \App\Http\Middleware\ValidateFriendCode::class,
             'require.subscription' => \App\Http\Middleware\RequireActiveSubscription::class,
+            'bitcoin.auth' => \App\Http\Middleware\BitcoinAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

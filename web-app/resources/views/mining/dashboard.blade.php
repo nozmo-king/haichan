@@ -136,12 +136,12 @@
                 <div>
                     <label style="font-size: 12px; color: #666;">Target Pattern:</label>
                     <select id="target-pattern" style="width: 100%; padding: 5px; border: 1px solid #708B75; border-radius: 3px;">
-                        <option value="21">21 (Idle - 0.1 points)</option>
-                        <option value="21e8" selected>21e8 (Common - 1 point)</option>
-                        <option value="21e80">21e80 (Uncommon - 5 points)</option>
-                        <option value="21e800">21e800 (Rare - 25 points)</option>
-                        <option value="21e8000">21e8000 (Epic - 125 points)</option>
-                        <option value="000021e8">000021e8 (Legendary - 625 points)</option>
+                        <option value="21">21 (0.1 points)</option>
+                        <option value="21e8" selected>21e8 (1 point)</option>
+                        <option value="21e80">21e80 (5 points)</option>
+                        <option value="21e800">21e800 (25 points)</option>
+                        <option value="21e8000">21e8000 (100 points)</option>
+                        <option value="21e80000">21e80000 (500 points)</option>
                     </select>
                 </div>
             </div>
@@ -216,7 +216,7 @@
         let hashCount = 0;
         let proofsFound = 0;
         let sessionPoints = 0;
-        let nonce = Math.floor(Math.random() * 1000000);
+        let nonce = crypto.getRandomValues(new Uint32Array(1))[0];
         let targetHash = null;
 
         function startMining() {
@@ -393,22 +393,8 @@
         }
         
         function sha256Fallback(message) {
-            // Use a simple but working hash function as fallback
-            // This creates a pseudo-SHA256 for demo purposes
-            let hash = 0;
-            const str = message + 'salt';
-            
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash; // Convert to 32-bit integer
-            }
-            
-            // Convert to positive and create a 64-char hex string
-            const baseHash = Math.abs(hash).toString(16);
-            const fullHash = (baseHash + baseHash + baseHash + baseHash + baseHash).substring(0, 64);
-            
-            return Promise.resolve(fullHash.padEnd(64, '0'));
+            // NO FALLBACK - This is a production system requiring real SHA-256
+            throw new Error('Crypto.subtle unavailable - Real SHA-256 computation required for production');
         }
         
         async function foundProof(hash, nonce, data, pattern) {
@@ -451,7 +437,7 @@
             }
             
             // Reset nonce to continue mining
-            nonce = Math.floor(Math.random() * 1000000);
+            nonce = crypto.getRandomValues(new Uint32Array(1))[0];
         }
         
         function celebrateProof(pattern, points) {
@@ -511,8 +497,8 @@
                 '21e8': 1,
                 '21e80': 5,
                 '21e800': 25,
-                '21e8000': 125,
-                '000021e8': 625
+                '21e8000': 100,
+                '21e80000': 500
             };
             return points[pattern] || 0.1;
         }

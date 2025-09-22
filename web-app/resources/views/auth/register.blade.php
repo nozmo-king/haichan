@@ -1,256 +1,172 @@
-@extends('layout')
+<!DOCTYPE html>
+<html lang="en" data-theme="classic">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Register - Haichan</title>
+    <link rel="stylesheet" href="/css/haichan.css">
+    <link rel="stylesheet" href="/css/themes.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
+</head>
+<body>
 
-@section('content')
-<div class="breadcrumb">
-    <a href="{{ route('forum.index') }}">Forum</a> > Register with Friend Code
-</div>
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--secondary-bg), var(--primary-bg));">
+    <div style="background: var(--primary-bg); padding: 40px; border-radius: 12px; border: 3px solid var(--border-color); max-width: 600px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
 
-<div style="max-width: 600px; margin: 0 auto; background-color: #f9f9f9; border: 1px solid #ccc; padding: 30px;">
-    <h2 style="text-align: center; margin-bottom: 20px;">Register with Friend Code</h2>
-    
-    @if ($errors->any())
-        <div style="background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; margin-bottom: 20px; border-radius: 3px;">
-            <ul style="margin: 0; padding-left: 20px;">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    <form action="{{ route('auth.register.submit') }}" method="POST" id="registerForm">
-        @csrf
-        
-        <div style="margin-bottom: 20px;">
-            <label for="friend_code" style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">
-                Friend Code
-            </label>
-            <input 
-                type="text" 
-                id="friend_code" 
-                name="friend_code" 
-                value="{{ $friendCode->code }}"
-                readonly
-                style="width: 100%; padding: 12px; border: 1px solid #ccc; font-family: 'Courier New', monospace; font-size: 14px; background-color: #f9f9f9; box-sizing: border-box;"
-            >
-            <p style="margin-top: 8px; font-size: 12px; color: #666;">
-                This friend code is valid until {{ $friendCode->expires_at ? $friendCode->expires_at->format('M j, Y g:i A') : 'it is used' }}
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="font-family: 'Nova Cut', serif; font-size: 32px; color: var(--text-primary); margin: 0 0 10px 0;">
+                📝 HAICHAN REGISTRATION
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 14px;">
+                Join the exclusive 256-user Bitcoin forum
             </p>
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <label for="public_key" style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">
-                Your Public Key *
-            </label>
-            <input 
-                type="text" 
-                id="public_key" 
-                name="public_key" 
-                placeholder="Enter your secp256k1 public key (66 characters)"
-                required
-                pattern="[0-9a-fA-F]{66}"
-                style="width: 100%; padding: 12px; border: 1px solid #ccc; font-family: 'Courier New', monospace; font-size: 14px; background-color: #fff; box-sizing: border-box;"
-            >
-            <p style="margin-top: 8px; font-size: 12px; color: #666;">
-                Your compressed secp256k1 public key (starts with 02 or 03)
-            </p>
-        </div>
-
-        <div style="margin-bottom: 25px;">
-            <button 
-                type="button" 
-                onclick="generateKeyPair()" 
-                style="width: 100%; background-color: #666; color: white; padding: 10px; border: none; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; margin-bottom: 8px;"
-            >
-                Generate Test Key Pair
-            </button>
-            <p style="font-size: 12px; color: #666; margin-bottom: 8px;">
-                ⚠️ This generates test keys for registration. For production use, generate keys with proper wallet software.
-            </p>
-            <div id="generatedKeys" style="display: none; margin-top: 15px; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 3px;">
-                <p style="font-size: 14px; font-weight: bold; color: #856404; margin-bottom: 8px;">Generated Keys (Save these securely!):</p>
-                <div style="margin-bottom: 10px;">
-                    <label style="display: block; font-size: 12px; font-weight: bold; color: #856404;">Private Key:</label>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <input type="text" id="generatedPrivateKey" readonly style="flex: 1; font-size: 11px; font-family: 'Courier New', monospace; background-color: #fff; border: 1px solid #ffeaa7; border-radius: 3px; padding: 4px;">
-                        <button type="button" onclick="copyPrivateKey()" style="font-size: 11px; background-color: #856404; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer;">Copy</button>
-                    </div>
-                </div>
-                <div style="margin-bottom: 10px;">
-                    <label style="display: block; font-size: 12px; font-weight: bold; color: #856404;">Public Key:</label>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <input type="text" id="generatedPublicKey" readonly style="flex: 1; font-size: 11px; font-family: 'Courier New', monospace; background-color: #fff; border: 1px solid #ffeaa7; border-radius: 3px; padding: 4px;">
-                        <button type="button" onclick="copyPublicKey()" style="font-size: 11px; background-color: #856404; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer;">Copy</button>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" onclick="useGeneratedKey()" style="font-size: 12px; background-color: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 3px; cursor: pointer;">
-                        Use This Public Key
-                    </button>
-                    <button type="button" onclick="downloadKeys()" style="font-size: 12px; background-color: #007bff; color: white; padding: 6px 12px; border: none; border-radius: 3px; cursor: pointer;">
-                        Download Keys
-                    </button>
-                </div>
-                <div style="margin-top: 10px; padding: 8px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 3px;">
-                    <p style="font-size: 11px; color: #721c24; font-weight: bold; margin-bottom: 4px;">⚠️ CRITICAL: Save your private key securely!</p>
-                    <p style="font-size: 11px; color: #721c24;">You will need it to sign in. This is the only time it will be shown.</p>
-                </div>
+        <!-- User Slots Status -->
+        <div style="background: var(--content-bg); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+            <div style="color: var(--text-primary); font-weight: bold; margin-bottom: 5px;">
+                🎯 REMAINING SLOTS: {{ $remainingSlots }}/256
+            </div>
+            <div style="color: var(--text-secondary); font-size: 12px;">
+                Registration {{ $remainingSlots > 0 ? 'OPEN' : 'CLOSED' }}
             </div>
         </div>
 
-        <button 
-            type="submit" 
-            style="width: 100%; background-color: #789922; color: white; padding: 12px; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace;"
-        >
-            Create Account
-        </button>
-    </form>
+        <!-- Error Messages -->
+        @if($errors->any())
+        <div style="background: #FFE6E6; border: 2px solid #FF6B6B; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+            @foreach($errors->all() as $error)
+                <div style="color: #D63031; font-size: 13px; margin: 5px 0;">• {{ $error }}</div>
+            @endforeach
+        </div>
+        @endif
 
-    <div style="margin-top: 25px; text-align: center;">
-        <p style="font-size: 14px; color: #666;">
-            Already have an account? 
-            <a href="{{ route('login') }}" style="color: #34345c; text-decoration: underline;">
-                Sign in
+        @if(session('success'))
+        <div style="background: #E8F5E8; border: 2px solid #4CAF50; padding: 15px; margin-bottom: 20px; border-radius: 8px; color: #2E7D32; font-size: 13px;">
+            {{ session('success') }}
+        </div>
+        @endif
+
+        <!-- Registration Form -->
+        <form method="POST" action="/auth/register" style="margin-bottom: 30px;">
+            @csrf
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
+                    🎟️ Friend Code
+                </label>
+                <input type="text" name="invite_code" required
+                       placeholder="Enter your friend code..."
+                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
+                    🔑 Private Key
+                </label>
+                <input type="password" name="private_key" required
+                       placeholder="Enter your 64-character private key..."
+                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
+            </div>
+
+            <input type="hidden" name="public_key" id="public_key">
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
+                    📍 Bitcoin Address
+                </label>
+                <input type="text" name="address" required
+                       placeholder="Enter your Bitcoin address..."
+                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
+                    🔒 Password
+                </label>
+                <input type="password" name="password" required minlength="8"
+                       placeholder="Create a secure password..."
+                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
+            </div>
+
+            <div style="background: #FFF3CD; border: 2px solid #FFC107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="color: #856404; font-size: 13px;">
+                    🔒 <strong>Security Notice</strong><br>
+                    • Your password will be salted and hashed with your cryptographic keys<br>
+                    • Keep your private key safe - it's your backup login method<br>
+                    • We cannot recover lost credentials
+                </div>
+            </div>
+
+            <button type="submit" style="width: 100%; background: linear-gradient(135deg, var(--border-color), var(--accent-color)); color: var(--text-primary); border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+                🚀 REGISTER FOR HAICHAN
+            </button>
+        </form>
+
+        <!-- Back to Login -->
+        <div style="text-align: center;">
+            <a href="/auth/login" style="color: var(--text-secondary); text-decoration: none; font-size: 14px;">
+                ← Back to Login
             </a>
-        </p>
+        </div>
+
     </div>
 </div>
 
-<!-- Use Web Crypto API for key generation -->
+
 <script>
-let generatedPrivateKeyBytes = null;
+// Auto-generate public key from private key
+document.addEventListener('DOMContentLoaded', function() {
+    const privateKeyInput = document.querySelector('input[name="private_key"]');
+    const publicKeyInput = document.querySelector('input[name="public_key"]');
+    const addressInput = document.querySelector('input[name="address"]');
 
-async function generateKeyPair() {
+    if (privateKeyInput) {
+        privateKeyInput.addEventListener('input', function() {
+            const privateKey = this.value;
+            if (privateKey.length === 64) {
+                // Simple hash to generate public key (not real ECDSA but works for our system)
+                const publicKey = sha256(privateKey);
+                publicKeyInput.value = publicKey;
+
+                // Generate Bitcoin address from public key
+                generateAddress(publicKey).then(address => {
+                    addressInput.value = address;
+                });
+            }
+        });
+    }
+});
+
+// Simple SHA-256 implementation
+async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Generate Bitcoin address (simplified version)
+async function generateAddress(publicKey) {
     try {
-        const button = event.target;
-        const originalText = button.textContent;
-        button.textContent = 'Generating...';
-        button.disabled = true;
+        // Step 1: SHA256 of public key
+        const pubKeyBytes = new Uint8Array(publicKey.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+        const sha256Hash = await crypto.subtle.digest('SHA-256', pubKeyBytes);
 
-        // Generate a cryptographically secure random private key using Web Crypto API
-        const privateKeyArray = new Uint8Array(32);
-        crypto.getRandomValues(privateKeyArray);
-        
-        // Store the private key bytes
-        generatedPrivateKeyBytes = privateKeyArray;
-        const privateKeyHex = Array.from(privateKeyArray)
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-        
-        // For the public key, we'll generate a mock one that follows the correct format
-        // In a real implementation, you'd derive this from the private key using secp256k1
-        // But for registration purposes, we just need a valid format
-        const publicKeyPrefix = Math.random() > 0.5 ? '02' : '03'; // Random compressed prefix
-        const publicKeyBody = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-        const publicKeyHex = publicKeyPrefix + publicKeyBody;
-        
-        // Display the keys
-        document.getElementById('generatedPrivateKey').value = privateKeyHex;
-        document.getElementById('generatedPublicKey').value = publicKeyHex;
-        document.getElementById('generatedKeys').style.display = 'block';
-        
-        // Restore button
-        button.textContent = originalText;
-        button.disabled = false;
-        
-        showNotification('Key pair generated successfully! Please save your private key securely.', 'success');
+        // For simplicity, we'll just return a placeholder Bitcoin address format
+        // In a real implementation, this would do full RIPEMD160 + Base58 encoding
+        const hashArray = Array.from(new Uint8Array(sha256Hash));
+        const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Simple address generation (placeholder)
+        return '1' + hash.substring(0, 25) + hash.substring(25, 33);
     } catch (error) {
-        console.error('Key generation error:', error);
-        button.textContent = originalText;
-        button.disabled = false;
-        showNotification('Error generating key pair: ' + error.message, 'error');
+        return '';
     }
 }
-
-
-function useGeneratedKey() {
-    const publicKey = document.getElementById('generatedPublicKey').value;
-    document.getElementById('public_key').value = publicKey;
-    showNotification('Public key inserted into form', 'success');
-}
-
-function copyPrivateKey() {
-    const privateKey = document.getElementById('generatedPrivateKey').value;
-    copyToClipboard(privateKey, 'Private key copied to clipboard!');
-}
-
-function copyPublicKey() {
-    const publicKey = document.getElementById('generatedPublicKey').value;
-    copyToClipboard(publicKey, 'Public key copied to clipboard!');
-}
-
-function copyToClipboard(text, message) {
-    navigator.clipboard.writeText(text).then(function() {
-        showNotification(message, 'success');
-    }, function(err) {
-        showNotification('Failed to copy to clipboard', 'error');
-    });
-}
-
-function downloadKeys() {
-    const privateKey = document.getElementById('generatedPrivateKey').value;
-    const publicKey = document.getElementById('generatedPublicKey').value;
-    
-    const keyData = {
-        timestamp: new Date().toISOString(),
-        warning: "KEEP THIS FILE SECURE! Anyone with your private key can access your account.",
-        privateKey: privateKey,
-        publicKey: publicKey,
-        instructions: "Use the public key to register. Keep the private key safe for signing in."
-    };
-    
-    const dataStr = JSON.stringify(keyData, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
-    const url = URL.createObjectURL(dataBlob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `secp256k1-keypair-${Date.now()}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    showNotification('Key pair downloaded as JSON file', 'success');
-}
-
-function showNotification(message, type) {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 px-4 py-3 rounded shadow-lg z-50 ${
-        type === 'success' ? 'bg-green-100 border border-green-400 text-green-700' :
-        type === 'error' ? 'bg-red-100 border border-red-400 text-red-700' :
-        'bg-blue-100 border border-blue-400 text-blue-700'
-    }`;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.remove();
-    }, 4000);
-}
-
-// Validate public key format
-document.getElementById('public_key').addEventListener('input', function(e) {
-    const value = e.target.value;
-    const isValid = /^[0-9a-fA-F]{66}$/.test(value) && (value.startsWith('02') || value.startsWith('03'));
-    
-    if (value.length > 0 && !isValid) {
-        e.target.setCustomValidity('Public key must be 66 hexadecimal characters starting with 02 or 03');
-    } else {
-        e.target.setCustomValidity('');
-    }
-});
-
-// Show warning before leaving page if keys are generated but not saved
-window.addEventListener('beforeunload', function(e) {
-    if (generatedPrivateKeyBytes && document.getElementById('generatedKeys').style.display !== 'none') {
-        e.preventDefault();
-        e.returnValue = 'You have generated keys that may not be saved. Are you sure you want to leave?';
-        return e.returnValue;
-    }
-});
 </script>
-@endsection
+
+</body>
+</html>

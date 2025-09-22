@@ -225,4 +225,73 @@
     </div>
     @endif
 </div>
+
+<script>
+// Auto-shifting catalog system
+class CatalogShiftingSystem {
+    constructor() {
+        this.threads = Array.from(document.querySelectorAll('.catalog-thread'));
+        this.grid = document.querySelector('.catalog-grid');
+        this.startShifting();
+    }
+
+    startShifting() {
+        if (this.threads.length > 1) {
+            // Shift every 10 seconds
+            setInterval(() => {
+                this.performShift();
+            }, 10000);
+
+            console.log('🔄 Thread catalog automatic shifting started (every 10 seconds)');
+        }
+    }
+
+    performShift() {
+        if (this.threads.length < 2) return;
+
+        // Randomly select 2-4 threads to swap positions
+        const swapCount = Math.min(Math.floor(Math.random() * 3) + 2, this.threads.length);
+
+        for (let i = 0; i < swapCount; i++) {
+            const idx1 = Math.floor(Math.random() * this.threads.length);
+            const idx2 = Math.floor(Math.random() * this.threads.length);
+
+            if (idx1 !== idx2) {
+                // Add shift animation
+                this.threads[idx1].style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+                this.threads[idx2].style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+
+                // Temporarily highlight shifting threads
+                this.threads[idx1].style.transform = 'scale(0.95) rotate(2deg)';
+                this.threads[idx2].style.transform = 'scale(0.95) rotate(-2deg)';
+
+                setTimeout(() => {
+                    // Swap elements in DOM
+                    const parent = this.threads[idx1].parentNode;
+                    const next1 = this.threads[idx1].nextSibling;
+                    const next2 = this.threads[idx2].nextSibling;
+
+                    if (next1 === this.threads[idx2]) {
+                        parent.insertBefore(this.threads[idx2], this.threads[idx1]);
+                    } else if (next2 === this.threads[idx1]) {
+                        parent.insertBefore(this.threads[idx1], this.threads[idx2]);
+                    } else {
+                        parent.insertBefore(this.threads[idx1], next2);
+                        parent.insertBefore(this.threads[idx2], next1);
+                    }
+
+                    // Reset styles
+                    this.threads[idx1].style.transform = '';
+                    this.threads[idx2].style.transform = '';
+                }, 400);
+            }
+        }
+    }
+}
+
+// Initialize shifting system when DOM loads
+document.addEventListener('DOMContentLoaded', () => {
+    new CatalogShiftingSystem();
+});
+</script>
 @endsection

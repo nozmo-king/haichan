@@ -40,7 +40,7 @@ class ImageLibrary extends Model
     /**
      * Store a new image in the library or return existing one if already exists
      */
-    public static function storeImage(UploadedFile $file, ?string $uploaderIp = null, ?int $threadId = null, ?int $postId = null): self
+    public static function storeImage(UploadedFile $file, ?string $uploaderIp = null, ?int $threadId = null, ?int $postId = null, bool $applyDither = false): self
     {
         // Calculate SHA256 hash of the file
         $hash = hash_file('sha256', $file->path());
@@ -64,7 +64,13 @@ class ImageLibrary extends Model
         $filePath = "forum/images/" . $filename;
 
         // Store the file
-        $file->storeAs('public/forum/images', $filename);
+        $storedPath = $file->storeAs('public/forum/images', $filename);
+        $fullPath = storage_path('app/public/forum/images/' . $filename);
+
+        // Apply dither effect if requested
+        if ($applyDither) {
+            \App\Helpers\ImageHelper::applyDither($fullPath);
+        }
 
         // Create database record
         return static::create([

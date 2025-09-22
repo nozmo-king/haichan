@@ -67,9 +67,10 @@
 
                 <!-- File Upload -->
                 <div style="margin-bottom: 25px;">
-                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Image (optional)</label>
-                    <input type="file" name="image" accept="image/*"
+                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Image (required) 📷</label>
+                    <input type="file" name="image" accept="image/*" required
                            style="width: 100%; padding: 10px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 12px; box-sizing: border-box;">
+                    <div style="font-size: 10px; color: #708B75; margin-top: 5px;">Max 2MB • JPG, PNG, GIF</div>
                 </div>
 
                 <!-- Proof of Work Mining -->
@@ -127,7 +128,13 @@
                             </a>
                         </h3>
                         <div style="color: #708B75; font-size: 11px;">
+                            @if($board->code === 'pol' && $thread->country_flag)
+                                <span style="font-size: 16px; margin-right: 5px; vertical-align: middle;">{{ $thread->country_flag }}</span>
+                            @endif
                             Anonymous • {{ $thread->created_at->format('M d, Y H:i') }} • No.{{ $thread->id }}
+                            @if($thread->user_id)
+                                @include('components.admin-badge', ['user' => $thread->bitcoinUser])
+                            @endif
                         </div>
                         @if($thread->pow_hash)
                         <div style="margin-top: 8px; padding: 6px; background: rgba(154, 184, 122, 0.05); border: 1px solid rgba(154, 184, 122, 0.3); border-radius: 3px;">
@@ -220,7 +227,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('thread-pow-challenge-id').value = currentChallenge;
 
         const challengeData = `thread:{{ $board->code }}:${title}:${currentChallenge}`;
-        const targetPattern = '21e8';
+        const targetPattern = '21e';
 
         mineProof(challengeData, targetPattern);
     }

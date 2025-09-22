@@ -14,6 +14,11 @@ Route::post('/auth/login', [AuthApiController::class, 'login'])->middleware('thr
 Route::post('/proof', [ProofController::class, 'submit']);
 Route::get('/proof/stats', [ProofController::class, 'stats']);
 
+// Mining API endpoints (no auth required)
+Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
+Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
+Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
+
 // Public subscription routes (requires public key but not auth token)
 Route::post('/subscription/activate-for-key', [App\Http\Controllers\Api\SubscriptionApiController::class, 'activateForPublicKey'])->middleware('throttle:25,1');
 

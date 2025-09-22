@@ -11,7 +11,7 @@
 
 <h2>Create Thread in /{{ $board->code }}/</h2>
 
-<form action="{{ route('forum.store', $board->code) }}" method="POST" enctype="multipart/form-data">
+<form action="{{ route('board.store', $board->code) }}" method="POST" enctype="multipart/form-data">
     @csrf
     
     <div class="form-group">
@@ -31,15 +31,32 @@
             <div style="color: red; font-size: 12px;">{{ $message }}</div>
         @enderror
     </div>
+
+    <!-- Anonymous posting option for registered users -->
+    @if(session('bitcoin_auth_id'))
+    <div class="form-group">
+        <label style="display: flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 14px; margin: 10px 0;">
+            <input type="checkbox" name="post_anonymous" value="1" style="margin: 0;">
+            Post as Anonymous (hide admin badge and username)
+        </label>
+    </div>
+    @endif
     
     <div class="form-group">
-        <label for="image">Image (optional):</label>
-        <input type="file" name="image" id="image" accept="image/*" 
+        <label for="image">Image (required):</label>
+        <input type="file" name="image" id="image" accept="image/*" required
                style="width: 100%; padding: 5px; margin: 5px 0;">
         <small style="color: #666; font-size: 12px;">Max size: 2MB. Supported formats: JPEG, PNG, JPG, GIF</small>
         @error('image')
             <div style="color: red; font-size: 12px;">{{ $message }}</div>
         @enderror
+
+        <div style="margin-top: 10px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" name="dither" id="dither" value="1" {{ old('dither') ? 'checked' : '' }}>
+                <span style="font-size: 12px; color: #666;">🎨 Apply dither effect to uploaded image</span>
+            </label>
+        </div>
     </div>
     
     
