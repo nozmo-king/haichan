@@ -209,6 +209,7 @@ class AuthApiController extends Controller
 
         $user = User::create([
             'allowed_public_key_id' => $allowedKey->id,
+            'username' => $request->public_key,
         ]);
 
         $this->friendCodeService->useFriendCode($request->friend_code, $user);
