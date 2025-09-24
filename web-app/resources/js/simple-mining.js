@@ -1,28 +1,33 @@
-// Simple Haichan Mining System v4.0 - ULTRA CLEAN VERSION
-// NO PROBLEMATIC TEXT OR SANITIZERS AT ALL
+// Simple Haichan Mining System v5.0 - Thread-focused dashboard with gradient power slider
+// Default: OFF (user opt-in)
 
 class SimpleMiner {
     constructor() {
         this.isActive = false;
         this.hashCount = 0;
-        this.proofsFound = 0; // Track successful proofs found
+        this.proofsFound = 0;
         this.startTime = 0;
         this.currentHash = '';
-        this.pattern = '21e8'; // Should hit roughly every 5 seconds at typical mining rates
+        this.pattern = '21e8';
         this.nonce = 0;
-        this.mode = 'off';
+
+        // Targeting
         this.targetType = 'global';
         this.targetId = 'haichan';
-        this.isHovering = false;
         this.defaultTargetType = 'global';
         this.defaultTargetId = 'haichan';
+        this.isHovering = false;
+
+        // Power slider (0-100). 0 => OFF
+        this.powerLevel = 0;
+        this.mode = 'off'; // derived from powerLevel
 
         this.init();
     }
 
     init() {
         this.detectMiningTarget();
-        this.setupMiniDashboard();
+        this.setupDashboard();
         this.setupStatusBar();
         this.setupHoverMining();
         this.autoStart();
@@ -31,13 +36,12 @@ class SimpleMiner {
     detectMiningTarget() {
         const path = window.location.pathname;
 
-        if (path.match(/^\/(\w+)\/(\d+)$/)) {
-            // Thread pages like /gen/123 - allow thread mining
-            const matches = path.match(/^\/(\w+)\/(\d+)$/);
+        // Thread pages like /gen/123 - prefer thread mining
+        const threadMatch = path.match(/^\/(\w+)\/(\d+)$/);
+        if (threadMatch) {
             this.targetType = 'thread';
-            this.targetId = matches[2];
+            this.targetId = threadMatch[2];
         } else {
-            // Everything else defaults to global mining
             this.targetType = 'global';
             this.targetId = 'haichan';
         }
@@ -47,24 +51,23 @@ class SimpleMiner {
     }
 
     autoStart() {
-        // Load persisted mining state
-        const savedMode = localStorage.getItem('haichan_mining_mode') || 'idle';
+        const savedPower = parseInt(localStorage.getItem('haichan_power_level') || '0', 10);
         const savedProofCount = localStorage.getItem('haichan_proof_count') || '0';
 
-        this.proofsFound = parseInt(savedProofCount);
-        this.setMode(savedMode);
+        this.proofsFound = parseInt(savedProofCount, 10);
+        this.setPowerLevel(isNaN(savedPower) ? 0 : savedPower);
     }
 
-    setMode(newMode) {
-        console.log(`🎯 Setting mining mode to: ${newMode}`);
-        this.mode = newMode;
+    setPowerLevel(level) {
+        const clamped = Math.max(0, Math.min(100, parseInt(level, 10)));
+        this.powerLevel = clamped;
+        localStorage.setItem('haichan_power_level', String(this.powerLevel));
 
-        // Persist mining mode across page loads
-        localStorage.setItem('haichan_mining_mode', newMode);
-
-        if (newMode === 'off') {
+        if (this.powerLevel === 0) {
+            this.mode = 'off';
             this.stop();
         } else {
+            this.mode = 'variable';
             this.start();
         }
 
@@ -74,7 +77,7 @@ class SimpleMiner {
     start() {
         if (this.isActive) return;
 
-        console.log(`🔥 Starting mining in ${this.mode} mode, targeting: ${this.targetType}:${this.targetId}`);
+        console.log(`🔥 Starting mining (power ${this.powerLevel}%), target: ${this.targetType}:${this.targetId}`);
         this.isActive = true;
         this.startTime = Date.now();
         this.hashCount = 0;
@@ -84,32 +87,37 @@ class SimpleMiner {
     }
 
     stop() {
+        if (!this.isActive) return;
         this.isActive = false;
+        console.log('⏸️ Mining stopped');
         this.updateMiningUI();
+    }
+
+    // Map power level to batch size and delay. Higher power → larger batch and shorter delay.
+    computeWorkParams() {
+        // Smooth non-linear scaling for better UX
+        const p = this.powerLevel / 100; // 0..1
+        const batchSize = Math.floor(5 + (p ** 0.8) * 195); // 5..200
+        const delayMs = Math.max(10, Math.floor(250 - (p ** 0.8) * 240)); // 250..10
+        return { batchSize, delayMs };
     }
 
     async mine() {
         if (!this.isActive) return;
 
-        let batchSize = this.mode === 'idle' ? 10 :
-                       this.mode === 'active' ? 50 :
-                       this.mode === 'hyperactive' ? 100 : 150;
-
-        let delay = this.mode === 'idle' ? 100 :
-                   this.mode === 'active' ? 50 :
-                   this.mode === 'hyperactive' ? 20 : 10;
+        const { batchSize, delayMs } = this.computeWorkParams();
 
         for (let i = 0; i < batchSize && this.isActive; i++) {
             await this.performHash();
         }
 
         if (this.isActive) {
-            setTimeout(() => this.mine(), delay);
+            setTimeout(() => this.mine(), delayMs);
         }
     }
 
     async performHash() {
-        // Construct challenge data to match backend expectation
+        // Challenge data correlates with thread/global target
         const challengeData = `${this.targetType}:${this.targetId}`;
         const fullData = `${challengeData}:${this.nonce}`;
         const hash = await this.sha256(fullData);
@@ -117,14 +125,10 @@ class SimpleMiner {
         this.hashCount++;
         this.nonce++;
 
-
         if (hash.startsWith(this.pattern)) {
             console.log(`💎 PROOF FOUND! ${hash.substring(0, 16)}... after ${this.hashCount} attempts`);
-            console.log(`📊 Challenge data: ${challengeData}`);
-            console.log(`🔢 Nonce: ${this.nonce - 1}`);
-            console.log(`🔗 Full hash: ${hash}`);
-            console.log(`🎯 Target: ${this.targetType}:${this.targetId}`);
-            this.triggerSeizureAnimation();
+            console.log(`📊 Challenge: ${challengeData} | Nonce: ${this.nonce - 1}`);
+            this.flashDashboard();
             await this.submitProof(challengeData, this.nonce - 1, hash);
         }
 
@@ -139,7 +143,7 @@ class SimpleMiner {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    triggerSeizureAnimation() {
+    flashDashboard() {
         const dashboard = document.getElementById('simple-mini-dashboard');
         if (dashboard) {
             dashboard.style.animation = 'haichan-seizure 0.5s ease-in-out';
@@ -161,13 +165,14 @@ class SimpleMiner {
                     target_type: this.targetType,
                     target_id: this.targetId,
                     pattern: this.pattern,
-                    hash: hash,
-                    nonce: nonce,
+                    hash,
+                    nonce,
                     challenge_data: data,
-                    hashes_computed: this.hashCount, // Send actual hash count as computational work
+                    hashes_computed: this.hashCount,
                     metadata: {
                         hash_rate: this.getHashRate(),
-                        browser: navigator.userAgent.substring(0, 100)
+                        browser: navigator.userAgent.substring(0, 100),
+                        power_level: this.powerLevel
                     }
                 })
             });
@@ -176,13 +181,11 @@ class SimpleMiner {
             if (result.success) {
                 this.proofsFound++;
                 localStorage.setItem('haichan_proof_count', this.proofsFound.toString());
-                console.log(`✅ Proof accepted! Total proofs found: ${this.proofsFound}`);
+                console.log(`✅ Proof accepted! Total proofs: ${this.proofsFound}`);
 
-                // Update thread mining badge if we're mining a thread
                 if (this.targetType === 'thread') {
                     this.updateThreadMiningBadge(result.new_difficulty || result.difficulty);
 
-                    // Check if we're on catalog page and reorder threads
                     if (window.location.pathname.includes('/catalog')) {
                         this.reorderCatalogByPoW(this.targetId, result.new_difficulty || result.difficulty);
                     }
@@ -214,19 +217,37 @@ class SimpleMiner {
     }
 
     updateMiningUI() {
-        this.updateHashDisplay();
+        // Slider and gradient bar
+        const slider = document.getElementById('compute-slider');
+        const bar = document.getElementById('compute-gradient-bar');
+        const label = document.getElementById('compute-label');
+        const status = document.getElementById('power-status');
 
-        const modeEls = document.querySelectorAll('[data-mode]');
-        modeEls.forEach(el => {
-            const isActive = el.dataset.mode === this.mode;
-            el.style.background = isActive ? '#708B75' : '#CCCCCC';
-            el.style.color = isActive ? '#FFFFEE' : '#666666';
-        });
+        if (slider) slider.value = String(this.powerLevel);
+        if (label) label.textContent = `${this.powerLevel}%`;
+        if (status) status.textContent = this.powerLevel === 0 ? 'OFF' : 'ON';
+
+        if (bar) {
+            const pct = this.powerLevel;
+            bar.style.background = `linear-gradient(90deg, #6BBF59 0%, #6BBF59 ${pct}%, #CD5C5C ${pct}%, #CD5C5C 100%)`;
+        }
+
+        // Target label
+        const targetEl = document.getElementById('simple-target');
+        if (targetEl) targetEl.textContent = this.getDisplayName();
+
+        // Hash display
+        const hashrateEl = document.getElementById('simple-hashrate');
+        const proofsEl = document.getElementById('simple-proofs');
+        const hashEl = document.getElementById('simple-current-hash');
+
+        if (hashrateEl) hashrateEl.textContent = `${this.getHashRate()} H/s`;
+        if (proofsEl) proofsEl.textContent = this.proofsFound.toLocaleString();
+        if (hashEl) hashEl.textContent = this.currentHash ? this.currentHash.substring(0, 24) + '...' : '—';
     }
 
     setupHoverMining() {
         document.addEventListener('mouseover', (e) => {
-            // Check for threads first - everything is minable!
             const threadElement = e.target.closest('[data-thread-id]');
             if (threadElement && threadElement.dataset.threadId) {
                 const threadTitle = threadElement.dataset.threadTitle || `Thread ${threadElement.dataset.threadId}`;
@@ -241,7 +262,6 @@ class SimpleMiner {
                 return;
             }
 
-            // Check for general mining targets
             const target = e.target.closest('[data-mine-type]');
             if (target) {
                 target.style.cursor = 'crosshair';
@@ -301,7 +321,7 @@ class SimpleMiner {
         }, 1000);
     }
 
-    setupMiniDashboard() {
+    setupDashboard() {
         const oldDash = document.getElementById('mini-dashboard-overlay');
         if (oldDash) oldDash.remove();
 
@@ -314,16 +334,18 @@ class SimpleMiner {
             position: fixed;
             top: 60px;
             right: 20px;
-            width: 280px;
+            width: 300px;
             background: #F5F5DC;
             border: 2px solid #708B75;
-            border-radius: 5px;
+            border-radius: 6px;
             font-family: 'Courier New', monospace;
             font-size: 10px;
             z-index: 9999;
             display: block;
             box-shadow: 0 4px 12px rgba(68, 75, 110, 0.3);
         `;
+
+        const isThread = this.targetType === 'thread';
 
         dashboard.innerHTML = `
             <div style="background: linear-gradient(135deg, #708B75, #9AB87A); color: #FFFFEE; padding: 8px 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
@@ -335,59 +357,60 @@ class SimpleMiner {
                 <div style="margin-bottom: 10px;">
                     <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Mining Target:</div>
                     <div id="simple-target" style="color: #708B75; font-size: 9px; padding: 3px; background: #F8F8F8; border: 1px solid #CCCCCC;">${this.getDisplayName()}</div>
+                    ${isThread ? '' : '<div style="margin-top:6px;color:#8a8a8a;font-size:9px;">Tip: open a thread page to mine that thread directly.</div>'}
                 </div>
 
                 <div style="margin-bottom: 10px;">
                     <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Hash Rate: <span id="simple-hashrate" style="color: #708B75;">0 H/s</span></div>
-                    <div style="color: #444B6E; font-size: 9px;">Proofs Found: <span id="simple-proofs" style="color: #708B75;">0</span></div>
+                    <div style="color: #444B6E; font-size: 9px;">Proofs Found: <span id="simple-proofs" style="color: #708B75;">${this.proofsFound}</span></div>
                     <div style="color: #444B6E; font-size: 9px;">Pattern: <span style="color: #CD5C5C;">21e8</span></div>
                 </div>
 
-                <div style="margin-bottom: 10px;">
-                    <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Mining Power:</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 5px;">
-                        <button id="simple-off-btn" data-mode="off" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer; background: #CD5C5C; color: white;">OFF</button>
-                        <button id="simple-idle-btn" data-mode="idle" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer;">IDLE</button>
-                        <button id="simple-active-btn" data-mode="active" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer;">ACTIVE</button>
-                        <button id="simple-hyper-btn" data-mode="hyper" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer;">HYPER</button>
+                <div style="margin-bottom: 12px;">
+                    <div style="color: #444B6E; font-weight: bold; margin-bottom: 6px; display:flex; justify-content: space-between; align-items:center;">
+                        <span>Compute (choose power)</span>
+                        <span id="power-status" style="color:#708B75;">OFF</span>
+                    </div>
+                    <input id="compute-slider" type="range" min="0" max="100" step="1" value="${this.powerLevel}" style="width: 100%;">
+                    <div id="compute-gradient-bar" style="height: 10px; border:1px solid #CCC; border-radius: 4px; margin-top:6px; background: linear-gradient(90deg, #6BBF59 0%, #6BBF59 0%, #CD5C5C 0%, #CD5C5C 100%);"></div>
+                    <div style="display:flex; justify-content: space-between; font-size:9px; color:#666; margin-top:4px;">
+                        <span>Idle</span>
+                        <span id="compute-label">0%</span>
+                        <span>Max</span>
+                    </div>
+                    <div style="margin-top:6px;">
+                        <button id="simple-off-btn" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer; background: #CD5C5C; color: white; width:100%;">Turn Off</button>
                     </div>
                 </div>
 
                 <div style="margin-bottom: 10px;">
                     <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Current Hash:</div>
-                    <div id="simple-current-hash" style="font-size: 8px; color: #888; word-break: break-all; background: #FAFAFA; padding: 3px; border: 1px solid #DDD;">calculating...</div>
+                    <div id="simple-current-hash" style="font-size: 8px; color: #888; word-break: break-all; background: #FAFAFA; padding: 3px; border: 1px solid #DDD;">—</div>
                 </div>
 
                 <div style="border-top: 1px solid #CCCCCC; padding-top: 8px; text-align: center; font-size: 8px; color: #666;">
-                    Hover + SPACE/ENTER to mine
+                    Tip: set compute to 0% to stop. Mining is OFF by default.
                 </div>
             </div>
         `;
 
         document.body.appendChild(dashboard);
 
-        // Add event listeners
+        // Events
         document.getElementById('simple-close').addEventListener('click', () => {
             dashboard.style.display = 'none';
         });
 
-        document.getElementById('simple-off-btn').addEventListener('click', () => this.setMode('off'));
-        document.getElementById('simple-idle-btn').addEventListener('click', () => this.setMode('idle'));
-        document.getElementById('simple-active-btn').addEventListener('click', () => this.setMode('active'));
-        document.getElementById('simple-hyper-btn').addEventListener('click', () => this.setMode('hyper'));
+        document.getElementById('simple-off-btn').addEventListener('click', () => this.setPowerLevel(0));
 
-        // Update dashboard displays
-        setInterval(() => {
-            const hashrateEl = document.getElementById('simple-hashrate');
-            const proofsEl = document.getElementById('simple-proofs');
-            const hashEl = document.getElementById('simple-current-hash');
-            const targetEl = document.getElementById('simple-target');
+        const slider = document.getElementById('compute-slider');
+        slider.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value, 10);
+            this.setPowerLevel(value);
+        });
 
-            if (hashrateEl) hashrateEl.textContent = `${this.getHashRate()} H/s`;
-            if (proofsEl) proofsEl.textContent = this.proofsFound.toLocaleString();
-            if (hashEl) hashEl.textContent = this.currentHash ? this.currentHash.substring(0, 24) + '...' : 'calculating...';
-            if (targetEl) targetEl.textContent = this.getDisplayName();
-        }, 1000);
+        // Initial UI sync
+        this.updateMiningUI();
     }
 
     // Public API methods
@@ -410,7 +433,6 @@ class SimpleMiner {
             const formattedDifficulty = Number(newDifficulty).toFixed(2);
             threadPowEl.textContent = formattedDifficulty;
 
-            // Add a brief flash effect to show the update
             const badge = document.getElementById('thread-mining-badge');
             if (badge) {
                 badge.style.animation = 'haichan-seizure 0.3s ease-in-out';
@@ -429,7 +451,6 @@ class SimpleMiner {
 
         const threads = Array.from(catalogGrid.querySelectorAll('.catalog-thread'));
 
-        // Update the PoW badge for the mined thread
         const minedThread = threads.find(t => t.dataset.threadId === threadId);
         if (minedThread) {
             let powBadge = minedThread.querySelector('.catalog-pow-badge');
@@ -441,14 +462,12 @@ class SimpleMiner {
             powBadge.textContent = `${Number(newPoW).toFixed(1)}⚡`;
             powBadge.dataset.powValue = newPoW;
 
-            // Flash the thread
             minedThread.style.animation = 'haichan-seizure 0.5s ease-in-out';
             setTimeout(() => {
                 minedThread.style.animation = '';
             }, 500);
         }
 
-        // Sort threads by PoW value (highest first)
         threads.sort((a, b) => {
             const aPowBadge = a.querySelector('.catalog-pow-badge');
             const bPowBadge = b.querySelector('.catalog-pow-badge');
@@ -456,10 +475,9 @@ class SimpleMiner {
             const aPow = aPowBadge ? parseFloat(aPowBadge.dataset.powValue || aPowBadge.textContent.replace('⚡', '')) || 0 : 0;
             const bPow = bPowBadge ? parseFloat(bPowBadge.dataset.powValue || bPowBadge.textContent.replace('⚡', '')) || 0 : 0;
 
-            return bPow - aPow; // Descending order
+            return bPow - aPow;
         });
 
-        // Clear and re-append in new order
         threads.forEach(thread => catalogGrid.appendChild(thread));
 
         console.log(`🔄 Catalog reordered! Thread ${threadId} with PoW ${newPoW} moved to position`);
@@ -470,19 +488,15 @@ class SimpleMiner {
             hashRate: this.getHashRate(),
             proofsFound: this.proofsFound,
             target: this.getDisplayName(),
-            powerLevel: this.mode.toUpperCase(),
+            powerLevel: this.powerLevel,
             currentHash: this.currentHash
         };
-    }
-
-    setPowerLevel(level, levelNum) {
-        this.setMode(level);
     }
 }
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎯 Initializing Ultra Clean Haichan Miner...');
+    console.log('🎯 Initializing Haichan Miner (thread-focused, OFF by default)...');
     window.simpleMiner = new SimpleMiner();
 });
 
