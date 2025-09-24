@@ -371,10 +371,10 @@ class ReplyHashSystem {
             if (hashElement) hashElement.textContent = hash;
         } catch (error) {
             console.error('Reply hash calculation failed:', error);
-        }
+
     }
 
-    processAllReplies() {
+
         document.querySelectorAll('.post[data-post-id]').forEach(post => {
             const postId = post.dataset.postId;
             const contentEl = post.querySelector('.post-text');
@@ -400,7 +400,7 @@ async function mineReplyProof(threadId, content, pattern) {
     let nonce = 0, startTime = Date.now(), hashCount = 0;
     const maxTime = 30000;
 
-    document.getElementById('reply-pow-challenge-id').value = challengeId;
+
 
     const hashCountEl = document.getElementById('reply-hash-count');
     const hashRateEl = document.getElementById('reply-hash-rate');
@@ -410,7 +410,7 @@ async function mineReplyProof(threadId, content, pattern) {
     async function mineStep() {
         if (!replyMiningInProgress) return;
 
-        const elapsed = Date.now() - startTime;
+
         if (elapsed > maxTime) {
             document.getElementById('reply-pow-nonce').value = '0';
             document.getElementById('reply-pow-hash').value = '0'.repeat(64);
@@ -439,7 +439,7 @@ async function mineReplyProof(threadId, content, pattern) {
             hashRateEl.textContent = rate.toLocaleString();
 
             if (hashHex.startsWith(pattern.toLowerCase())) {
-                document.getElementById('reply-pow-nonce').value = nonce;
+
                 document.getElementById('reply-pow-hash').value = hashHex;
                 replyMiningInProgress = false;
                 statusEl.style.display = 'none';
@@ -460,7 +460,7 @@ async function mineReplyProof(threadId, content, pattern) {
 }
 
 function submitReplyForm(formData, url) {
-    fetch(url, {
+
         method: 'POST',
         body: formData,
         headers: {
