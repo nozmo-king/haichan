@@ -155,7 +155,7 @@ class TransparentPoWSystem {
                     type: 'thread',
                     id: current.dataset.threadId,
                     title: current.dataset.threadTitle || `Thread #${current.dataset.threadId}`,
-                    difficulty: '21e',
+                    difficulty: '21e8',
                     basePoints: 5
                 };
             }
@@ -167,7 +167,7 @@ class TransparentPoWSystem {
                     id: current.dataset.postId,
                     threadId: current.dataset.threadId,
                     title: `Post #${current.dataset.postId}`,
-                    difficulty: '21e',
+                    difficulty: '21e8',
                     basePoints: 2
                 };
             }
@@ -178,7 +178,7 @@ class TransparentPoWSystem {
                     type: 'image',
                     id: `img_${Date.now()}`,
                     title: current.alt || 'Image',
-                    difficulty: '21e',
+                    difficulty: '21e8',
                     basePoints: 3
                 };
             }

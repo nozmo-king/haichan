@@ -154,11 +154,11 @@
                     • Invite friends and earn mining bonuses<br>
                     • Build your network, increase your power
                 </div>
-                <div id="friend-code-demo" style="background: var(--secondary-bg); padding: 10px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-primary); text-align: center; cursor: pointer;" onclick="generateDemoCode()">
-                    DEMO12345678
+                <div id="real-friend-codes" style="background: var(--secondary-bg); padding: 10px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-primary); text-align: center;">
+                    Loading available codes...
                 </div>
                 <div style="color: var(--text-secondary); font-size: 10px; margin-top: 5px;">
-                    ↑ Click for a new demo code
+                    ↑ Available friend codes (click to copy)
                 </div>
             </div>
         </div>
@@ -251,13 +251,28 @@ function toggleBackupLogin() {
     backupForm.style.display = isVisible ? 'none' : 'block';
 }
 
-function generateDemoCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = 'DEMO';
-    for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
+async function loadRealFriendCodes() {
+    try {
+        const response = await fetch('/api/available-friend-codes');
+        const codes = await response.json();
+
+        const container = document.getElementById('real-friend-codes');
+        if (codes && codes.length > 0) {
+            container.innerHTML = codes.map(code =>
+                `<div style="margin: 2px 0; cursor: pointer; padding: 2px;" onclick="copyToClipboard('${code}')">${code}</div>`
+            ).join('');
+        } else {
+            container.textContent = 'No codes available - contact admin';
+        }
+    } catch (error) {
+        document.getElementById('real-friend-codes').textContent = 'Error loading codes';
     }
-    document.getElementById('friend-code-demo').textContent = code;
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert(`Code ${text} copied to clipboard!`);
+    });
 }
 
 // Load user status
@@ -296,7 +311,9 @@ async function loadUserStatus() {
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     loadUserStatus();
+    loadRealFriendCodes();
     setInterval(loadUserStatus, 30000); // Update every 30 seconds
+    setInterval(loadRealFriendCodes, 60000); // Update codes every minute
 });
 </script>
 

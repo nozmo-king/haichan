@@ -121,6 +121,16 @@
                         <div style="font-size: 9px; opacity: 0.9;">Monitor your mining</div>
                     </a>
 
+                    <a href="/anonymous" style="display: block; text-decoration: none; background: #6B4E3D; color: #FFFFEE; padding: 15px; border-radius: 5px; text-align: center; transition: all 0.2s ease;">
+                        <div style="font-size: 20px; margin-bottom: 5px;">
+                            <span class="strobing-emoji-fast">👀</span>
+                            <span class="strobing-emoji-fast">🫠</span>
+                            <span class="strobing-emoji-fast">💀</span>
+                        </div>
+                        <div style="font-size: 12px; font-weight: 600;">Browse anonymously...</div>
+                        <div style="font-size: 9px; opacity: 0.9;">One post per day</div>
+                    </a>
+
                     <a href="/faq" style="display: block; text-decoration: none; background: #444B6E; color: #FFFFEE; padding: 15px; border-radius: 5px; text-align: center; transition: all 0.2s ease;">
                         <div style="font-size: 20px; margin-bottom: 5px;">❓</div>
                         <div style="font-size: 12px; font-weight: 600;">FAQ & Help</div>
@@ -173,6 +183,10 @@
 
     .strobing-emoji {
         animation: strobe 3s infinite ease-in-out;
+    }
+
+    .strobing-emoji-fast {
+        animation: strobe 0.8s infinite ease-in-out;
     }
 
     .fade-text {

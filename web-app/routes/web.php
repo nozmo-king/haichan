@@ -31,7 +31,7 @@ Route::post('/auth/login-backup', [AuthController::class, 'backupLogin'])->middl
 Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
 
 // Logout routes - supporting both paths
-Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->middleware('auth');
+Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->middleware('bitcoin.auth');
 Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout.alt');
 
 // Registration routes (public)
@@ -40,8 +40,14 @@ Route::post('/register/validate-friend-code', [AuthController::class, 'validateF
 Route::get('/register/{friendCode}', [AuthController::class, 'showRegister'])->name('auth.register')->middleware('validate.friend.code');
 Route::post('/register', [AuthController::class, 'register'])->name('auth.register.store');
 
+// Anonymous browsing route
+Route::get('/anonymous', function () {
+    $boards = \App\Models\Board::all();
+    return view('anonymous.index', compact('boards'));
+})->name('anonymous.index');
+
 // Protected routes - require authentication
-Route::middleware('auth')->group(function () {
+Route::middleware('bitcoin.auth')->group(function () {
     Route::get('/', function () {
         $userCount = \App\Models\User::count();
         $userCap = 256; // Define the user cap

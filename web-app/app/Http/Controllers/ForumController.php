@@ -85,6 +85,9 @@ class ForumController extends Controller
             ->firstOrFail();
         $thread = Thread::with('bitcoinUser')->findOrFail($threadId);
 
+        // Calculate accumulated points for PoW display
+        $thread->accumulated_points = $thread->bump_score + \App\Models\ProofOfWork::where('thread_id', $thread->id)->sum('points');
+
         // Return just PoW score for AJAX requests
         if (request()->get('pow_only')) {
             $powScore = ProofSubmission::where('target_type', 'thread')
@@ -152,23 +155,29 @@ class ForumController extends Controller
             return back()->withErrors(['content' => 'Content is required'])->withInput();
         }
 
+        // Set allowed file types based on board
+        $allowedMimes = 'jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif';
+        if ($board === 'mu') {
+            $allowedMimes .= ',mp3,wav,flac,ogg,m4a,aac,wma';
+        }
+
         // Validate PoW and optional image upload
         $request->validate([
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
             'pow_challenge_id' => 'required|string|size:32',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600'
+            'image' => 'nullable|file|mimes:' . $allowedMimes . '|max:25600'
         ]);
 
         $boardModel = Board::where('code', $board)->firstOrFail();
 
         // Generate proper challenge data and verify PoW
-        $challengeData = "thread:{$boardModel->code}:{$title}:{$request->pow_challenge_id}";
+        $challengeData = "thread:" . strtolower($boardModel->code) . ":{$title}:{$request->pow_challenge_id}";
         $verification = Thread::verifyProofOfWork(
             $challengeData,
             $request->pow_nonce,
             $request->pow_hash,
-            '21e' // Global difficulty setting
+            '21e8' // Global difficulty setting
         );
 
         if (!$verification['valid']) {
@@ -196,7 +205,8 @@ class ForumController extends Controller
             'pow_difficulty' => 1.0,
             'pow_verified_at' => now(),
             'ip_address' => $request->ip(),
-            'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip())
+            'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip()),
+            'is_anonymous_post' => $request->has('anon') || session('anonymous_mode', false)
         ];
 
         // Handle image upload
@@ -228,6 +238,11 @@ class ForumController extends Controller
                 $libraryImage->awardPoW($this->calculateRealImagePoW($libraryImage, 'thread'));
             }
 
+            // Increment anonymous post count if this was an anonymous thread
+            if ($request->has('anon') || session('anonymous_mode', false)) {
+                \App\Http\Middleware\AnonymousPosting::incrementPostCount($request->ip());
+            }
+
             return redirect("/$board/{$thread->id}");
             
         } catch (\Exception $e) {
@@ -257,9 +272,15 @@ class ForumController extends Controller
             'user_agent' => substr($request->userAgent(), 0, 100)
         ]);
 
+        // Set allowed file types based on board
+        $allowedMimes = 'jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif';
+        if ($board === 'mu') {
+            $allowedMimes .= ',mp3,wav,flac,ogg,m4a,aac,wma';
+        }
+
         $request->validate([
             'content' => 'required|max:5000',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+            'image' => 'nullable|file|mimes:' . $allowedMimes . '|max:25600',
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
             'pow_challenge_id' => 'required|string|size:32'
@@ -272,13 +293,13 @@ class ForumController extends Controller
         $thread = Thread::with('bitcoinUser')->findOrFail($threadId);
 
         // Generate proper challenge data and verify PoW for reply
-        $challengeData = "reply:{$boardModel->code}:{$threadId}:{$request->pow_challenge_id}";
+        $challengeData = "reply:" . strtolower($boardModel->code) . ":{$threadId}:{$request->pow_challenge_id}";
 
         $verification = Thread::verifyProofOfWork(
             $challengeData,
             $request->pow_nonce,
             $request->pow_hash,
-            '21e' // Intermediate difficulty for replies
+            '21e8' // Intermediate difficulty for replies
         );
 
         if (!$verification['valid']) {
@@ -318,7 +339,8 @@ class ForumController extends Controller
             'pow_difficulty' => 1.0,
             'pow_verified_at' => now(),
             'ip_address' => $request->ip(),
-            'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip())
+            'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip()),
+            'is_anonymous_post' => $request->has('anon') || session('anonymous_mode', false)
         ];
 
         // Handle image upload
@@ -364,6 +386,11 @@ class ForumController extends Controller
             'thread_id' => $post->thread_id,
             'content' => substr($post->content, 0, 50) . '...'
         ]);
+
+        // Increment anonymous post count if this was an anonymous post
+        if ($request->has('anon') || session('anonymous_mode', false)) {
+            \App\Http\Middleware\AnonymousPosting::incrementPostCount($request->ip());
+        }
 
         return redirect("/$board/$threadId")->with('reply_created', $post->id);
     }

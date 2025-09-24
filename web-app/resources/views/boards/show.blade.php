@@ -131,7 +131,12 @@
                             @if($board->code === 'pol' && $thread->country_flag)
                                 <span style="font-size: 16px; margin-right: 5px; vertical-align: middle;">{{ $thread->country_flag }}</span>
                             @endif
-                            Anonymous • {{ $thread->created_at->format('M d, Y H:i') }} • No.{{ $thread->id }}
+                            @if($thread->is_anonymous_post ?? false)
+                                <span style="color: #8B008B; font-weight: bold;">Anonymous</span>
+                            @else
+                                Anonymous
+                            @endif
+                            • {{ $thread->created_at->format('M d, Y H:i') }} • No.{{ $thread->id }}
                             @if($thread->user_id)
                                 @include('components.admin-badge', ['user' => $thread->bitcoinUser])
                             @endif
@@ -227,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('thread-pow-challenge-id').value = currentChallenge;
 
         const challengeData = `thread:{{ $board->code }}:${title}:${currentChallenge}`;
-        const targetPattern = '21e';
+        const targetPattern = '21e8';
 
         mineProof(challengeData, targetPattern);
     }

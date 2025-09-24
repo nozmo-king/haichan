@@ -145,7 +145,12 @@
                             @if($board->code === 'pol' && $thread->country_flag)
                                 <span style="font-size: 18px; margin-right: 5px; vertical-align: middle;">{{ $thread->country_flag }}</span>
                             @endif
-                            Anonymous • {{ $thread->created_at->format('M d, Y H:i') }}
+                            @if($thread->is_anonymous_post ?? false)
+                                <span style="color: #8B008B; font-weight: bold;">Anonymous</span>
+                            @else
+                                Anonymous
+                            @endif
+                            • {{ $thread->created_at->format('M d, Y H:i') }}
                             @if($thread->user_id)
                                 @include('components.admin-badge', ['user' => $thread->bitcoinUser])
                             @endif
@@ -279,7 +284,7 @@
                 <div id="reply-mining-status" style="display: none; margin-bottom: 25px; padding: 20px; background: #FFFACD; border: 1px solid #9AB87A; border-radius: 5px;">
                     <div style="font-family: monospace; font-size: 11px; color: #666;">
                         <div style="margin-bottom: 10px;">⛏️ Mining proof of work...</div>
-                        <div>Pattern: <strong>21e</strong></div>
+                        <div>Pattern: <strong>21e8</strong></div>
                         <div>Hashes: <span id="reply-hash-count">0</span></div>
                         <div>Rate: <span id="reply-hash-rate">0</span> H/s</div>
                         <div style="margin-top: 15px;">
@@ -354,7 +359,6 @@ class ReplyHashSystem {
     }
 
     trigger21e8Bump(postId, hash, bumpIndicator) {
-        console.log(`🔥 21e8 BUMP! Reply #${postId}: ${hash}`);
         if (bumpIndicator) bumpIndicator.style.display = 'inline';
 
         const post = document.querySelector(`#post${postId}`);
@@ -382,7 +386,6 @@ class ReplyHashSystem {
             });
             const result = await response.json();
             if (result.success) {
-                console.log(`✅ Reply bump applied! Post #${postId} +${result.bump_points} points`);
             }
         } catch (error) {
             console.error('Reply bump submission failed:', error);
@@ -419,9 +422,6 @@ async function mineReplyProof(threadId, content, pattern) {
     let nonce = 0, startTime = Date.now(), hashCount = 0;
     const maxTime = 30000; // 30 second timeout
 
-    console.log('⛏️ Mining challenge data:', challengeData);
-    console.log('🎯 Looking for pattern:', pattern);
-    console.log('⏱️ Max mining time: 30 seconds');
 
     document.getElementById('reply-pow-challenge-id').value = challengeId;
 
@@ -438,21 +438,12 @@ async function mineReplyProof(threadId, content, pattern) {
     async function mineStep() {
         if (!replyMiningInProgress) return;
 
-        // Check timeout
+        // Check timeout - if exceeded, stop mining and show error
         const elapsed = Date.now() - startTime;
         if (elapsed > maxTime) {
-            console.log('⏰ Mining timeout reached, submitting with dummy proof');
-            // Submit with dummy proof if timeout
-            document.getElementById('reply-pow-nonce').value = '0';
-            document.getElementById('reply-pow-hash').value = '0000000000000000000000000000000000000000000000000000000000000000';
             replyMiningInProgress = false;
             statusEl.style.display = 'none';
-
-            const replyForm = document.getElementById('reply-form-actual');
-            const formData = new FormData(replyForm);
-            const correctUrl = '/{{ strtolower($board->code) }}/{{ $thread->id }}/reply';
-
-            submitReplyForm(formData, correctUrl);
+            alert('Mining timeout reached. Please try again with a shorter reply or wait for better network conditions.');
             return;
         }
 
@@ -471,10 +462,6 @@ async function mineReplyProof(threadId, content, pattern) {
             hashRateEl.textContent = rate.toLocaleString();
 
             if (hashHex.startsWith(pattern.toLowerCase())) {
-                console.log('💎 FOUND VALID PROOF!');
-                console.log('🔗 Hash:', hashHex);
-                console.log('🔢 Nonce:', nonce);
-                console.log('📊 Attempts:', hashCount);
 
                 document.getElementById('reply-pow-nonce').value = nonce;
                 document.getElementById('reply-pow-hash').value = hashHex;
@@ -501,8 +488,6 @@ async function mineReplyProof(threadId, content, pattern) {
 
 // Centralized reply submission function
 function submitReplyForm(formData, url) {
-    console.log('🚀 Submitting reply to:', url);
-    console.log('📋 Form data content length:', formData.get('content') ? formData.get('content').length : 0);
 
     fetch(url, {
         method: 'POST',
@@ -513,9 +498,7 @@ function submitReplyForm(formData, url) {
         }
     })
     .then(response => {
-        console.log('📡 Response status:', response.status);
         if (response.ok) {
-            console.log('✅ Reply successful, reloading page');
             window.location.reload();
         } else {
             response.text().then(text => {
@@ -558,11 +541,9 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.innerHTML = '⛏️ <span class="mining-active">⚡</span> Mining...';
         btn.classList.add('mining-shake', 'mining-glow');
 
-        console.log('🚀 Starting reply mining for thread {{ $thread->id }}');
-        console.log('📝 Content:', content);
 
         // Intermediate difficulty for replies
-        await mineReplyProof({{ $thread->id }}, content, '21e');
+        await mineReplyProof({{ $thread->id }}, content, '21e8');
     });
 
     document.getElementById('stop-reply-mining').addEventListener('click', () => {
@@ -625,7 +606,7 @@ function getDynamicPoWPattern() {
     const replyCount = {{ count($posts ?? []) }};
 
     if (replyCount <= 10) {
-        return '21e';     // Easy for small threads
+        return '21e8';    // Easy for small threads
     } else if (replyCount <= 50) {
         return '21e8';    // Medium for growing threads
     } else if (replyCount <= 100) {
@@ -639,7 +620,6 @@ function getDynamicPoWPattern() {
 const originalMineReplyProof = mineReplyProof;
 async function mineReplyProof(threadId, content, staticPattern) {
     const dynamicPattern = getDynamicPoWPattern();
-    console.log(`⚡ Dynamic PoW difficulty: ${dynamicPattern} (${{{ count($posts ?? []) }}} replies)`);
     return originalMineReplyProof(threadId, content, dynamicPattern);
 }
 

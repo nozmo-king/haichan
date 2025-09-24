@@ -39,6 +39,20 @@ Route::post('/dev/add-public-key', function (Illuminate\Http\Request $request) {
 // Friend Code validation endpoint (public - for registration)
 Route::post('/friend-codes/validate', [AuthApiController::class, 'validateFriendCode'])->middleware('throttle:10,1');
 
+// Available friend codes endpoint (public - for registration page)
+Route::get('/available-friend-codes', function() {
+    $codes = \App\Models\InviteCode::where('uses_remaining', '>', 0)
+        ->where(function($query) {
+            $query->whereNull('expires_at')
+                  ->orWhere('expires_at', '>', now());
+        })
+        ->limit(10)
+        ->pluck('code')
+        ->toArray();
+
+    return response()->json($codes);
+})->middleware('throttle:30,1');
+
 // Debug endpoints (remove in production)
 Route::post('/debug/signature', [AuthApiController::class, 'debugSignature'])->middleware('throttle:20,1');
 Route::get('/debug/test-challenge', [AuthApiController::class, 'createTestChallenge'])->middleware('throttle:20,1');

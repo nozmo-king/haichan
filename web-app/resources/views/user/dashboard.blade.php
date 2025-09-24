@@ -287,9 +287,7 @@
             <h3>⛏️ MINING DASHBOARD</h3>
 
             <div style="margin-bottom: 15px;">
-                <div>Current Mining Power: <strong>{{ number_format($user->mining_power, 2) }} H/s</strong></div>
-                <div>Total PoW Points: <strong>{{ number_format($user->total_pow_points) }}</strong></div>
-                <div>Current Streak: <strong>{{ $user->mining_streak }} days</strong></div>
+                <div>Mining Status: <strong>Active</strong></div>
             </div>
 
             <a href="/mining" class="action-btn">Open Mining Dashboard</a>

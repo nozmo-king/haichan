@@ -1,6 +1,6 @@
-<div class="post {{ $level > 0 ? 'nested-post' : 'reply-post' }}" id="post{{ $post->id }}"
+<div class="post {{ $level > 0 ? 'nested-post' : 'reply-post' }} @if($post->is_anonymous_post ?? false) anonymous-garbage-post @endif" id="post{{ $post->id }}"
      data-mine-type="reply"
-     data-mine-target="reply-{{ $post->id }}"
+     data-mine-target="{{ $post->id }}"
      data-mine-weight="40"
      data-thread-id="{{ $thread->id }}"
      data-thread-title="{{ $thread->title ?: 'Thread #' . $thread->id }}"
@@ -11,7 +11,12 @@
             @if($board->code === 'pol' && $post->country_flag)
                 <span style="font-size: 18px; margin-right: 5px; vertical-align: middle;">{{ $post->country_flag }}</span>
             @endif
-            Anonymous {{ $post->created_at->format('m/d/y H:i:s') }} No.{{ $post->id }}
+            @if($post->is_anonymous_post ?? false)
+                <span style="color: #8B008B; font-weight: bold;">Anonymous</span>
+            @else
+                Anonymous
+            @endif
+            {{ $post->created_at->format('m/d/y H:i:s') }} No.{{ $post->id }}
             @if($post->user_id)
                 @include('components.admin-badge', ['user' => $post->bitcoinUser])
             @endif
@@ -51,15 +56,85 @@
         </div>
         @endif
 
-        <div class="post-text">
+        <div class="post-text @if($post->user_id && $post->bitcoinUser && $post->bitcoinUser->is_admin) admin-post-content @endif">
             {!! App\Helpers\MarkdownHelper::parseContent($post->content) !!}
         </div>
     </div>
 
 </div>
 
+@if($post->user_id && $post->bitcoinUser && $post->bitcoinUser->is_admin)
+<style>
+.admin-post-content {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FFD700 100%);
+    background-size: 200% 200%;
+    animation: adminScintillate 3s ease-in-out infinite;
+    padding: 15px !important;
+    border-radius: 8px;
+    border: 2px solid #B8860B;
+    font-weight: bold !important;
+    font-family: Impact, Arial Black, sans-serif !important;
+    color: #000 !important;
+    text-shadow: 1px 1px 2px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+@keyframes adminScintillate {
+    0% {
+        background-position: 0% 50%;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
+    50% {
+        background-position: 100% 50%;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    }
+    100% {
+        background-position: 0% 50%;
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+    }
+}
+</style>
+@endif
+
 @if($post->allReplies && $post->allReplies->count() > 0)
     @foreach($post->allReplies as $reply)
         @include('forum.post-recursive', ['post' => $reply, 'level' => $level + 1, 'thread' => $thread, 'board' => $board])
     @endforeach
+@endif
+
+@if($post->is_anonymous_post ?? false)
+<style>
+.anonymous-garbage-post {
+    background: linear-gradient(135deg, #2F2F2F 0%, #1A1A1A 100%) !important;
+    border: 2px solid #555 !important;
+    color: #CCC !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+.anonymous-garbage-post .post-header {
+    background: #3E3E3E !important;
+    border-bottom: 1px solid #555 !important;
+    color: #999 !important;
+}
+
+.anonymous-garbage-post .post-content {
+    background: #1A1A1A !important;
+    color: #AAA !important;
+}
+
+.anonymous-garbage-post .post-text {
+    color: #BBB !important;
+}
+
+.anonymous-garbage-post .reply-link,
+.anonymous-garbage-post .quote-link {
+    color: #8B008B !important;
+}
+
+.anonymous-garbage-post #hash-{{ $post->id }} {
+    background: #333 !important;
+    border: 1px solid #555 !important;
+    color: #999 !important;
+}
+</style>
 @endif

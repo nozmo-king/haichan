@@ -23,7 +23,7 @@ class ProofOfWorkController extends Controller
             'hash' => 'required|string|size:64',
             'nonce' => 'required|integer|min:0',
             'data' => 'required|string',
-            'pattern' => 'required|string|in:21,21e,21e8,21e80,21e800,21e8000,000021e8,000,111,222,333,444,555,666,777,888,999,aaa,bbb,ccc,ddd,eee,fff,ace,bad,cab,dad,ded,fab,fed,beef,cafe,face,babe,fade,dead,deed,feed,c0de,b00b,1337,pwnd,rekt,epic,Chad,deadbeef',
+            'pattern' => 'required|string|in:21e8,21e80,21e800,21e8000,000021e8',
             'target_type' => 'nullable|string',
             'target_id' => 'nullable|string'
         ]);
@@ -205,64 +205,11 @@ class ProofOfWorkController extends Controller
     private function calculatePoints($pattern)
     {
         $points = [
-            // Standard patterns
-            '21' => 0.1, // Idle pattern - very low points
-            '21e' => 0.5, // Easy pattern for replies
             '21e8' => 1,
             '21e80' => 5,
             '21e800' => 25,
             '21e8000' => 100,
-            '000021e8' => 625,
-
-            // Legendary patterns
-            '000' => 500,  // Triple zero
-            '111' => 400,  // Triple one
-            '222' => 300,
-            '333' => 350,
-            '444' => 300,
-            '555' => 450,  // Lucky fives
-            '666' => 666,  // Devil number - high value
-            '777' => 777,  // Lucky sevens - highest
-            '888' => 400,  // Lucky eights
-            '999' => 350,
-
-            // Hex letter patterns
-            'aaa' => 250,
-            'bbb' => 250,
-            'ccc' => 250,
-            'ddd' => 250,
-            'eee' => 250,
-            'fff' => 300,  // All F's
-
-            // 3-letter vanity words
-            'ace' => 150,  // Ace
-            'bad' => 100,  // Bad
-            'cab' => 80,   // Cab
-            'dad' => 120,  // Dad
-            'ded' => 200,  // Ded (dead misspelled)
-            'fab' => 100,  // Fab
-            'fed' => 90,   // Fed
-
-            // 4-letter vanity words
-            'beef' => 300,  // Beef
-            'cafe' => 250,  // Cafe
-            'face' => 200,  // Face
-            'babe' => 180,  // Babe
-            'fade' => 150,  // Fade
-            'dead' => 400,  // Dead
-            'deed' => 250,  // Deed
-            'feed' => 200,  // Feed
-
-            // Internet culture
-            'deadbeef' => 3133, // DEADBEEF - legendary 8-char hex pattern
-            'c0de' => 1337, // Code - elite value
-            'b00b' => 800,  // Boob - high meme value
-            '1337' => 1337, // Leet - ultimate
-            'pwnd' => 500,  // Pwned
-            'rekt' => 400,  // Rekt
-            'epic' => 300,  // Epic
-            'chad' => 250,  // Chad (case insensitive)
-            'Chad' => 250   // Chad (proper case)
+            '000021e8' => 625
         ];
         return $points[$pattern] ?? 0.1;
     }

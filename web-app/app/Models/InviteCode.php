@@ -121,4 +121,19 @@ class InviteCode extends Model
 
         return $codes;
     }
+
+    /**
+     * Get invite status for registration page
+     */
+    public static function getInviteStatus()
+    {
+        $currentUsers = BitcoinAuth::count();
+        $remainingSlots = max(0, 256 - $currentUsers);
+
+        return [
+            'current_users' => $currentUsers,
+            'remaining_slots' => $remainingSlots,
+            'registration_open' => $remainingSlots > 0
+        ];
+    }
 }

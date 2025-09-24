@@ -36,10 +36,14 @@ class SimpleMiner {
             const matches = path.match(/^\/(\w+)\/(\d+)$/);
             this.targetType = 'thread';
             this.targetId = matches[2];
+        } else if (path.match(/^\/library\/?$/)) {
+            // Image library page - allow image mining
+            this.targetType = 'images';
+            this.targetId = 'library';
         } else {
-            // Everything else defaults to global mining
-            this.targetType = 'global';
-            this.targetId = 'haichan';
+            // Everything else - no mining allowed (set to null)
+            this.targetType = null;
+            this.targetId = null;
         }
 
         this.defaultTargetType = this.targetType;
@@ -73,6 +77,12 @@ class SimpleMiner {
 
     start() {
         if (this.isActive) return;
+
+        // Don't start mining if there's no valid target
+        if (this.targetType === null || this.targetId === null) {
+            console.log('⚠️ Mining disabled - no valid target on this page');
+            return;
+        }
 
         console.log(`🔥 Starting mining in ${this.mode} mode, targeting: ${this.targetType}:${this.targetId}`);
         this.isActive = true;
@@ -225,42 +235,31 @@ class SimpleMiner {
     }
 
     setupHoverMining() {
-        document.addEventListener('mouseover', (e) => {
-            // Check for threads first - everything is minable!
-            const threadElement = e.target.closest('[data-thread-id]');
-            if (threadElement && threadElement.dataset.threadId) {
-                const threadTitle = threadElement.dataset.threadTitle || `Thread ${threadElement.dataset.threadId}`;
-                threadElement.style.cursor = 'crosshair';
-                this.startHoverMining({
-                    dataset: {
-                        mineType: 'thread',
-                        mineTarget: threadElement.dataset.threadId,
-                        mineTitle: threadTitle
-                    }
-                });
-                return;
-            }
+        // Disable hover mining to prevent site freaking out
+        return;
 
-            // Check for general mining targets
-            const target = e.target.closest('[data-mine-type]');
-            if (target) {
-                target.style.cursor = 'crosshair';
-                this.startHoverMining(target);
-            }
+        // Only attach to specific containers, not entire document
+        const containers = document.querySelectorAll('.post, .thread-item, .image-item');
+
+        containers.forEach(container => {
+            container.addEventListener('mouseover', (e) => {
+                // Only process if the target has mining attributes
+                const target = e.target.closest('[data-mine-type]');
+                if (target && container.contains(target)) {
+                    target.style.cursor = 'crosshair';
+                    this.startHoverMining(target);
+                }
+            });
+
+            container.addEventListener('mouseout', (e) => {
+                const target = e.target.closest('[data-mine-type]');
+                if (target && container.contains(target)) {
+                    target.style.cursor = '';
+                    this.stopHoverMining();
+                }
+            });
         });
 
-        document.addEventListener('mouseout', (e) => {
-            const threadElement = e.target.closest('[data-thread-id]');
-            const target = e.target.closest('[data-mine-type]');
-
-            if (threadElement) {
-                threadElement.style.cursor = '';
-                this.stopHoverMining();
-            } else if (target) {
-                target.style.cursor = '';
-                this.stopHoverMining();
-            }
-        });
     }
 
     startHoverMining(element) {
@@ -268,11 +267,22 @@ class SimpleMiner {
         const mineTarget = element.dataset.mineTarget;
         const displayName = element.dataset.mineTitle || `${mineType} ${mineTarget}`;
 
+        // Only allow mining of images, threads, and replies
+        if (mineType !== 'images' && mineType !== 'thread' && mineType !== 'reply') {
+            console.log(`⚠️ Mining type '${mineType}' not allowed`);
+            return;
+        }
+
         if (this.targetType !== mineType || this.targetId !== mineTarget) {
             this.isHovering = true;
             this.targetType = mineType;
             this.targetId = mineTarget;
             console.log(`👆 Hover mining: ${displayName}`);
+
+            // Start mining if we were previously stopped
+            if (!this.isActive && this.mode !== 'off') {
+                this.start();
+            }
         }
     }
 
@@ -281,7 +291,14 @@ class SimpleMiner {
             this.isHovering = false;
             this.targetType = this.defaultTargetType;
             this.targetId = this.defaultTargetId;
-            console.log(`↩️ Back to default mining: ${this.getDisplayName()}`);
+
+            // If we revert to null target, stop mining
+            if (this.targetType === null) {
+                this.stop();
+                console.log(`↩️ Back to default - mining stopped (no valid target)`);
+            } else {
+                console.log(`↩️ Back to default mining: ${this.getDisplayName()}`);
+            }
         }
     }
 
