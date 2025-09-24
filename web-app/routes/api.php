@@ -50,7 +50,7 @@ Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController
 Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
 
 // Public subscription routes (requires public key but not auth token)
-Route::post('/subscription/activate-for-key', [App\Http\Controllers\Api\SubscriptionApiController::class, 'activateForPublicKey'])->middleware('throttle:25,1');
+// Route::post('/subscription/activate-for-key', [App\Http\Controllers\Api\SubscriptionApiController::class, 'activateForPublicKey'])->middleware('throttle:25,1');
 
 // Protected API routes
 Route::middleware('auth:sanctum')->group(function () {

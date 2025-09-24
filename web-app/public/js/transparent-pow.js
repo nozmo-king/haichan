@@ -39,79 +39,19 @@ class TransparentPoWSystem {
     }
 
     setupRealtimeDisplay() {
-        // Create transparent PoW overlay
-        const overlay = document.createElement('div');
-        overlay.id = 'pow-transparency-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            width: 350px;
-            background: rgba(0, 0, 0, 0.9);
-            color: #00FF00;
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            padding: 15px;
-            border-radius: 8px;
-            border: 2px solid #00FF00;
-            z-index: 9999;
-            backdrop-filter: blur(10px);
-            display: none;
-        `;
-
-        overlay.innerHTML = `
-            <div style="text-align: center; font-weight: bold; margin-bottom: 10px; color: #FFFF00;">
-                🔍 PROOF-OF-WORK TRANSPARENCY
-            </div>
-            <div id="pow-current-target">Target: None</div>
-            <div id="pow-current-difficulty">Difficulty: N/A</div>
-            <div id="pow-current-hashrate">Hashrate: 0 H/s</div>
-            <div id="pow-current-attempts">Attempts: 0</div>
-            <div style="margin: 10px 0; border-top: 1px solid #00FF00; padding-top: 10px;">
-                <div>Session Proofs: <span id="pow-session-proofs">0</span></div>
-                <div>Session Points: <span id="pow-session-points">0</span></div>
-                <div>Global Hashrate: <span id="pow-global-hashrate">0 H/s</span></div>
-            </div>
-            <div id="pow-recent-proofs" style="margin-top: 10px; max-height: 150px; overflow-y: auto;">
-                <div style="font-weight: bold; color: #FFFF00;">Recent Proofs:</div>
-            </div>
-            <button onclick="togglePoWTransparency()" style="
-                position: absolute;
-                top: 5px;
-                right: 5px;
-                background: transparent;
-                border: 1px solid #00FF00;
-                color: #00FF00;
-                padding: 2px 6px;
-                cursor: pointer;
-                font-size: 10px;
-            ">×</button>
-        `;
-
-        document.body.appendChild(overlay);
-
-        // Create toggle button
+        // PoW transparency overlay disabled - using main mini dashboard instead
+        console.log('🎯 PoW transparency disabled - integrated into main dashboard');
+        
+        // Still create the toggle button but make it invisible/disabled
         const toggleBtn = document.createElement('button');
         toggleBtn.id = 'pow-transparency-btn';
         toggleBtn.textContent = '🔍 PoW';
         toggleBtn.style.cssText = `
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: #000;
-            color: #00FF00;
-            border: 2px solid #00FF00;
-            padding: 8px 12px;
-            cursor: pointer;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            font-weight: bold;
-            border-radius: 5px;
-            z-index: 10000;
+            display: none;
         `;
-        toggleBtn.onclick = () => this.toggleTransparency();
+        // toggleBtn.onclick = () => this.toggleTransparency();
 
-        document.body.appendChild(toggleBtn);
+        // document.body.appendChild(toggleBtn);
     }
 
     toggleTransparency() {

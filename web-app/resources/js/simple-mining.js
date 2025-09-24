@@ -217,33 +217,22 @@ class SimpleMiner {
     }
 
     updateMiningUI() {
-        // Slider and gradient bar
-        const slider = document.getElementById('compute-slider');
-        const bar = document.getElementById('compute-gradient-bar');
-        const label = document.getElementById('compute-label');
-        const status = document.getElementById('power-status');
+        // Update main layout mini dashboard elements
+        const targetEl = document.getElementById('dashboard-target');
+        const hashrateEl = document.getElementById('dashboard-hashrate');  
+        const proofsEl = document.getElementById('dashboard-proofs');
+        const hashEl = document.getElementById('dashboard-current-hash');
+        const powerDisplay = document.getElementById('power-level-display');
+        const powerSlider = document.getElementById('dashboard-power-slider');
+        const statusEl = document.getElementById('dashboard-status');
 
-        if (slider) slider.value = String(this.powerLevel);
-        if (label) label.textContent = `${this.powerLevel}%`;
-        if (status) status.textContent = this.powerLevel === 0 ? 'OFF' : 'ON';
-
-        if (bar) {
-            const pct = this.powerLevel;
-            bar.style.background = `linear-gradient(90deg, #6BBF59 0%, #6BBF59 ${pct}%, #CD5C5C ${pct}%, #CD5C5C 100%)`;
-        }
-
-        // Target label
-        const targetEl = document.getElementById('simple-target');
         if (targetEl) targetEl.textContent = this.getDisplayName();
-
-        // Hash display
-        const hashrateEl = document.getElementById('simple-hashrate');
-        const proofsEl = document.getElementById('simple-proofs');
-        const hashEl = document.getElementById('simple-current-hash');
-
         if (hashrateEl) hashrateEl.textContent = `${this.getHashRate()} H/s`;
         if (proofsEl) proofsEl.textContent = this.proofsFound.toLocaleString();
-        if (hashEl) hashEl.textContent = this.currentHash ? this.currentHash.substring(0, 24) + '...' : '—';
+        if (hashEl) hashEl.textContent = this.currentHash ? this.currentHash.substring(0, 32) + '...' : 'calculating...';
+        if (powerDisplay) powerDisplay.textContent = Math.ceil(this.powerLevel / 10);
+        if (powerSlider) powerSlider.value = Math.ceil(this.powerLevel / 10);
+        if (statusEl) statusEl.textContent = this.powerLevel === 0 ? 'IDLE' : 'MINING';
     }
 
     setupHoverMining() {
@@ -322,95 +311,15 @@ class SimpleMiner {
     }
 
     setupDashboard() {
+        // Clean up old dashboards
         const oldDash = document.getElementById('mini-dashboard-overlay');
         if (oldDash) oldDash.remove();
 
         const simpleDash = document.getElementById('simple-mini-dashboard');
         if (simpleDash) simpleDash.remove();
 
-        const dashboard = document.createElement('div');
-        dashboard.id = 'simple-mini-dashboard';
-        dashboard.style.cssText = `
-            position: fixed;
-            top: 60px;
-            right: 20px;
-            width: 300px;
-            background: #F5F5DC;
-            border: 2px solid #708B75;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 10px;
-            z-index: 9999;
-            display: block;
-            box-shadow: 0 4px 12px rgba(68, 75, 110, 0.3);
-        `;
-
-        const isThread = this.targetType === 'thread';
-
-        dashboard.innerHTML = `
-            <div style="background: linear-gradient(135deg, #708B75, #9AB87A); color: #FFFFEE; padding: 8px 12px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
-                <span>⛏️ HAICHAN MINER</span>
-                <button id="simple-close" style="background: transparent; border: 1px solid #FFFFEE; color: #FFFFEE; padding: 2px 6px; cursor: pointer; font-size: 10px;">✕</button>
-            </div>
-
-            <div style="padding: 12px;">
-                <div style="margin-bottom: 10px;">
-                    <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Mining Target:</div>
-                    <div id="simple-target" style="color: #708B75; font-size: 9px; padding: 3px; background: #F8F8F8; border: 1px solid #CCCCCC;">${this.getDisplayName()}</div>
-                    ${isThread ? '' : '<div style="margin-top:6px;color:#8a8a8a;font-size:9px;">Tip: open a thread page to mine that thread directly.</div>'}
-                </div>
-
-                <div style="margin-bottom: 10px;">
-                    <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Hash Rate: <span id="simple-hashrate" style="color: #708B75;">0 H/s</span></div>
-                    <div style="color: #444B6E; font-size: 9px;">Proofs Found: <span id="simple-proofs" style="color: #708B75;">${this.proofsFound}</span></div>
-                    <div style="color: #444B6E; font-size: 9px;">Pattern: <span style="color: #CD5C5C;">21e8</span></div>
-                </div>
-
-                <div style="margin-bottom: 12px;">
-                    <div style="color: #444B6E; font-weight: bold; margin-bottom: 6px; display:flex; justify-content: space-between; align-items:center;">
-                        <span>Compute (choose power)</span>
-                        <span id="power-status" style="color:#708B75;">OFF</span>
-                    </div>
-                    <input id="compute-slider" type="range" min="0" max="100" step="1" value="${this.powerLevel}" style="width: 100%;">
-                    <div id="compute-gradient-bar" style="height: 10px; border:1px solid #CCC; border-radius: 4px; margin-top:6px; background: linear-gradient(90deg, #6BBF59 0%, #6BBF59 0%, #CD5C5C 0%, #CD5C5C 100%);"></div>
-                    <div style="display:flex; justify-content: space-between; font-size:9px; color:#666; margin-top:4px;">
-                        <span>Idle</span>
-                        <span id="compute-label">0%</span>
-                        <span>Max</span>
-                    </div>
-                    <div style="margin-top:6px;">
-                        <button id="simple-off-btn" style="padding: 4px; font-size: 8px; border: 1px solid #CCCCCC; cursor: pointer; background: #CD5C5C; color: white; width:100%;">Turn Off</button>
-                    </div>
-                </div>
-
-                <div style="margin-bottom: 10px;">
-                    <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Current Hash:</div>
-                    <div id="simple-current-hash" style="font-size: 8px; color: #888; word-break: break-all; background: #FAFAFA; padding: 3px; border: 1px solid #DDD;">—</div>
-                </div>
-
-                <div style="border-top: 1px solid #CCCCCC; padding-top: 8px; text-align: center; font-size: 8px; color: #666;">
-                    Tip: set compute to 0% to stop. Mining is OFF by default.
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(dashboard);
-
-        // Events
-        document.getElementById('simple-close').addEventListener('click', () => {
-            dashboard.style.display = 'none';
-        });
-
-        document.getElementById('simple-off-btn').addEventListener('click', () => this.setPowerLevel(0));
-
-        const slider = document.getElementById('compute-slider');
-        slider.addEventListener('input', (e) => {
-            const value = parseInt(e.target.value, 10);
-            this.setPowerLevel(value);
-        });
-
-        // Initial UI sync
-        this.updateMiningUI();
+        // No longer create the simple dashboard - use main layout mini dashboard instead
+        console.log('🎯 Mining system initialized - use main mini dashboard');
     }
 
     // Public API methods

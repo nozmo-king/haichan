@@ -14,7 +14,6 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <script src="/js/transparent-pow.js"></script>
-    <script src="/js/addictive-mining.js"></script>
     @vite('resources/js/simple-mining.js')
     <script>
         // Force complete cache refresh
@@ -697,195 +696,188 @@
         opacity: 0.1;
     "></canvas>
 
-    <!-- Quantum Mining Status Bar -->
-    <div id="mining-status-bar" style="
+    <!-- Elegant Film Grain Mini Dashboard Toggle -->
+    <button id="mini-dash-toggle" style="
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
+        top: 20px;
+        right: 20px;
         background: linear-gradient(135deg, rgba(154,184,122,0.95) 0%, rgba(112,139,117,0.95) 100%);
+        border: none;
+        color: #FFFFEE;
+        padding: 12px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        z-index: 10001;
+        box-shadow: 0 4px 16px rgba(68, 75, 110, 0.4);
         backdrop-filter: blur(10px);
-        color: #FFFFEE;
-        font-family: 'JetBrains Mono', 'Courier New', monospace;
-        font-size: 11px;
-        padding: 10px 20px;
-        z-index: 9999;
-        border-bottom: 2px solid #444B6E;
-        box-shadow: 0 2px 8px rgba(68, 75, 110, 0.3);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    ">
-        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 5px;">
-                <span id="mining-indicator" style="
-                    display: inline-block;
-                    width: 8px;
-                    height: 8px;
-                    background: #708B75;
-                    border-radius: 50%;
-                    animation: pulse 1s infinite;
-                "></span>
-                <span style="color: #FFFFEE; font-weight: bold; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">HAICHAN MINING NETWORK</span>
-            </div>
-            <div style="color: #FFFFEE; font-size: 9px;">
-                <span style="color: rgba(255,255,238,0.7);">CURRENT:</span>
-                <span id="network-hashrate" style="color: #E8FFE8; font-weight: bold;">0 H/s</span>
-            </div>
-            <div style="color: #FFFFEE; font-size: 9px;">
-                <span style="color: rgba(255,255,238,0.7);">TODAY:</span>
-                <span id="network-daily-pow" style="color: #FFE8C8; font-weight: bold;">{{ $dailyProofs ?? 0 }} PoW</span>
-            </div>
-            <div style="color: #FFFFEE; font-size: 9px;">
-                <span style="color: rgba(255,255,238,0.7);">WEEK:</span>
-                <span id="network-weekly-pow" style="color: #E8FFE8; font-weight: bold;">{{ $weeklyProofs ?? 0 }} PoW</span>
-            </div>
-            <div style="color: #FFFFEE; font-size: 9px;">
-                <span style="color: rgba(255,255,238,0.7);">GLOBAL PoW:</span>
-                <span id="network-total-pow" style="color: #FFD8D8; font-weight: bold;">{{ number_format($totalProofs ?? 0) }}</span>
-            </div>
-            <div style="color: #FFFFEE; font-size: 9px;">
-                <span style="color: rgba(255,255,238,0.7);">MINERS:</span>
-                <span id="network-active-miners" style="color: #FFD8D8; font-weight: bold;">{{ $activeSessions ?? 1 }}</span>
-            </div>
-        </div>
-        
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <div id="current-mining-hash" style="
-                font-family: 'Courier New', monospace;
-                font-size: 9px;
-                color: rgba(255,255,238,0.7);
-                max-width: 150px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            ">calculating...</div>
-            <div style="color: #FFFFEE;">
-                <span style="color: rgba(255,255,238,0.8);">DIFFICULTY:</span>
-                <span id="current-difficulty" style="color: #FFD8D8; font-weight: bold;">21e8</span>
-            </div>
-            <select style="
-                background: #708B75;
-                color: #FFFFEE;
-                border: 1px solid #444B6E;
-                padding: 4px 6px;
-                border-radius: 3px;
-                font-size: 9px;
-                margin-left: 10px;
-                cursor: pointer;
-            " onchange="if(this.value) window.location.href=this.value">
-                <option value="">🌐 Navigate</option>
-                <option value="/catalog">🎯 The MC</option>
-                <option value="/library">🖼️ Image Library</option>
-                <option value="/mining">⛏️ Mining Dashboard</option>
-                <option value="/faq">❓ FAQ & Help</option>
-                <optgroup label="📋 Boards">
-                @php
-                $boardIcons = [
-                    'gen' => '💬',
-                    'tech' => '💻',
-                    'biz' => '💼',
-                    'film' => '🎬',
-                    'x' => '👽',
-                    'lit' => '📚',
-                    'meta' => '⚙️',
-                    'mu' => '🎵'
-                ];
-                $allBoards = \App\Models\Board::orderBy('code')->get();
-                @endphp
-                @foreach($allBoards as $board)
-                <option value="/{{ $board->code }}">{{ $boardIcons[$board->code] ?? '📌' }} /{{ $board->code }}/</option>
-                @endforeach
-                </optgroup>
-            </select>
-            <button id="mini-dash-toggle" style="
-                background: #708B75;
-                border: none;
-                color: white;
-                padding: 4px 8px;
-                border-radius: 3px;
-                cursor: pointer;
-                font-size: 12px;
-                margin-left: 5px;
-            " title="Open Mining Dashboard">⛏️</button>
+        border: 2px solid rgba(255, 255, 238, 0.3);
+        transition: all 0.3s ease;
+    " title="Open Mining Dashboard" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">⛏️ MINE</button>
 
-        </div>
-    </div>
-
-    <!-- Bottom Mining Toolbar (Always Visible) -->
-    <div id="bottom-mining-toolbar" style="
+    <!-- Elegant Film Grain Mini Dashboard -->
+    <div id="mini-dashboard" style="
         position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: linear-gradient(135deg, #708B75 0%, #9AB87A 100%);
-        color: #FFFFEE;
+        top: 100px;
+        right: 20px;
+        width: 360px;
+        background: linear-gradient(135deg, rgba(245, 245, 220, 0.98) 0%, rgba(240, 240, 215, 0.98) 100%);
+        border: 3px solid rgba(68, 75, 110, 0.6);
+        border-radius: 12px;
+        z-index: 10000;
+        display: none;
         font-family: 'Courier New', monospace;
-        font-size: 9px;
-        padding: 6px 15px;
-        z-index: 9998;
-        border-top: 1px solid #444B6E;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 -2px 8px rgba(68, 75, 110, 0.2);
-    ">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="color: #E8FFE8; font-weight: bold;">MINING STATUS</div>
-            <div style="color: rgba(255,255,238,0.9);">Rate: <span id="toolbar-hashrate" style="color: #E8FFE8; font-weight: bold;">0 H/s</span></div>
-            <div style="color: rgba(255,255,238,0.9);">Target: <span id="toolbar-target" style="color: #FFD8D8; font-weight: bold;">None</span></div>
-
-            <!-- Navigation Links in Bottom Toolbar -->
-            <a href="/catalog" style="
-                background: rgba(255,255,238,0.1);
-                color: #E8FFE8;
-                text-decoration: none;
-                padding: 2px 6px;
-                border-radius: 3px;
-                font-size: 8px;
-                font-weight: bold;
-                border: 1px solid rgba(255,255,238,0.2);
-                transition: all 0.2s ease;
-            " title="The MC" onmouseover="this.style.background='rgba(255,255,238,0.2)'" onmouseout="this.style.background='rgba(255,255,238,0.1)'">🎯 MC</a>
-
-            <a href="/library" style="
-                background: rgba(255,255,238,0.1);
-                color: #E8FFE8;
-                text-decoration: none;
-                padding: 2px 6px;
-                border-radius: 3px;
-                font-size: 8px;
-                font-weight: bold;
-                border: 1px solid rgba(255,255,238,0.2);
-                transition: all 0.2s ease;
-            " title="Image Library" onmouseover="this.style.background='rgba(255,255,238,0.2)'" onmouseout="this.style.background='rgba(255,255,238,0.1)'">🖼️ LIB</a>
-
-            <a href="/mining" style="
-                background: rgba(255,255,238,0.1);
-                color: #E8FFE8;
-                text-decoration: none;
-                padding: 2px 6px;
-                border-radius: 3px;
-                font-size: 8px;
-                font-weight: bold;
-                border: 1px solid rgba(255,255,238,0.2);
-                transition: all 0.2s ease;
-            " title="Mining Dashboard" onmouseover="this.style.background='rgba(255,255,238,0.2)'" onmouseout="this.style.background='rgba(255,255,238,0.1)'">⛏️ MINE</a>
-        </div>
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="color: rgba(255,255,238,0.8); font-size: 8px;">Power: <span id="toolbar-power" style="color: #FFE8C8;">IDLE</span></div>
-
-            <!-- Theme Switcher Dropdown -->
-            <div style="position: relative; display: flex; align-items: center; gap: 8px;">
-                <span style="color: rgba(255,255,238,0.8); font-size: 8px;">Theme:</span>
-                <select id="theme-selector" onchange="switchTheme(this.value)" style="
-                    background: rgba(255,255,238,0.1);
-                    color: #E8FFE8;
-                    border: 1px solid rgba(255,255,238,0.2);
-                    padding: 2px 6px;
-                    font-size: 7px;
-                    border-radius: 3px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(15px);
+        overflow: hidden;
+    " class="film-grain-overlay">
+        <!-- Film Grain Background -->
+        <div class="film-grain" style="
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.15;
+            mix-blend-mode: multiply;
+            pointer-events: none;
+            z-index: 1;
+        "></div>
+        
+        <!-- Dashboard Header -->
+        <div id="dashboard-header" style="
+            background: linear-gradient(135deg, rgba(68, 75, 110, 0.95) 0%, rgba(112, 139, 117, 0.95) 100%);
+            color: #FFFFEE;
+            padding: 12px 16px;
+            font-size: 11pt;
+            font-weight: bold;
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 9px 9px 0 0;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 2;
+        ">
+            <span>⛏️ HAICHAN MINER</span>
+            <div>
+                <button id="minimize-dashboard" style="
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    color: #FFFFEE;
+                    padding: 4px 8px;
+                    margin-right: 6px;
                     cursor: pointer;
+                    font-size: 10px;
+                    border-radius: 4px;
+                    transition: all 0.2s ease;
+                    backdrop-filter: blur(5px);
+                " title="Minimize" onmouseover="this.style.background='rgba(255,255,255,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">−</button>
+                <button id="close-dashboard" style="
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    color: #FFFFEE;
+                    padding: 4px 8px;
+                    cursor: pointer;
+                    font-size: 10px;
+                    border-radius: 4px;
+                    transition: all 0.2s ease;
+                    backdrop-filter: blur(5px);
+                " title="Close" onmouseover="this.style.background='rgba(255,100,100,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">✕</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div id="dashboard-content" style="padding: 20px; font-size: 10pt; position: relative; z-index: 2;">
+            <!-- Mining Target Display -->
+            <div style="margin-bottom: 16px; padding: 12px; background: rgba(255, 255, 255, 0.4); border-radius: 8px; border: 1px solid rgba(154, 184, 122, 0.3);">
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 6px; font-size: 9pt;">🎯 Mining Target</div>
+                <div id="dashboard-target" style="color: #666; font-size: 8pt; font-family: monospace;">No target selected</div>
+            </div>
+
+            <!-- Performance Stats -->
+            <div style="margin-bottom: 16px; padding: 12px; background: rgba(255, 255, 255, 0.4); border-radius: 8px; border: 1px solid rgba(154, 184, 122, 0.3);">
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 8px; font-size: 9pt;">📊 Performance</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 8pt;">
+                    <div>Hash Rate: <br><span id="dashboard-hashrate" style="color: #789922; font-weight: bold;">0 H/s</span></div>
+                    <div>Difficulty: <br><span id="dashboard-difficulty" style="color: #789922; font-weight: bold;">21e8</span></div>
+                    <div>Session Proofs: <br><span id="dashboard-proofs" style="color: #666; font-weight: bold;">0</span></div>
+                    <div>Status: <br><span id="dashboard-status" style="color: #666; font-weight: bold;">IDLE</span></div>
+                </div>
+            </div>
+
+            <!-- Elegant Gradient Power Slider -->
+            <div style="margin-bottom: 16px; padding: 12px; background: rgba(255, 255, 255, 0.4); border-radius: 8px; border: 1px solid rgba(154, 184, 122, 0.3);">
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 8px; font-size: 9pt;">⚡ Mining Power: <span id="power-level-display" style="color: #789922;">1</span>/10</div>
+                
+                <!-- Custom Gradient Slider -->
+                <div style="position: relative; height: 20px; margin: 10px 0;">
+                    <div style="
+                        position: absolute;
+                        width: 100%;
+                        height: 20px;
+                        background: linear-gradient(90deg, 
+                            #4CAF50 0%,     /* Green - Low */
+                            #8BC34A 20%,    /* Light Green */
+                            #FFEB3B 40%,    /* Yellow */
+                            #FF9800 60%,    /* Orange */
+                            #FF5722 80%,    /* Red-Orange */
+                            #F44336 100%    /* Red - High */
+                        );
+                        border-radius: 10px;
+                        box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+                    "></div>
+                    <input type="range" id="dashboard-power-slider" min="1" max="10" value="1" style="
+                        position: absolute;
+                        width: 100%;
+                        height: 20px;
+                        background: transparent;
+                        -webkit-appearance: none;
+                        appearance: none;
+                        cursor: pointer;
+                        border-radius: 10px;
+                    ">
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 7pt; color: #666; margin-top: 6px;">
+                    <span style="color: #4CAF50;">💨 Whisper</span>
+                    <span style="color: #FF9800;">🚀 Cruise</span>
+                    <span style="color: #F44336;">🔥 OVERDRIVE</span>
+                </div>
+            </div>
+
+            <!-- Current Hash Display -->
+            <div style="padding: 12px; background: rgba(255, 255, 255, 0.4); border-radius: 8px; border: 1px solid rgba(154, 184, 122, 0.3);">
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 6px; font-size: 9pt;">🔐 Current Hash</div>
+                <div id="dashboard-current-hash" style="
+                    font-family: 'Courier New', monospace;
+                    font-size: 7pt;
+                    color: #888;
+                    word-break: break-all;
+                    background: rgba(250, 250, 250, 0.8);
+                    padding: 6px;
+                    border: 1px solid rgba(221, 221, 221, 0.6);
+                    border-radius: 4px;
+                    line-height: 1.3;
+                ">calculating...</div>
+            </div>
+            
+            <!-- Theme Switcher -->
+            <div style="margin-top: 16px; padding: 12px; background: rgba(255, 255, 255, 0.4); border-radius: 8px; border: 1px solid rgba(154, 184, 122, 0.3);">
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 8px; font-size: 9pt;">🎨 Theme</div>
+                <select id="dashboard-theme-selector" onchange="switchTheme(this.value)" style="
+                    width: 100%;
+                    background: rgba(255, 255, 255, 0.8);
+                    color: #444B6E;
+                    border: 1px solid rgba(154, 184, 122, 0.4);
+                    padding: 6px 8px;
+                    border-radius: 6px;
+                    font-size: 8pt;
                     font-weight: bold;
+                    cursor: pointer;
                     outline: none;
                 ">
                     <option value="classic">🏛️ Classic</option>
@@ -899,127 +891,53 @@
                     <option value="arctic">❄️ Arctic</option>
                 </select>
             </div>
-        </div>
-    </div>
 
-    <!-- Moveable Mini Dashboard (Hidden by Default) -->
-    <div id="mini-dashboard" style="
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        width: 320px;
-        background: #F5F5DC;
-        border: 2px solid #444B6E;
-        border-radius: 5px;
-        z-index: 10000;
-        display: none;
-        font-family: 'Courier New', monospace;
-        box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);
-    ">
-        <!-- Dashboard Header -->
-        <div id="dashboard-header" style="
-            background: linear-gradient(135deg, #444B6E 0%, #708B75 100%);
-            color: #FFFFEE;
-            padding: 8px 12px;
-            font-size: 10pt;
-            font-weight: bold;
-            cursor: move;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-radius: 3px 3px 0 0;
-        ">
-            <span>⛏️ HAICHAN MINER</span>
-            <div>
-                <button id="minimize-dashboard" style="
-                    background: transparent;
-                    border: 1px solid #FFFFEE;
-                    color: #FFFFEE;
-                    padding: 1px 4px;
-                    margin-right: 3px;
-                    cursor: pointer;
-                    font-size: 10px;
-                    border-radius: 2px;
-                " title="Minimize">−</button>
-                <button id="close-dashboard" style="
-                    background: transparent;
-                    border: 1px solid #FFFFEE;
-                    color: #FFFFEE;
-                    padding: 1px 4px;
-                    cursor: pointer;
-                    font-size: 10px;
-                    border-radius: 2px;
-                " title="Close">✕</button>
-            </div>
-        </div>
-
-        <!-- Dashboard Content -->
-        <div id="dashboard-content" style="padding: 15px; font-size: 9pt;">
-            <div style="margin-bottom: 10px;">
-                <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Mining Target:</div>
-                <div id="dashboard-target" style="color: #666; font-size: 8pt;">No target selected</div>
-            </div>
-
-            <div style="margin-bottom: 10px;">
-                <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Performance:</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 8pt;">
-                    <div>Hash Rate: <span id="dashboard-hashrate" style="color: #789922; font-weight: bold;">0 H/s</span></div>
-                    <div>Difficulty: <span id="dashboard-difficulty" style="color: #789922; font-weight: bold;">21e8</span></div>
-                    <div>Session Proofs: <span id="dashboard-proofs" style="color: #666;">0</span></div>
-                </div>
-            </div>
-
-            <!-- Rare Hash Notifications -->
-            <div id="rare-hash-notifications" style="
-                margin-bottom: 15px;
-                max-height: 120px;
-                overflow-y: auto;
-                background: #FFFFEE;
-                border: 1px solid #9AB87A;
-                border-radius: 4px;
-                padding: 8px;
-                display: none;
-            ">
-                <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px; font-size: 8pt;">
-                    🎉 RARE HASH DISCOVERIES
-                </div>
-                <div id="rare-hash-list" style="font-size: 7pt; font-family: 'Courier New', monospace;">
-                    <!-- Rare hashes will appear here -->
-                </div>
-            </div>
-
-            <div style="margin-bottom: 10px;">
-                <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Mining Power: <span id="power-level-display">1</span>/10</div>
-                <input type="range" id="dashboard-power-slider" min="1" max="10" value="1" style="
-                    width: 100%;
-                    margin: 5px 0;
-                    background: #708B75;
-                    border-radius: 5px;
-                ">
-                <div style="display: flex; justify-content: space-between; font-size: 7pt; color: #666;">
-                    <span>1: Whisper (~50 H/s)</span>
-                    <span>5: Cruise (~1K H/s)</span>
-                    <span>10: OVERDRIVE (~10K H/s)</span>
-                </div>
-            </div>
-
-            <div>
-                <div style="color: #444B6E; font-weight: bold; margin-bottom: 5px;">Current Hash:</div>
-                <div id="dashboard-current-hash" style="
-                    font-family: monospace;
-                    font-size: 7pt;
-                    color: #888;
-                    word-break: break-all;
-                    background: #FAFAFA;
-                    padding: 3px;
-                    border: 1px solid #DDD;
-                    border-radius: 2px;
-                ">calculating...</div>
+            <!-- Quick Navigation -->
+            <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: space-between;">
+                <a href="/catalog" style="
+                    flex: 1;
+                    text-align: center;
+                    background: rgba(154, 184, 122, 0.3);
+                    color: #444B6E;
+                    text-decoration: none;
+                    padding: 8px 4px;
+                    border-radius: 6px;
+                    font-size: 8pt;
+                    font-weight: bold;
+                    border: 1px solid rgba(154, 184, 122, 0.4);
+                    transition: all 0.2s ease;
+                " onmouseover="this.style.background='rgba(154,184,122,0.5)'" onmouseout="this.style.background='rgba(154,184,122,0.3)'">🎯 MC</a>
+                <a href="/library" style="
+                    flex: 1;
+                    text-align: center;
+                    background: rgba(154, 184, 122, 0.3);
+                    color: #444B6E;
+                    text-decoration: none;
+                    padding: 8px 4px;
+                    border-radius: 6px;
+                    font-size: 8pt;
+                    font-weight: bold;
+                    border: 1px solid rgba(154, 184, 122, 0.4);
+                    transition: all 0.2s ease;
+                " onmouseover="this.style.background='rgba(154,184,122,0.5)'" onmouseout="this.style.background='rgba(154,184,122,0.3)'">🖼️ LIB</a>
+                <a href="/mining" style="
+                    flex: 1;
+                    text-align: center;
+                    background: rgba(154, 184, 122, 0.3);
+                    color: #444B6E;
+                    text-decoration: none;
+                    padding: 8px 4px;
+                    border-radius: 6px;
+                    font-size: 8pt;
+                    font-weight: bold;
+                    border: 1px solid rgba(154, 184, 122, 0.4);
+                    transition: all 0.2s ease;
+                " onmouseover="this.style.background='rgba(154,184,122,0.5)'" onmouseout="this.style.background='rgba(154,184,122,0.3)'">⛏️ FULL</a>
             </div>
         </div>
     </div>
 
-    <div class="container" style="margin-top: 50px; margin-bottom: 40px;">
+    <div class="container" style="margin-top: 20px; margin-bottom: 40px;">
         <div class="header">
             <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
                 <h1><a href="/" style="text-decoration: none; color: #3D315B; font-family: 'Nova Cut', serif; font-size: 28px; font-weight: 300; letter-spacing: 2px;" id="header-text">HAICHAN</a></h1>
@@ -1202,7 +1120,7 @@
         });
     </script>
 
-    <!-- Additional CSS for pulse animation -->
+    <!-- Film Grain & Dashboard CSS -->
     <style>
         @keyframes pulse {
             0% { transform: scale(1); opacity: 1; }
@@ -1210,21 +1128,112 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
+        @keyframes filmGrain {
+            0% { transform: translateX(0) translateY(0); }
+            10% { transform: translateX(-5%) translateY(10%); }
+            20% { transform: translateX(-10%) translateY(5%); }
+            30% { transform: translateX(5%) translateY(-10%); }
+            40% { transform: translateX(-5%) translateY(15%); }
+            50% { transform: translateX(-10%) translateY(5%); }
+            60% { transform: translateX(15%) translateY(0%); }
+            70% { transform: translateX(0%) translateY(15%); }
+            80% { transform: translateX(-15%) translateY(10%); }
+            90% { transform: translateX(10%) translateY(5%); }
+            100% { transform: translateX(5%) translateY(0%); }
+        }
+
+        /* 8mm Film Grain Effect */
+        .film-grain::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                radial-gradient(circle, transparent 1px, rgba(255,255,255,.1) 1px),
+                radial-gradient(circle, transparent 1px, rgba(0,0,0,.05) 1px);
+            background-size: 3px 3px, 7px 7px;
+            background-position: 0 0, 3px 3px;
+            animation: filmGrain 8s steps(10, end) infinite;
+            mix-blend-mode: overlay;
+        }
+
+        /* Custom Gradient Slider Styling */
+        #dashboard-power-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border: 2px solid #444B6E;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8);
+            transition: all 0.2s ease;
+        }
+
+        #dashboard-power-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.9);
+        }
+
+        #dashboard-power-slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border: 2px solid #444B6E;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8);
+            transition: all 0.2s ease;
+        }
+
         /* Dashboard hover effects */
         #mini-dash-toggle:hover {
-            background: #9AB87A !important;
-            transform: scale(1.1);
+            background: linear-gradient(135deg, rgba(154,184,122,1) 0%, rgba(112,139,117,1) 100%) !important;
         }
 
-        #minimize-dashboard:hover, #close-dashboard:hover {
-            background: rgba(255,255,255,0.2) !important;
+        .film-grain-overlay {
+            position: relative;
+            overflow: hidden;
         }
 
-        #dashboard-header:hover {
-            background: linear-gradient(135deg, #708B75 0%, #9AB87A 100%) !important;
+        .film-grain-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle, transparent 1px, rgba(255,255,255,.08) 1px),
+                radial-gradient(circle, transparent 1px, rgba(0,0,0,.04) 1px);
+            background-size: 4px 4px, 8px 8px;
+            background-position: 0 0, 4px 4px;
+            animation: filmGrain 6s linear infinite;
+            pointer-events: none;
+            mix-blend-mode: overlay;
+            z-index: 3;
         }
 
+        /* Thread expand button styling */
+        .thread-expand-btn {
+            background: linear-gradient(135deg, rgba(154,184,122,0.8) 0%, rgba(112,139,117,0.8) 100%);
+            border: 1px solid rgba(68, 75, 110, 0.4);
+            color: #444B6E;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 8pt;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(5px);
+        }
 
+        .thread-expand-btn:hover {
+            background: linear-gradient(135deg, rgba(154,184,122,1) 0%, rgba(112,139,117,1) 100%);
+            transform: scale(1.05);
+        }
     </style>
 
     <!-- Theme Switching Script -->
@@ -1517,10 +1526,15 @@
                 }
             });
 
-            // Initialize theme selector dropdown
+            // Initialize theme selector dropdowns
             const themeSelector = document.getElementById('theme-selector');
+            const dashboardThemeSelector = document.getElementById('dashboard-theme-selector');
+            
             if (themeSelector && currentTheme !== 'classic') {
                 themeSelector.value = currentTheme;
+            }
+            if (dashboardThemeSelector && currentTheme !== 'classic') {
+                dashboardThemeSelector.value = currentTheme;
             }
         });
 

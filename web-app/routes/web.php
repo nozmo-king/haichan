@@ -17,6 +17,7 @@ Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('auth.login');
 Route::get('/auth/register', [AuthController::class, 'showRegister'])->name('register');
 Route::get('/auth/generate-keys', [AuthController::class, 'generateKeys']);
+Route::post('/auth/generate-address', [AuthController::class, 'generateAddress']);
 Route::get('/auth/invite-status', function() {
     return response()->json(\App\Models\InviteCode::getInviteStatus());
 });
@@ -40,8 +41,12 @@ Route::post('/register/validate-friend-code', [AuthController::class, 'validateF
 Route::get('/register/{friendCode}', [AuthController::class, 'showRegister'])->name('auth.register')->middleware('validate.friend.code');
 Route::post('/register', [AuthController::class, 'register'])->name('auth.register.store');
 
+// Image serving routes - public access
+Route::get('/image/thread/{id}', [App\Http\Controllers\ForumController::class, 'serveThreadImage'])->name('thread.image');
+Route::get('/image/post/{id}', [App\Http\Controllers\ForumController::class, 'servePostImage'])->name('post.image');
+
 // Protected routes - require authentication
-Route::middleware('auth')->group(function () {
+Route::middleware('bitcoin.auth')->group(function () {
     Route::get('/', function () {
         $userCount = \App\Models\User::count();
         $userCap = 256; // Define the user cap
@@ -104,7 +109,7 @@ Route::middleware('auth')->group(function () {
 
     // Thread creation POST (specific path)
     Route::post('/{board}/create', [App\Http\Controllers\ForumController::class, 'storeThread'])
-         ->name('board.store')
+         ->name('board.create.store')
          ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
 
     // Thread creation (less specific, comes after specific paths)
@@ -131,7 +136,7 @@ Route::middleware('auth')->group(function () {
 
         // Thread creation (less specific, comes after specific paths)
         Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])
-             ->name('board.store')
+             ->name('board.thread.store')
              ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
 
         // Board main page (least specific, comes last)
@@ -140,11 +145,7 @@ Route::middleware('auth')->group(function () {
              ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
     });
 
-    // Image serving routes
-    Route::get('/image/thread/{id}', [App\Http\Controllers\ForumController::class, 'serveThreadImage'])->name('thread.image');
-    Route::get('/image/post/{id}', [App\Http\Controllers\ForumController::class, 'servePostImage'])->name('post.image');
-
-    // Image Library routes
+    // Image Library routes (protected)
     Route::get('/library', [App\Http\Controllers\ImageLibraryController::class, 'index'])->name('image-library.index');
     Route::post('/api/image-library/mine', [App\Http\Controllers\ImageLibraryController::class, 'mine']);
     Route::post('/api/image-library/upload', [App\Http\Controllers\ImageLibraryController::class, 'upload']);
