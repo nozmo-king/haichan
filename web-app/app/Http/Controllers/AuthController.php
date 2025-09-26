@@ -225,4 +225,97 @@ class AuthController extends Controller
         session()->forget(['bitcoin_auth_id', 'bitcoin_auth_user']);
         return redirect('/auth/login')->with('success', 'Logged out successfully.');
     }
+
+    public function showDashboard()
+    {
+        if (!session('bitcoin_auth_id')) {
+            return redirect('/auth/login');
+        }
+
+        $user = BitcoinAuth::findOrFail(session('bitcoin_auth_id'));
+        
+        // Get user stats
+        $stats = [
+            'posts' => \DB::table('posts')->where('user_id', $user->id)->count(),
+            'threads' => \DB::table('threads')->where('user_id', $user->id)->count(),
+            'messages' => 0 // Will implement messages later
+        ];
+
+        // Get recent messages (empty for now)
+        $messages = collect();
+
+        return view('user.dashboard', compact('user', 'stats', 'messages'));
+    }
+
+    public function showEditProfile()
+    {
+        if (!session('bitcoin_auth_id')) {
+            return redirect('/auth/login');
+        }
+
+        $user = BitcoinAuth::findOrFail(session('bitcoin_auth_id'));
+        return view('user.profile-edit', compact('user'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        if (!session('bitcoin_auth_id')) {
+            return redirect('/auth/login');
+        }
+
+        $user = BitcoinAuth::findOrFail(session('bitcoin_auth_id'));
+
+        $request->validate([
+            'display_name' => 'nullable|string|max:100',
+            'bio' => 'nullable|string|max:1000',
+            'location' => 'nullable|string|max:100',
+            'website' => 'nullable|url|max:255',
+            'email' => 'nullable|email|max:255',
+            'timezone' => 'nullable|string|max:50',
+            'signature' => 'nullable|string|max:500',
+            'show_email' => 'boolean',
+            'profile_public' => 'boolean',
+            'social_links' => 'nullable|json'
+        ]);
+
+        // Parse social links JSON
+        $socialLinks = null;
+        if ($request->has('social_twitter') || $request->has('social_github') || $request->has('social_discord')) {
+            $socialLinks = [];
+            if ($request->social_twitter) $socialLinks['twitter'] = $request->social_twitter;
+            if ($request->social_github) $socialLinks['github'] = $request->social_github;
+            if ($request->social_discord) $socialLinks['discord'] = $request->social_discord;
+        }
+
+        $user->update([
+            'display_name' => $request->display_name ?: null,
+            'bio' => $request->bio ?: null,
+            'location' => $request->location ?: null,
+            'website' => $request->website ?: null,
+            'email' => $request->email ?: null,
+            'timezone' => $request->timezone ?: 'UTC',
+            'signature' => $request->signature ?: null,
+            'show_email' => $request->has('show_email'),
+            'profile_public' => $request->has('profile_public'),
+            'social_links' => $socialLinks
+        ]);
+
+        // Update session user data
+        session(['bitcoin_auth_user' => $user->fresh()]);
+
+        return redirect('/user/profile/edit')->with('success', 'Profile updated successfully!');
+    }
+
+    public function showUserProfile($userId)
+    {
+        $user = BitcoinAuth::findOrFail($userId);
+        
+        // Get user stats
+        $stats = [
+            'posts' => \DB::table('posts')->where('user_id', $user->id)->count(),
+            'threads' => \DB::table('threads')->where('user_id', $user->id)->count(),
+        ];
+
+        return view('user.profile', compact('user', 'stats'));
+    }
 }

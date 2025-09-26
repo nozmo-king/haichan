@@ -75,11 +75,25 @@ class ProofOfWorkController extends Controller
             'verified_at' => now()
         ]);
 
-        // Add PoW points to the board if this is thread-related mining
+        // Add PoW points and bump thread if this is thread-related mining
         if ($threadId) {
             $thread = Thread::find($threadId);
-            if ($thread && $thread->board) {
-                $thread->board->addPowPoints($points);
+            if ($thread) {
+                // Increment thread bump score with PoW points
+                $thread->increment('bump_score', $points);
+                $thread->update(['bumped_at' => now()]);
+                
+                // Also add to board if method exists
+                if ($thread->board && method_exists($thread->board, 'addPowPoints')) {
+                    $thread->board->addPowPoints($points);
+                }
+                
+                Log::info('THREAD BUMPED WITH POW', [
+                    'thread_id' => $threadId,
+                    'points_added' => $points,
+                    'new_bump_score' => $thread->fresh()->bump_score,
+                    'pattern' => $request->input('pattern')
+                ]);
             }
         }
 
@@ -205,14 +219,14 @@ class ProofOfWorkController extends Controller
     private function calculatePoints($pattern)
     {
         $points = [
-            // Standard patterns
+            // Standard patterns - FIXED SCORING
             '21' => 0.1, // Idle pattern - very low points
             '21e' => 0.5, // Easy pattern for replies
-            '21e8' => 1,
-            '21e80' => 5,
-            '21e800' => 25,
-            '21e8000' => 100,
-            '000021e8' => 625,
+            '21e8' => 100, // MAIN MINING PATTERN - 100 POINTS
+            '21e80' => 500, // 5x harder
+            '21e800' => 2500, // 25x harder 
+            '21e8000' => 10000, // 100x harder
+            '000021e8' => 50000, // Ultra rare
 
             // Legendary patterns
             '000' => 500,  // Triple zero

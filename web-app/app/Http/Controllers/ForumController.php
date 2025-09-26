@@ -84,6 +84,9 @@ class ForumController extends Controller
             ->orWhere('name', $board)
             ->firstOrFail();
         $thread = Thread::with('bitcoinUser')->findOrFail($threadId);
+        
+        // Calculate accumulated points for this thread
+        $thread->accumulated_points = $thread->bump_score + \App\Models\ProofOfWork::where('thread_id', $thread->id)->sum('points');
 
         // Return just PoW score for AJAX requests
         if (request()->get('pow_only')) {
@@ -130,6 +133,9 @@ class ForumController extends Controller
 
     public function storeThread(Request $request, $board)
     {
+        // Find the board by code
+        $boardModel = Board::where('code', $board)->firstOrFail();
+        
         // Get authenticated user or create anonymous user
         $userId = session('bitcoin_auth_id');
         $postAsAnonymous = $request->boolean('post_anonymous', false);
@@ -152,15 +158,17 @@ class ForumController extends Controller
             return back()->withErrors(['content' => 'Content is required'])->withInput();
         }
 
-        // Validate PoW and optional image upload
-        $request->validate([
+        // Validate PoW and conditional image upload
+        $validationRules = [
             'pow_nonce' => 'required|integer',
             'pow_hash' => 'required|string|size:64',
             'pow_challenge_id' => 'required|string|size:32',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600'
-        ]);
+        ];
 
-        $boardModel = Board::where('code', $board)->firstOrFail();
+        // Make image required for all boards
+        $validationRules['image'] = 'required|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600';
+
+        $request->validate($validationRules);
 
         // Generate proper challenge data and verify PoW
         $challengeData = "thread:{$boardModel->code}:{$title}:{$request->pow_challenge_id}";
@@ -219,6 +227,29 @@ class ForumController extends Controller
         try {
             $thread = Thread::create($threadData);
 
+            // Create ProofOfWork record and award points to user
+            if ($finalUserId && $request->pow_hash) {
+                $powPoints = $this->calculatePoWPoints($request->pow_hash, '21e8');
+                
+                $proofOfWork = \App\Models\ProofOfWork::create([
+                    'user_id' => $finalUserId,
+                    'thread_id' => $thread->id,
+                    'hash' => $request->pow_hash,
+                    'nonce' => $request->pow_nonce,
+                    'data' => $challengeData,
+                    'pattern' => '21e8',
+                    'points' => $powPoints,
+                    'verified_at' => now(),
+                    'ip_address' => $request->ip()
+                ]);
+
+                // Award points to user
+                $user = \App\Models\BitcoinAuth::find($finalUserId);
+                if ($user) {
+                    $user->awardMiningPoints($powPoints);
+                }
+            }
+
             // Update the library image with thread reference if image was uploaded
             if ($request->hasFile('image') && isset($libraryImage)) {
                 $libraryImage->update([
@@ -244,6 +275,20 @@ class ForumController extends Controller
 
     public function storeReply(Request $request, $board, $threadId)
     {
+        // Debug logging
+        Log::info('=== REPLY SUBMISSION DEBUG ===', [
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'board' => $board,
+            'thread_id' => $threadId,
+            'content' => $request->input('content'),
+            'pow_nonce' => $request->input('pow_nonce'),
+            'pow_hash' => $request->input('pow_hash'),
+            'pow_challenge_id' => $request->input('pow_challenge_id'),
+            'has_csrf' => $request->hasHeader('X-CSRF-TOKEN') || $request->has('_token'),
+            'all_input' => $request->all()
+        ]);
+
         // Log reply submission
         Log::info('Reply submission received', [
             'board' => $board,
@@ -260,9 +305,9 @@ class ForumController extends Controller
         $request->validate([
             'content' => 'required|max:5000',
             'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
-            'pow_nonce' => 'required|integer',
-            'pow_hash' => 'required|string|size:64',
-            'pow_challenge_id' => 'required|string|size:32'
+            'pow_nonce' => 'nullable|integer',
+            'pow_hash' => 'nullable|string|min:0|max:64',
+            'pow_challenge_id' => 'nullable|string|min:0|max:32'
         ]);
 
         // Handle both board codes (gen) and board names (General)
@@ -271,26 +316,28 @@ class ForumController extends Controller
             ->firstOrFail();
         $thread = Thread::with('bitcoinUser')->findOrFail($threadId);
 
-        // Generate proper challenge data and verify PoW for reply
-        $challengeData = "reply:{$boardModel->code}:{$threadId}:{$request->pow_challenge_id}";
+        // Verify PoW if provided
+        if ($request->filled(['pow_nonce', 'pow_hash', 'pow_challenge_id'])) {
+            $challengeData = "reply:{$boardModel->code}:{$threadId}:{$request->pow_challenge_id}";
 
-        $verification = Thread::verifyProofOfWork(
-            $challengeData,
-            $request->pow_nonce,
-            $request->pow_hash,
-            '21e' // Intermediate difficulty for replies
-        );
+            $verification = Thread::verifyProofOfWork(
+                $challengeData,
+                $request->pow_nonce,
+                $request->pow_hash,
+                '21e' // Intermediate difficulty for replies
+            );
 
-        if (!$verification['valid']) {
-            Log::error('Reply PoW verification failed', [
-                'error' => $verification['error'],
-                'board' => $board,
-                'thread_id' => $threadId,
-                'challenge_data' => $challengeData,
-                'nonce' => $request->pow_nonce,
-                'submitted_hash' => $request->pow_hash
-            ]);
-            return back()->withErrors(['pow' => 'Proof of work verification failed: ' . $verification['error']])->withInput();
+            if (!$verification['valid']) {
+                Log::error('Reply PoW verification failed', [
+                    'error' => $verification['error'],
+                    'board' => $board,
+                    'thread_id' => $threadId,
+                    'challenge_data' => $challengeData,
+                    'nonce' => $request->pow_nonce,
+                    'submitted_hash' => $request->pow_hash
+                ]);
+                return back()->withErrors(['pow' => 'Proof of work verification failed: ' . $verification['error']])->withInput();
+            }
         }
 
         // Get authenticated user or create anonymous user
@@ -347,6 +394,30 @@ class ForumController extends Controller
             
             return $post;
         });
+
+        // Create ProofOfWork record and award points to user for replies
+        if ($finalUserId && $request->pow_hash) {
+            $powPoints = $this->calculatePoWPoints($request->pow_hash, '21e');
+            $challengeData = "reply:{$boardModel->code}:{$threadId}:{$request->pow_challenge_id}";
+            
+            $proofOfWork = \App\Models\ProofOfWork::create([
+                'user_id' => $finalUserId,
+                'thread_id' => $threadId,
+                'hash' => $request->pow_hash,
+                'nonce' => $request->pow_nonce,
+                'data' => $challengeData,
+                'pattern' => '21e',
+                'points' => $powPoints,
+                'verified_at' => now(),
+                'ip_address' => $request->ip()
+            ]);
+
+            // Award points to user
+            $user = \App\Models\BitcoinAuth::find($finalUserId);
+            if ($user) {
+                $user->awardMiningPoints($powPoints);
+            }
+        }
 
         // Update the library image with post reference if image was uploaded
         if ($request->hasFile('image') && isset($libraryImage)) {
@@ -414,7 +485,7 @@ class ForumController extends Controller
             abort(404);
         }
         
-        $fullPath = storage_path('app/public/' . $thread->image_path);
+        $fullPath = public_path($thread->image_path);
         
         if (!file_exists($fullPath)) {
             abort(404);
@@ -427,17 +498,62 @@ class ForumController extends Controller
     {
         $post = Post::findOrFail($id);
         
-        if (!$post->image_filename) {
+        if (!$post->image_path) {
             abort(404);
         }
         
-        $fullPath = storage_path('app/public/forum/images/' . $post->image_filename);
+        $fullPath = public_path($post->image_path);
         
         if (!file_exists($fullPath)) {
             abort(404);
         }
         
         return response()->file($fullPath);
+    }
+
+    /**
+     * Calculate PoW points based on hash pattern difficulty
+     */
+    private function calculatePoWPoints($hash, $expectedPattern)
+    {
+        $hash = strtolower($hash);
+        $expectedPattern = strtolower($expectedPattern);
+        
+        // Base points for different patterns
+        $pointMap = [
+            '21' => 0.1,      // Easy difficulty
+            '21e' => 0.5,     // Medium difficulty  
+            '21e8' => 100,    // Hard difficulty
+            '21e80' => 500,   // Very hard
+            '21e800' => 2500, // Extreme
+        ];
+        
+        // Check for exact pattern match first
+        if (isset($pointMap[$expectedPattern])) {
+            $basePoints = $pointMap[$expectedPattern];
+        } else {
+            $basePoints = 0.1; // Default minimum
+        }
+        
+        // Bonus for exceeding expected difficulty
+        if (str_starts_with($hash, '21e800') && $expectedPattern !== '21e800') {
+            $basePoints *= 25; // Extreme bonus
+        } elseif (str_starts_with($hash, '21e80') && !in_array($expectedPattern, ['21e80', '21e800'])) {
+            $basePoints *= 5; // High bonus
+        } elseif (str_starts_with($hash, '21e8') && !in_array($expectedPattern, ['21e8', '21e80', '21e800'])) {
+            $basePoints *= 2; // Moderate bonus
+        }
+        
+        // Special rare patterns
+        if (str_starts_with($hash, '000')) {
+            $basePoints *= 10; // Legendary
+        } elseif (str_starts_with($hash, '666')) {
+            $basePoints *= 15; // Cursed
+        } elseif (str_contains($hash, 'dead')) {
+            $basePoints *= 8; // Death hash
+        }
+        
+        return max(0.1, $basePoints); // Minimum 0.1 points
     }
 
     /**

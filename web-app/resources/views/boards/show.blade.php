@@ -67,8 +67,8 @@
 
                 <!-- File Upload -->
                 <div style="margin-bottom: 25px;">
-                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Image (required) 📷</label>
-                    <input type="file" name="image" accept="image/*" required
+                    <label style="display: block; color: #444B6E; font-weight: 600; margin-bottom: 8px; font-size: 12px;">Image @if($board->is_doodle_board ?? false)(required)@else(optional)@endif 📷</label>
+                    <input type="file" name="image" accept="image/*" @if($board->is_doodle_board ?? false)required @endif
                            style="width: 100%; padding: 10px; border: 2px solid #708B75; border-radius: 5px; background: #FFFFEE; color: #3D315B; font-size: 12px; box-sizing: border-box;">
                     <div style="font-size: 10px; color: #708B75; margin-top: 5px;">Max 2MB • JPG, PNG, GIF</div>
                 </div>
@@ -131,7 +131,12 @@
                             @if($board->code === 'pol' && $thread->country_flag)
                                 <span style="font-size: 16px; margin-right: 5px; vertical-align: middle;">{{ $thread->country_flag }}</span>
                             @endif
-                            Anonymous • {{ $thread->created_at->format('M d, Y H:i') }} • No.{{ $thread->id }}
+                            @if($thread->user_id && $thread->bitcoinUser)
+                                {{ $thread->bitcoinUser->getDisplayName() }}
+                            @else
+                                Anonymous
+                            @endif
+                            • {{ $thread->created_at->format('M d, Y H:i') }} • No.{{ $thread->id }}
                             @if($thread->user_id)
                                 @include('components.admin-badge', ['user' => $thread->bitcoinUser])
                             @endif
@@ -150,7 +155,7 @@
                     <div style="display: flex; gap: 20px;">
                         @if($thread->image_path)
                         <div style="flex-shrink: 0;">
-                            <img src="/storage/{{ $thread->image_path }}"
+                            <img src="{{ route('thread.image', $thread->id) }}"
                                  style="max-width: 150px; max-height: 150px; border: 1px solid #708B75; border-radius: 4px;">
                         </div>
                         @endif

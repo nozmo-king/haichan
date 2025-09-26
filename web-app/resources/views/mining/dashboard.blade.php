@@ -110,32 +110,32 @@
         }
     </style>
     <div style="padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: #F5F5DC; border: 1px solid #708B75; border-radius: 5px;">
-            <h2 style="color: #444B6E; margin-bottom: 10px; font-size: 24px;">
+        <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px;">
+            <h2 style="color: var(--text-primary); margin-bottom: 10px; font-size: 24px;">
                 <span class="strobing-emoji">⛏️</span> Mining Dashboard <span class="strobing-emoji">⛏️</span>
             </h2>
-            <p style="color: #666; font-size: 14px; margin: 0;">Client-side SHA-256 computation for discourse validation</p>
+            <p style="color: var(--text-muted); font-size: 14px; margin: 0;">Client-side SHA-256 computation for discourse validation</p>
         </div>
 
         <!-- Mining Controls -->
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div style="background: #F5F5DC; border: 1px solid #708B75; border-radius: 5px; padding: 15px;">
-                <h3 style="color: #444B6E; margin-bottom: 10px; font-size: 16px;">Mining Controls</h3>
+            <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px;">
+                <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Mining Controls</h3>
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <button class="btn-primary" id="start-mining" onclick="startMining()">Start Mining</button>
                     <button class="btn" id="stop-mining" onclick="stopMining()" disabled>Stop Mining</button>
                 </div>
                 <div style="margin-bottom: 10px;">
-                    <label style="font-size: 12px; color: #666;">Mining Mode:</label>
-                    <select id="mining-mode" style="width: 100%; padding: 5px; border: 1px solid #708B75; border-radius: 3px;">
+                    <label style="font-size: 12px; color: var(--text-muted);">Mining Mode:</label>
+                    <select id="mining-mode" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--content-bg); color: var(--text-primary);">
                         <option value="idle">IDLE (~100 H/s)</option>
                         <option value="active">ACTIVE (~1K H/s)</option>
                         <option value="hyper">HYPER (~3K H/s)</option>
                     </select>
                 </div>
                 <div>
-                    <label style="font-size: 12px; color: #666;">Target Pattern:</label>
-                    <select id="target-pattern" style="width: 100%; padding: 5px; border: 1px solid #708B75; border-radius: 3px;">
+                    <label style="font-size: 12px; color: var(--text-muted);">Target Pattern:</label>
+                    <select id="target-pattern" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--content-bg); color: var(--text-primary);">
                         <option value="21">21 (0.1 points)</option>
                         <option value="21e8" selected>21e8 (1 point)</option>
                         <option value="21e80">21e80 (5 points)</option>
@@ -146,62 +146,63 @@
                 </div>
             </div>
             
-            <div style="background: #F5F5DC; border: 1px solid #708B75; border-radius: 5px; padding: 15px;">
-                <h3 style="color: #444B6E; margin-bottom: 10px; font-size: 16px;">Mining Stats</h3>
+            <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px;">
+                <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Mining Stats</h3>
                 <div style="font-size: 12px; line-height: 1.6;">
                     <div style="display: flex; justify-content: space-between;">
                         <span>Hash Rate:</span>
-                        <span id="hash-rate" style="color: #9AB87A; font-weight: bold;">0 H/s</span>
+                        <span id="hash-rate" style="color: var(--accent-color); font-weight: bold;">0 H/s</span>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
                         <span>Total Hashes:</span>
-                        <span id="total-hashes" style="color: #9AB87A; font-weight: bold;">0</span>
+                        <span id="total-hashes" style="color: var(--accent-color); font-weight: bold;">0</span>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
                         <span>Proofs Found:</span>
-                        <span id="proofs-found" style="color: #9AB87A; font-weight: bold;">0</span>
+                        <span id="proofs-found" style="color: var(--accent-color); font-weight: bold;">0</span>
                     </div>
                     <div style="display: flex; justify-content: space-between;">
                         <span>Mining Time:</span>
-                        <span id="mining-time" style="color: #9AB87A; font-weight: bold;">00:00</span>
+                        <span id="mining-time" style="color: var(--accent-color); font-weight: bold;">00:00</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Targeted Mining Section -->
-        <div style="background: #F5F5DC; border: 1px solid #708B75; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
-            <h3 style="color: #444B6E; margin-bottom: 10px; font-size: 16px;">🎯 Targeted Mining</h3>
+        <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+            <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">🎯 Targeted Mining</h3>
             <div style="margin-bottom: 10px;">
-                <label style="font-size: 12px; color: #666;">Mine specific thread/post (enter SHA256 hash):</label>
+                <label style="font-size: 12px; color: var(--text-muted);">Mine specific thread/post (enter SHA256 hash):</label>
                 <input type="text" id="target-hash" placeholder="Enter SHA256 hash of thread or post content..."
-                       style="width: 100%; padding: 8px; border: 1px solid #708B75; border-radius: 3px; font-family: monospace; font-size: 11px;">
+                       style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 3px; font-family: monospace; font-size: 11px; background: var(--content-bg); color: var(--text-primary);">
             </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <button class="btn" onclick="setTargetHash()">Set Target</button>
+                <button class="btn" onclick="getRandomTarget()">🎲 Random Target</button>
                 <button class="btn" onclick="clearTargetHash()">Clear (Global Mining)</button>
-                <span id="target-status" style="font-size: 11px; color: #666; font-style: italic;">Global mining mode</span>
+                <span id="target-status" style="font-size: 11px; color: var(--text-muted); font-style: italic;">Global mining mode</span>
             </div>
-            <div style="margin-top: 10px; font-size: 11px; color: #999;">
+            <div style="margin-top: 10px; font-size: 11px; color: var(--text-muted);">
                 💡 Tip: Copy SHA256 hash from thread/post headers or use browser dev tools to inspect content hashes
             </div>
         </div>
 
         <!-- Current Hash Display -->
-        <div style="background: #F5F5DC; border: 1px solid #708B75; border-radius: 5px; padding: 15px; margin-bottom: 20px;">
-            <h3 style="color: #444B6E; margin-bottom: 10px; font-size: 16px;">Current Hash</h3>
-            <div style="background: #000; color: #00ff00; font-family: 'Courier New', monospace; font-size: 12px; padding: 10px; border-radius: 3px; word-break: break-all; text-shadow: 0 0 3px #00ff00;" id="current-hash-display">
+        <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px; margin-bottom: 20px;">
+            <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Current Hash</h3>
+            <div style="background: var(--content-bg); color: var(--text-primary); font-family: 'Courier New', monospace; font-size: 12px; padding: 10px; border-radius: 3px; word-break: break-all; border: 1px solid var(--border-color);" id="current-hash-display">
                 waiting for hash...
             </div>
-            <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                Mining target: <span id="current-target" style="color: #444B6E; font-weight: bold;">global</span>
+            <div style="margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+                Mining target: <span id="current-target" style="color: var(--text-primary); font-weight: bold;">global</span>
             </div>
         </div>
 
         <!-- Mining Log -->
-        <div style="background: #F5F5DC; border: 1px solid #708B75; border-radius: 5px; padding: 15px;">
-            <h3 style="color: #444B6E; margin-bottom: 10px; font-size: 16px;">Mining Log</h3>
-            <div id="mining-log" style="background: #000; color: #00ff00; font-family: 'Courier New', monospace; font-size: 11px; padding: 10px; border-radius: 3px; height: 200px; overflow-y: auto;">
+        <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px;">
+            <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Mining Log</h3>
+            <div id="mining-log" style="background: var(--content-bg); color: var(--text-primary); font-family: 'Courier New', monospace; font-size: 11px; padding: 10px; border-radius: 3px; height: 200px; overflow-y: auto; border: 1px solid var(--border-color);">
                 <div class="log-entry">🚀 Haichan Mining Dashboard Ready</div>
                 <div class="log-entry">💡 Configure mining settings and click 'Start Mining'</div>
             </div>
@@ -372,6 +373,43 @@
             document.getElementById('current-target').textContent = 'global';
 
             logMessage('🌐 Switched to global mining mode');
+        }
+
+        async function getRandomTarget() {
+            logMessage('🎲 Fetching random target...');
+            
+            try {
+                const response = await fetch('/api/random-hash', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch random hash');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.hash) {
+                    const randomHash = result.hash.toLowerCase();
+                    document.getElementById('target-hash').value = randomHash;
+                    
+                    targetHash = randomHash;
+                    document.getElementById('target-status').textContent = `Random target: ${result.type} #${result.id}`;
+                    document.getElementById('current-target').textContent = `${result.type} #${result.id} (${randomHash.substring(0, 12)}...)`;
+
+                    logMessage(`🎯 Random target set: ${result.type} #${result.id}`);
+                    logMessage(`📝 "${result.preview}"`);
+                } else {
+                    throw new Error(result.message || 'No random hash available');
+                }
+            } catch (error) {
+                logMessage(`❌ Random target failed: ${error.message}`);
+                alert('Failed to get random target: ' + error.message);
+            }
         }
         
         async function sha256(message) {

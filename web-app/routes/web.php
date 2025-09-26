@@ -12,6 +12,16 @@ Route::get('/', function () {
     }
 });
 
+// Anonymous access route
+Route::get('/anon', function () {
+    try {
+        $boards = \App\Models\Board::getActiveBoards();
+        return view('boards.anon', compact('boards'));
+    } catch (Exception $e) {
+        return response()->json(['error' => $e->getMessage()]);
+    }
+})->name('anon');
+
 // Public authentication routes - both mobile and web support
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('auth.login');
@@ -160,6 +170,12 @@ Route::middleware('bitcoin.auth')->group(function () {
     Route::get('/mining', [App\Http\Controllers\MiningController::class, 'dashboard']);
     Route::get('/mining/stats', [App\Http\Controllers\MiningController::class, 'stats']);
 
+    // User profile routes
+    Route::get('/user/dashboard', [AuthController::class, 'showDashboard'])->name('user.dashboard');
+    Route::get('/user/profile/edit', [AuthController::class, 'showEditProfile'])->name('user.profile.edit');
+    Route::post('/user/profile/update', [AuthController::class, 'updateProfile'])->name('user.profile.update');
+    Route::get('/user/{userId}', [AuthController::class, 'showUserProfile'])->name('user.profile');
+
     // Static pages
     Route::get('/rules', function() {
         return view('static.rules');
@@ -192,6 +208,9 @@ Route::middleware('bitcoin.auth')->group(function () {
 
         // API endpoints
         Route::get('/api/activity', [App\Http\Controllers\AdminController::class, 'getActivity'])->name('api.activity');
+        Route::get('/api/invite-codes', [App\Http\Controllers\AdminController::class, 'getInviteCodes'])->name('api.invite-codes');
+        Route::post('/api/invite-codes/{code}/deactivate', [App\Http\Controllers\AdminController::class, 'deactivateInviteCode'])->name('api.invite-codes.deactivate');
+        Route::delete('/api/invite-codes/{code}', [App\Http\Controllers\AdminController::class, 'deleteInviteCode'])->name('api.invite-codes.delete');
 
         // Legacy keys management
         Route::get('/keys', [App\Http\Controllers\AdminController::class, 'keys'])->name('keys');

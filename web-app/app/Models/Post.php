@@ -72,11 +72,13 @@ class Post extends Model
         // Convert >>123456 to links
         $content = preg_replace('/&gt;&gt;(\d+)/', '<a href="#post$1" class="quote-link">&gt;&gt;$1</a>', $content);
         
-        // Convert >greentext
-        $content = preg_replace('/^&gt;(.+)/m', '<span class="greentext">&gt;$1</span>', $content);
-        
-        // Convert line breaks
+        // Convert line breaks first
         $content = nl2br($content);
+        
+        // Convert >pinktext (changed from greentext) - handle each line individually  
+        $content = preg_replace_callback('/^&gt;(.+?)(<br\s*\/?>|$)/m', function($matches) {
+            return '<span class="pinktext">&gt;' . $matches[1] . '</span>' . ($matches[2] ?? '');
+        }, $content);
         
         return $content;
     }

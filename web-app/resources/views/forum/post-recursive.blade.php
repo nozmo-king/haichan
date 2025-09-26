@@ -1,4 +1,4 @@
-<div class="post {{ $level > 0 ? 'nested-post' : 'reply-post' }}" id="post{{ $post->id }}"
+<div class="post {{ $level > 0 ? 'nested-post' : 'reply-post' }} {{ (!$post->user_id || !$post->bitcoinUser) ? 'anonymous-post' : '' }}" id="post{{ $post->id }}"
      data-mine-type="reply"
      data-mine-target="reply-{{ $post->id }}"
      data-mine-weight="40"
@@ -11,7 +11,12 @@
             @if($board->code === 'pol' && $post->country_flag)
                 <span style="font-size: 18px; margin-right: 5px; vertical-align: middle;">{{ $post->country_flag }}</span>
             @endif
-            Anonymous {{ $post->created_at->format('m/d/y H:i:s') }} No.{{ $post->id }}
+            @if($post->user_id && $post->bitcoinUser)
+                {{ $post->bitcoinUser->getDisplayName() }}
+            @else
+                Anonymous
+            @endif
+            {{ $post->created_at->format('m/d/y H:i:s') }} No.{{ $post->id }}
             @if($post->user_id)
                 @include('components.admin-badge', ['user' => $post->bitcoinUser])
             @endif
@@ -36,14 +41,14 @@
     </div>
 
     <div class="post-content">
-        @if($post->image_filename)
+        @if($post->image_path)
         <div class="post-image"
              data-mine-type="image"
              data-mine-target="image-{{ $post->id }}"
              data-mine-weight="60"
              data-mine-title="Image #{{ $post->id }}">
             <div class="image-info">
-                File: {{ $post->image_original_name }}
+                File: {{ $post->image_filename }}
             </div>
             <img src="{{ route('post.image', $post->id) }}" class="thumbnail"
                  style="max-width: 125px; max-height: 125px; cursor: pointer; border: 1px solid #ccc;"

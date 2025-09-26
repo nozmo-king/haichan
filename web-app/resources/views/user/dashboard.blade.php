@@ -185,7 +185,7 @@
                 <strong>Last Login:</strong> {{ $user->last_login ? $user->last_login->diffForHumans() : 'Never' }}
             </div>
 
-            <a href="/user/settings" class="action-btn">Edit Settings</a>
+            <a href="/user/profile/edit" class="action-btn">Edit Profile</a>
             <a href="/user/change-password" class="action-btn" style="background: #FF9800;">Change Password</a>
         </div>
 

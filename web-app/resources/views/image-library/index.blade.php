@@ -3,37 +3,37 @@
 @section('title', 'Image Library - Haichan')
 
 @section('content')
-<div style="margin: 60px auto; max-width: 1200px; background: #F5F5DC; border: 2px solid #708B75; box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);">
+<div style="margin: 60px auto; max-width: 1200px; background: var(--primary-bg); border: 2px solid var(--border-color); box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);">
     <!-- Header -->
-    <div style="background: linear-gradient(135deg, #FFFACD 0%, #F5F5DC 100%); padding: 20px 30px; border-bottom: 2px solid #708B75; text-align: center;">
-        <h1 style="font-size: 24px; color: #3D315B; margin: 0 0 8px 0; font-weight: 300; letter-spacing: 1.5px; font-family: 'Nova Cut', serif;">
+    <div style="background: var(--secondary-bg); padding: 20px 30px; border-bottom: 2px solid var(--border-color); text-align: center;">
+        <h1 style="font-size: 24px; color: var(--text-primary); margin: 0 0 8px 0; font-weight: 300; letter-spacing: 1.5px; font-family: 'Nova Cut', serif;">
             🖼️ Image Library ⛏️
         </h1>
-        <p style="color: #708B75; font-size: 12px; margin: 8px 0 0 0;">Proof-of-work powered image collection</p>
+        <p style="color: var(--text-secondary); font-size: 12px; margin: 8px 0 0 0;">Proof-of-work powered image collection</p>
     </div>
 
     <!-- Controls -->
-    <div style="padding: 20px 30px; background: #FFFFEE; border-bottom: 1px solid #CCCCCC;">
+    <div style="padding: 20px 30px; background: var(--content-bg); border-bottom: 1px solid var(--border-color);">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
             <!-- Sort Controls -->
             <div style="display: flex; gap: 10px; align-items: center;">
-                <select id="sort-select" style="padding: 6px 10px; background: #F5F5DC; border: 1px solid #708B75; border-radius: 3px; color: #3D315B; font-size: 11px;">
+                <select id="sort-select" style="padding: 6px 10px; background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 3px; color: var(--text-primary); font-size: 11px;">
                     <option value="pow">⛏️ By PoW Points</option>
                     <option value="usage">📊 By Usage</option>
                     <option value="recent">🆕 Most Recent</option>
                 </select>
 
-                <button id="refresh-btn" style="padding: 6px 12px; background: #708B75; color: #FFFFEE; border: none; border-radius: 3px; font-size: 10px; cursor: pointer;">
+                <button id="refresh-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--content-bg); border: none; border-radius: 3px; font-size: 10px; cursor: pointer;">
                     🔄 Refresh
                 </button>
 
-                <button id="auto-dither-toggle" style="padding: 6px 12px; background: #9AB87A; color: #FFFFEE; border: none; border-radius: 3px; font-size: 10px; cursor: pointer;">
+                <button id="auto-dither-toggle" style="padding: 6px 12px; background: var(--success-color); color: var(--content-bg); border: none; border-radius: 3px; font-size: 10px; cursor: pointer;" onclick="toggleSiteDither()">
                     🎨 Auto-Dither: <span id="dither-status">OFF</span>
                 </button>
             </div>
 
             <!-- Stats -->
-            <div style="color: #708B75; font-size: 10px; font-family: monospace;">
+            <div style="color: var(--text-secondary); font-size: 10px; font-family: monospace;">
                 Total Images: <span id="image-count">{{ count($images) }}</span> |
                 Total PoW: <span id="total-pow">{{ $images->sum('total_pow_earned') }}</span>
             </div>
@@ -41,7 +41,7 @@
     </div>
 
     <!-- Image Grid -->
-    <div style="padding: 30px; background: #FFFFEE;">
+    <div style="padding: 30px; background: var(--content-bg);">
         <div id="image-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;">
             @foreach($images as $image)
             <div class="image-item" data-id="{{ $image->id }}" data-pow="{{ $image->total_pow_earned }}" data-usage="{{ $image->usage_count }}" data-mine-type="images" data-mine-target="{{ $image->id }}" data-mine-title="Image {{ $image->id }}" style="
@@ -86,7 +86,7 @@
                 <!-- Info -->
                 <div style="font-size: 10px; color: #666; line-height: 1.4;">
                     <div style="font-weight: bold; color: #3D315B; margin-bottom: 3px;">{{ Str::limit($image->original_name, 20) }}</div>
-                    <div>Usage: {{ $image->usage_count }} | Hash: {{ substr($image->hash, 0, 8) }}...</div>
+                    <div>Usage: {{ $image->usage_count }} | Hash: <span class="hash-copy" data-hash="{{ $image->hash }}" title="Click to copy full hash" style="cursor: pointer; color: #708B75; font-weight: bold; text-decoration: underline;">{{ substr($image->hash, 0, 8) }}...</span></div>
                 </div>
 
             </div>
@@ -352,7 +352,7 @@ function openImageModal(imageId) {
 
     content.innerHTML = `
         <div style="text-align: center;">
-            <img src="${window.location.origin}/storage/${image.file_path}" style="max-width: 100%; max-height: 60vh; border-radius: 4px;">
+            <img src="${window.location.origin}/library/image/${image.id}" style="max-width: 100%; max-height: 60vh; border-radius: 4px;">
             <div style="margin-top: 15px; color: #333;">
                 <h3 style="margin: 0 0 10px 0;">${image.original_name}</h3>
                 <p style="margin: 5px 0; font-size: 12px;">PoW Points: <strong>${image.total_pow_earned}⚡</strong></p>
@@ -391,6 +391,57 @@ document.head.appendChild(style);
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     new ImageLibrary();
+    
+    // Hash copy functionality
+    document.querySelectorAll('.hash-copy').forEach(span => {
+        span.addEventListener('click', async function(e) {
+            e.stopPropagation(); // Don't trigger image mining
+            const hash = this.dataset.hash;
+            
+            try {
+                await navigator.clipboard.writeText(hash);
+                
+                // Show success feedback
+                const original = this.textContent;
+                this.textContent = 'Copied!';
+                this.style.color = '#4CAF50';
+                
+                setTimeout(() => {
+                    this.textContent = original;
+                    this.style.color = '#708B75';
+                }, 1000);
+                
+                console.log('Hash copied to clipboard:', hash);
+            } catch (err) {
+                console.error('Failed to copy hash:', err);
+                // Fallback: show hash in alert
+                alert('Hash: ' + hash);
+            }
+        });
+    });
+    
+    // Sync image library dither toggle with site-wide setting
+    function updateImageLibraryDither() {
+        const siteDitherEnabled = localStorage.getItem('haichan_site_dither') === 'true';
+        const ditherStatus = document.getElementById('dither-status');
+        const ditherToggle = document.getElementById('auto-dither-toggle');
+        
+        if (ditherStatus) {
+            ditherStatus.textContent = siteDitherEnabled ? 'ON' : 'OFF';
+        }
+        if (ditherToggle) {
+            ditherToggle.style.background = siteDitherEnabled ? '#4CAF50' : '#9AB87A';
+        }
+    }
+    
+    updateImageLibraryDither();
+    
+    // Update when storage changes (from other tabs/pages)
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'haichan_site_dither') {
+            updateImageLibraryDither();
+        }
+    });
 
     // Add click-to-mine functionality
     document.querySelectorAll('.image-item').forEach(item => {

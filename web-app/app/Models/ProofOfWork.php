@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProofOfWork extends Model
 {
     protected $fillable = [
-        'thread_id', 'hash', 'nonce', 'data', 
+        'user_id', 'thread_id', 'hash', 'nonce', 'data', 
         'pattern', 'points', 'verified_at', 'ip_address'
     ];
 
@@ -20,5 +20,10 @@ class ProofOfWork extends Model
     public function thread()
     {
         return $this->belongsTo(Thread::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(BitcoinAuth::class, 'user_id');
     }
 }

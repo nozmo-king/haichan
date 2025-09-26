@@ -114,10 +114,14 @@
                        style="width: 100%; padding: 10px; border: 2px solid var(--border-color); border-radius: 4px; background: var(--secondary-bg); color: var(--text-primary); margin-bottom: 10px; box-sizing: border-box;">
                 <input type="number" name="uses" placeholder="Max uses" min="1" max="50" value="10"
                        style="width: 100%; padding: 10px; border: 2px solid var(--border-color); border-radius: 4px; background: var(--secondary-bg); color: var(--text-primary); margin-bottom: 10px; box-sizing: border-box;">
-                <button type="submit" style="width: 100%; background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">
+                <button type="submit" style="width: 100%; background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; margin-bottom: 10px;">
                     Create Genesis Code
                 </button>
             </form>
+
+            <button onclick="showInviteCodesModal()" style="width: 100%; background: var(--success-color); color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">
+                📋 View All Invite Codes
+            </button>
         </div>
 
         <!-- System Actions -->
@@ -158,6 +162,31 @@
 
 </div>
 
+<!-- Invite Codes Modal -->
+<div id="invite-codes-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: var(--content-bg); border: 3px solid var(--accent-color); border-radius: 12px; padding: 30px; max-width: 800px; max-height: 80vh; width: 90%; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="color: var(--accent-color); margin: 0; font-family: 'Nova Cut', serif;">🎟️ ALL INVITE CODES</h2>
+            <button onclick="hideInviteCodesModal()" style="background: var(--highlight-color); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 18px;">✕</button>
+        </div>
+        
+        <div id="invite-codes-list" style="color: var(--text-primary);">
+            <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                Loading invite codes...
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+            <button onclick="refreshInviteCodes()" style="background: var(--accent-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; margin-right: 10px;">
+                🔄 Refresh
+            </button>
+            <button onclick="hideInviteCodesModal()" style="background: var(--text-muted); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
 // Load recent activity
 async function loadRecentActivity() {
@@ -177,6 +206,153 @@ async function loadRecentActivity() {
             '<div style="color: var(--highlight-color); text-align: center;">Failed to load activity</div>';
     }
 }
+
+// Invite Codes Modal Functions
+function showInviteCodesModal() {
+    const modal = document.getElementById('invite-codes-modal');
+    modal.style.display = 'flex';
+    loadInviteCodes();
+}
+
+function hideInviteCodesModal() {
+    const modal = document.getElementById('invite-codes-modal');
+    modal.style.display = 'none';
+}
+
+async function loadInviteCodes() {
+    try {
+        const response = await fetch('/admin/api/invite-codes');
+        const codes = await response.json();
+        
+        const container = document.getElementById('invite-codes-list');
+        
+        if (codes.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No invite codes found.</div>';
+            return;
+        }
+        
+        container.innerHTML = `
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; color: var(--text-primary);">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 15px; text-align: left; color: var(--accent-color); font-size: 14px;">Code</th>
+                            <th style="padding: 15px; text-align: center; color: var(--accent-color); font-size: 14px;">Status</th>
+                            <th style="padding: 15px; text-align: center; color: var(--accent-color); font-size: 14px;">Uses</th>
+                            <th style="padding: 15px; text-align: center; color: var(--accent-color); font-size: 14px;">Created</th>
+                            <th style="padding: 15px; text-align: center; color: var(--accent-color); font-size: 14px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${codes.map(code => {
+                            const isActive = code.uses_remaining > 0;
+                            const statusColor = isActive ? 'var(--success-color)' : 'var(--text-muted)';
+                            const statusText = isActive ? '✅ Active' : '❌ Exhausted';
+                            
+                            return `
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding: 15px; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; color: var(--accent-color);">
+                                        ${code.code}
+                                        <button onclick="copyToClipboard('${code.code}')" style="margin-left: 10px; background: var(--success-color); color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Copy</button>
+                                    </td>
+                                    <td style="padding: 15px; text-align: center; color: ${statusColor}; font-weight: bold; font-size: 12px;">
+                                        ${statusText}
+                                    </td>
+                                    <td style="padding: 15px; text-align: center; font-size: 13px;">
+                                        <span style="color: var(--success-color); font-weight: bold;">${code.uses_remaining}</span>
+                                        <span style="color: var(--text-secondary);">/ ${code.max_uses}</span>
+                                    </td>
+                                    <td style="padding: 15px; text-align: center; font-size: 12px; color: var(--text-secondary);">
+                                        ${new Date(code.created_at).toLocaleDateString()}
+                                    </td>
+                                    <td style="padding: 15px; text-align: center;">
+                                        ${isActive ? 
+                                            `<button onclick="deactivateCode('${code.code}')" style="background: var(--highlight-color); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">Deactivate</button>` :
+                                            `<button onclick="deleteCode('${code.code}')" style="background: var(--text-muted); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">Delete</button>`
+                                        }
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } catch (error) {
+        document.getElementById('invite-codes-list').innerHTML =
+            '<div style="color: var(--highlight-color); text-align: center; padding: 20px;">Failed to load invite codes</div>';
+    }
+}
+
+function refreshInviteCodes() {
+    loadInviteCodes();
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Show temporary success message
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = '✓ Copied!';
+        button.style.background = 'var(--success-color)';
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = 'var(--success-color)';
+        }, 1500);
+    });
+}
+
+async function deactivateCode(code) {
+    if (!confirm(`Are you sure you want to deactivate invite code "${code}"?`)) return;
+    
+    try {
+        const response = await fetch(`/admin/api/invite-codes/${code}/deactivate`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            loadInviteCodes(); // Refresh the list
+        } else {
+            alert('Failed to deactivate code');
+        }
+    } catch (error) {
+        alert('Error deactivating code');
+    }
+}
+
+async function deleteCode(code) {
+    if (!confirm(`Are you sure you want to permanently delete invite code "${code}"?`)) return;
+    
+    try {
+        const response = await fetch(`/admin/api/invite-codes/${code}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            loadInviteCodes(); // Refresh the list
+        } else {
+            alert('Failed to delete code');
+        }
+    } catch (error) {
+        alert('Error deleting code');
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('invite-codes-modal');
+    if (event.target === modal) {
+        hideInviteCodesModal();
+    }
+});
 
 // Load activity on page load
 document.addEventListener('DOMContentLoaded', function() {

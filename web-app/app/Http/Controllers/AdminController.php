@@ -261,4 +261,50 @@ class AdminController extends Controller
 
         return response()->json(array_slice($activities, 0, 10));
     }
+
+    // API endpoint for invite codes modal
+    public function getInviteCodes()
+    {
+        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+            return response()->json(['error' => 'Admin access required'], 403);
+        }
+
+        $codes = InviteCode::orderBy('created_at', 'desc')->get();
+        
+        return response()->json($codes);
+    }
+
+    public function deactivateInviteCode($code)
+    {
+        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+            return response()->json(['error' => 'Admin access required'], 403);
+        }
+
+        $inviteCode = InviteCode::where('code', strtoupper($code))->first();
+        
+        if (!$inviteCode) {
+            return response()->json(['error' => 'Code not found'], 404);
+        }
+
+        $inviteCode->update(['uses_remaining' => 0]);
+        
+        return response()->json(['success' => 'Code deactivated successfully']);
+    }
+
+    public function deleteInviteCode($code)
+    {
+        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+            return response()->json(['error' => 'Admin access required'], 403);
+        }
+
+        $inviteCode = InviteCode::where('code', strtoupper($code))->first();
+        
+        if (!$inviteCode) {
+            return response()->json(['error' => 'Code not found'], 404);
+        }
+
+        $inviteCode->delete();
+        
+        return response()->json(['success' => 'Code deleted successfully']);
+    }
 }

@@ -44,9 +44,25 @@
     
     <div class="form-group">
         <label for="image">Image (required):</label>
-        <input type="file" name="image" id="image" accept="image/*" required
-               style="width: 100%; padding: 5px; margin: 5px 0;">
-        <small style="color: #666; font-size: 12px;">Max size: 2MB. Supported formats: JPEG, PNG, JPG, GIF</small>
+        <input type="file" name="image" id="image" accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif" required
+               style="width: 100%; padding: 5px; margin: 5px 0;" onchange="previewImage(this)">
+        <small style="color: #666; font-size: 12px;">Max size: 25MB. Supported formats: JPEG, PNG, JPG, GIF, WebP, WebM, MP4, MOV, AVI, SVG, BMP, TIFF, AVIF, HEIC, HEIF</small>
+        
+        <!-- Image Preview -->
+        <div id="image-preview" style="margin-top: 10px; display: none; text-align: center;">
+            <img id="preview-img" style="max-width: 300px; max-height: 200px; border: 2px solid #708B75; border-radius: 5px;">
+            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                <span id="file-info"></span>
+            </div>
+        </div>
+        
+        <!-- OR use existing image hash -->
+        <div style="margin-top: 10px; padding: 10px; background: #F0F8FF; border: 1px dashed #708B75; border-radius: 4px;">
+            <label for="image_hash" style="font-size: 12px; color: #444B6E; font-weight: bold;">OR use existing image hash:</label>
+            <input type="text" name="image_hash" id="image_hash" placeholder="Paste image hash from library here..."
+                   style="width: 100%; padding: 5px; margin: 5px 0; font-family: monospace; font-size: 11px;">
+            <small style="color: #666; font-size: 11px;">💡 Click hash in Image Library to copy, then paste here instead of uploading</small>
+        </div>
         @error('image')
             <div style="color: red; font-size: 12px;">{{ $message }}</div>
         @enderror
@@ -213,7 +229,7 @@ class ThreadCreationMiner {
         const title = document.getElementById('title').value.trim();
         const content = document.getElementById('content').value.trim();
         const boardCode = '{{ $board->code }}';
-        const challengeData = `thread:${boardCode}:${title}:${content}:${this.challengeId}`;
+        const challengeData = `thread:${boardCode}:${title}:${this.challengeId}`;
         
         while (this.isMining) {
             const testData = `${challengeData}:${this.nonce}`;
@@ -336,6 +352,31 @@ class ThreadCreationMiner {
         while (logContainer.children.length > 20) {
             logContainer.removeChild(logContainer.firstChild);
         }
+    }
+}
+
+// Image preview function
+function previewImage(input) {
+    const preview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+    const fileInfo = document.getElementById('file-info');
+    
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+            
+            // Show file info
+            const size = (file.size / 1024 / 1024).toFixed(2);
+            fileInfo.textContent = `${file.name} (${size} MB)`;
+        };
+        
+        reader.readAsDataURL(file);
+    } else {
+        preview.style.display = 'none';
     }
 }
 

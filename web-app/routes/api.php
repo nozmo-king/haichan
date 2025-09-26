@@ -48,6 +48,7 @@ Route::post('/debug/compare', [AuthApiController::class, 'compareImplementations
 Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
 Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
 Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
+Route::get('/random-hash', [App\Http\Controllers\RandomHashController::class, 'getRandomHash']);
 
 // Public subscription routes (requires public key but not auth token)
 // Route::post('/subscription/activate-for-key', [App\Http\Controllers\Api\SubscriptionApiController::class, 'activateForPublicKey'])->middleware('throttle:25,1');

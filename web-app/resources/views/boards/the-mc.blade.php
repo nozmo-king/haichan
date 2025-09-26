@@ -68,7 +68,7 @@
             <!-- Thread Image -->
             @if($thread->image_path)
             <div style="margin-bottom: 10px;">
-                <img src="{{ asset('storage/' . $thread->image_path) }}" alt="Thread image"
+                <img src="{{ route('thread.image', $thread->id) }}" alt="Thread image"
                      style="max-width: 100%; height: auto; max-height: 80px; border-radius: 4px; object-fit: cover;">
             </div>
             @endif
@@ -82,7 +82,11 @@
                     📅 {{ $thread->created_at->diffForHumans() }}
                 </div>
                 <div style="color: #708B75; font-weight: bold;">
-                    by {{ $thread->author_name ?: 'Anonymous' }}
+                    by @if($thread->user_id && $thread->bitcoinUser)
+                        {{ $thread->bitcoinUser->getDisplayName() }}
+                    @else
+                        Anonymous
+                    @endif
                     @if($thread->user_id)
                         @include('components.admin-badge', ['user' => $thread->bitcoinUser])
                     @endif

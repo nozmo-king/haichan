@@ -63,9 +63,13 @@ class ImageLibrary extends Model
         $filename = time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
         $filePath = "forum/images/" . $filename;
 
-        // Store the file
-        $storedPath = $file->storeAs('public/forum/images', $filename);
-        $fullPath = storage_path('app/public/forum/images/' . $filename);
+        // Store the file directly in public directory so it's web-accessible
+        $publicPath = public_path('forum/images');
+        if (!file_exists($publicPath)) {
+            mkdir($publicPath, 0755, true);
+        }
+        $fullPath = $publicPath . '/' . $filename;
+        $file->move($publicPath, $filename);
 
         // Apply dither effect if requested
         if ($applyDither) {
@@ -115,7 +119,7 @@ class ImageLibrary extends Model
      */
     public function getImageUrl(): string
     {
-        return asset('storage/' . $this->file_path);
+        return asset($this->file_path);
     }
 
     /**

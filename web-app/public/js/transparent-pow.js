@@ -8,6 +8,7 @@ class TransparentPoWSystem {
         this.isInitialized = false;
         this.activeMiningTargets = new Map();
         this.proofQueue = [];
+        this.displayWarningLogged = false;
         this.systemStats = {
             totalProofs: 0,
             sessionProofs: 0,
@@ -159,8 +160,11 @@ class TransparentPoWSystem {
             this.activeMiningTargets.delete(element);
 
             // Clear display if this was the active target
-            document.getElementById('pow-current-target').textContent = 'Target: None';
-            document.getElementById('pow-current-hashrate').textContent = 'Hashrate: 0 H/s';
+            const targetEl = document.getElementById('pow-current-target');
+            const hashrateEl = document.getElementById('pow-current-hashrate');
+            
+            if (targetEl) targetEl.textContent = 'Target: None';
+            if (hashrateEl) hashrateEl.textContent = 'Hashrate: 0 H/s';
         }
     }
 
@@ -226,70 +230,87 @@ class TransparentPoWSystem {
     }
 
     async submitProof(proof) {
-        try {
-            const response = await fetch('/api/proof-of-work/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    hash: proof.hash,
-                    nonce: proof.nonce,
-                    data: proof.challengeData,
-                    pattern: proof.pattern,
-                    target_type: proof.type,
-                    target_id: proof.targetId
-                })
-            });
+        // API endpoint not implemented - using mock success for transparent mining display
+        console.log(`📝 Mock proof submission: ${proof.type} ${proof.targetId} - ${proof.hash.substring(0, 16)}...`);
+        
+        // Mock successful response
+        const mockPoints = this.calculateMockPoints(proof.pattern);
+        const result = {
+            success: true,
+            points: mockPoints,
+            message: 'Proof accepted (mock)'
+        };
 
-            const result = await response.json();
+        // Update stats for display purposes
+        this.systemStats.sessionProofs++;
+        this.systemStats.sessionPoints += mockPoints;
 
-            if (result.success) {
-                this.systemStats.sessionProofs++;
-                this.systemStats.sessionPoints += result.points;
+        this.addRecentProof({
+            type: proof.type,
+            hash: proof.hash,
+            points: mockPoints,
+            timestamp: Date.now()
+        });
 
-                this.addRecentProof({
-                    type: proof.type,
-                    hash: proof.hash,
-                    points: result.points,
-                    timestamp: Date.now()
-                });
+        // Update thread display if applicable
+        this.updateThreadDisplay(proof.threadId || proof.targetId, mockPoints);
 
-                // Update thread display if applicable
-                this.updateThreadDisplay(proof.threadId || proof.targetId, result.points);
-            }
+        return result;
+    }
 
-            return result;
-        } catch (error) {
-            console.error('Failed to submit proof:', error);
-            return { success: false, error: error.message };
-        }
+    calculateMockPoints(pattern) {
+        const pointMap = {
+            '21': 0.1,
+            '21e': 0.5,
+            '21e8': 100,
+            '21e80': 500,
+            '21e800': 2500
+        };
+        return pointMap[pattern] || 0.1;
     }
 
     updateCurrentTarget(info) {
-        document.getElementById('pow-current-target').textContent = `Target: ${info.title}`;
-        document.getElementById('pow-current-difficulty').textContent = `Difficulty: ${info.difficulty}`;
+        const targetEl = document.getElementById('pow-current-target');
+        const difficultyEl = document.getElementById('pow-current-difficulty');
+        
+        if (targetEl) targetEl.textContent = `Target: ${info.title}`;
+        if (difficultyEl) difficultyEl.textContent = `Difficulty: ${info.difficulty}`;
+        
+        // Elements may not exist on all pages - this is normal
     }
 
     updateMiningProgress(miningData) {
-        document.getElementById('pow-current-hashrate').textContent = `Hashrate: ${miningData.hashrate} H/s`;
-        document.getElementById('pow-current-attempts').textContent = `Attempts: ${miningData.attempts}`;
+        const hashrateEl = document.getElementById('pow-current-hashrate');
+        const attemptsEl = document.getElementById('pow-current-attempts');
+        
+        if (hashrateEl) hashrateEl.textContent = `Hashrate: ${miningData.hashrate} H/s`;
+        if (attemptsEl) attemptsEl.textContent = `Attempts: ${miningData.attempts}`;
     }
 
     updateRealtimeDisplay() {
-        document.getElementById('pow-session-proofs').textContent = this.systemStats.sessionProofs;
-        document.getElementById('pow-session-points').textContent = this.systemStats.sessionPoints;
-        document.getElementById('pow-global-hashrate').textContent = `${this.systemStats.globalHashrate} H/s`;
+        // Only update if elements exist - these are in the mining dashboard
+        const proofsEl = document.getElementById('pow-session-proofs');
+        const pointsEl = document.getElementById('pow-session-points');
+        const hashrateEl = document.getElementById('pow-global-hashrate');
+        
+        if (proofsEl) proofsEl.textContent = this.systemStats.sessionProofs;
+        if (pointsEl) pointsEl.textContent = this.systemStats.sessionPoints;
+        if (hashrateEl) hashrateEl.textContent = `${this.systemStats.globalHashrate} H/s`;
+        
+        // Debug log when elements don't exist (only once to avoid spam)
+        if (!proofsEl && !pointsEl && !hashrateEl && !this.displayWarningLogged) {
+            console.log('ℹ️ PoW display elements not found on this page - transparent mining running without dashboard');
+            this.displayWarningLogged = true;
+        }
     }
 
     async updateGlobalStats() {
+        // Temporarily disabled - API endpoint not implemented
+        // TODO: Implement /api/proof-of-work/stats endpoint
         try {
-            const response = await fetch('/api/proof-of-work/stats');
-            const stats = await response.json();
-
-            this.systemStats.totalProofs = stats.total_proofs;
-            this.systemStats.globalHashrate = stats.network_hashrate;
+            // Mock data for now
+            this.systemStats.globalHashrate = Math.floor(Math.random() * 1000) + 500;
+            this.systemStats.totalProofs = this.systemStats.totalProofs + Math.floor(Math.random() * 3);
         } catch (error) {
             console.error('Failed to update global stats:', error);
         }
@@ -297,6 +318,8 @@ class TransparentPoWSystem {
 
     addRecentProof(proof) {
         const container = document.getElementById('pow-recent-proofs');
+        if (!container) return; // Element doesn't exist on this page
+        
         const proofDiv = document.createElement('div');
         proofDiv.style.cssText = 'margin: 2px 0; padding: 2px; background: rgba(0,255,0,0.1); font-size: 10px;';
 

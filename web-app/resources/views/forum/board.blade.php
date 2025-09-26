@@ -28,9 +28,10 @@
         @forelse($threads as $thread)
             <tr>
                 <td colspan="3">
-                    <div class="thread-preview">
-                        <div class="thread-header">
+                    <div class="thread-preview" data-thread-id="{{ $thread->id }}">
+                        <div class="thread-header" style="cursor: pointer;" onclick="toggleThread({{ $thread->id }})">
                             <div class="thread-title">
+                                <span class="expand-icon" id="icon-{{ $thread->id }}">▶</span>
                                 <a href="{{ route('forum.thread', [$board->code, $thread->id]) }}">{{ $thread->title }}</a>
                             </div>
                             <div class="thread-meta">
@@ -38,11 +39,11 @@
                             </div>
                         </div>
                         
-                        <div class="thread-content">
+                        <div class="thread-content" id="content-{{ $thread->id }}" style="display: none;">
                             <div class="post-preview">
                                 @if($thread->image_path)
                                     <div class="thread-preview-image" style="float: left; margin: 0 20px 20px 0;">
-                                        <img src="{{ asset('storage/' . $thread->image_path) }}" alt="{{ $thread->image_filename }}" 
+                                        <img src="{{ route('thread.image', $thread->id) }}" alt="{{ $thread->image_filename }}" 
                                              style="width: 180px; height: 180px; border: 1px solid #ccc; border-radius: 5px; object-fit: cover;">
                                     </div>
                                 @endif
@@ -56,7 +57,7 @@
                                         <div class="reply-preview">
                                             @if($post->image_path)
                                                 <div class="post-preview-image" style="float: left; margin: 0 15px 15px 0;">
-                                                    <img src="{{ asset('storage/' . $post->image_path) }}" alt="{{ $post->image_filename }}" 
+                                                    <img src="{{ route('post.image', $post->id) }}" alt="{{ $post->image_filename }}" 
                                                          style="width: 120px; height: 120px; border: 1px solid #ccc; border-radius: 4px; object-fit: cover;">
                                                 </div>
                                             @endif
@@ -69,7 +70,7 @@
                                                     <div class="nested-reply">
                                                         @if($reply->image_path)
                                                             <div class="reply-preview-image" style="float: left; margin: 0 12px 12px 0;">
-                                                                <img src="{{ asset('storage/' . $reply->image_path) }}" alt="{{ $reply->image_filename }}" 
+                                                                <img src="{{ route('post.image', $reply->id) }}" alt="{{ $reply->image_filename }}" 
                                                                      style="width: 80px; height: 80px; border: 1px solid #ccc; border-radius: 3px; object-fit: cover;">
                                                             </div>
                                                         @endif
@@ -82,7 +83,7 @@
                                                                 <div class="deeply-nested-reply" style="margin-left: 30px; margin-top: 3px; font-size: 12px; color: #777;">
                                                                     @if($nestedReply->image_path)
                                                                         <div style="float: left; margin: 0 10px 10px 0;">
-                                                                            <img src="{{ asset('storage/' . $nestedReply->image_path) }}" alt="{{ $nestedReply->image_filename }}" 
+                                                                            <img src="{{ route('post.image', $nestedReply->id) }}" alt="{{ $nestedReply->image_filename }}" 
                                                                                  style="width: 60px; height: 60px; border: 1px solid #ccc; border-radius: 3px; object-fit: cover;">
                                                                         </div>
                                                                     @endif
@@ -127,4 +128,49 @@
 <div style="margin-top: 30px; text-align: center; padding: 20px; border-top: 1px solid #ddd;">
     {{ $threads->links() }}
 </div>
+<script>
+function toggleThread(threadId) {
+    const content = document.getElementById('content-' + threadId);
+    const icon = document.getElementById('icon-' + threadId);
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.textContent = '▼';
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '▶';
+    }
+}
+
+// Add expand/collapse all functionality
+document.addEventListener('DOMContentLoaded', function() {
+    // Add expand all / collapse all buttons
+    const controlsDiv = document.createElement('div');
+    controlsDiv.style.cssText = 'margin: 10px 0; text-align: center;';
+    controlsDiv.innerHTML = `
+        <button onclick="expandAll()" style="margin: 0 5px; padding: 5px 10px; background: #708B75; color: white; border: none; border-radius: 3px; cursor: pointer;">Expand All</button>
+        <button onclick="collapseAll()" style="margin: 0 5px; padding: 5px 10px; background: #9AB87A; color: white; border: none; border-radius: 3px; cursor: pointer;">Collapse All</button>
+    `;
+    
+    const table = document.querySelector('.thread-list');
+    table.parentNode.insertBefore(controlsDiv, table);
+});
+
+function expandAll() {
+    const contents = document.querySelectorAll('[id^="content-"]');
+    const icons = document.querySelectorAll('[id^="icon-"]');
+    
+    contents.forEach(content => content.style.display = 'block');
+    icons.forEach(icon => icon.textContent = '▼');
+}
+
+function collapseAll() {
+    const contents = document.querySelectorAll('[id^="content-"]');
+    const icons = document.querySelectorAll('[id^="icon-"]');
+    
+    contents.forEach(content => content.style.display = 'none');
+    icons.forEach(icon => icon.textContent = '▶');
+}
+</script>
+
 @endsection

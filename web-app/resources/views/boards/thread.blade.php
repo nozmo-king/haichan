@@ -1,12 +1,35 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="classic">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ ($thread->title ?: 'Thread') . ' - /' . $board->code . '/' }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/haichan.css">
-    @vite('resources/js/simple-mining.js')
+    <link rel="stylesheet" href="/css/elegant-themes.css">
+    <script>
+        // Define toggleQuickReply early to prevent "not defined" errors
+        window.toggleQuickReply = function() {
+            const replyForm = document.getElementById('reply-form');
+            const quickBtn = document.getElementById('quick-reply-btn');
+
+            if (!replyForm || !quickBtn) return; // Guard against missing elements
+
+            if (replyForm.style.display === 'none' || !replyForm.style.display) {
+                replyForm.style.display = 'block';
+                replyForm.scrollIntoView({ behavior: 'smooth' });
+                quickBtn.textContent = 'Hide Reply';
+                quickBtn.style.background = 'var(--warning-color, #CD5C5C)';
+            } else {
+                replyForm.style.display = 'none';
+                quickBtn.textContent = 'Quick Reply';
+                quickBtn.style.background = 'var(--accent-color, #708B75)';
+            }
+        };
+    </script>
     <style>
         :root {
             --bg: #FFFFEE;
@@ -122,7 +145,7 @@
         }
         .reply-card {
             background: var(--card);
-            border: 2px solid var(--primary);
+            border: 2px solid var(--border);
             border-radius: 8px;
             padding: 20px;
         }
@@ -136,7 +159,7 @@
         .reply-card input[type="file"] {
             width: 100%;
             padding: 10px;
-            border: 2px solid var(--primary);
+            border: 2px solid var(--border);
             border-radius: 4px;
             background: var(--bg);
             color: var(--text);
@@ -231,7 +254,12 @@
             <div class="op-header">
                 <div>
                     <div class="meta">
-                        Anonymous • {{ $thread->created_at->format('M d, Y H:i') }}
+                        @if($thread->user_id && $thread->bitcoinUser)
+                            {{ $thread->bitcoinUser->getDisplayName() }}
+                        @else
+                            Anonymous
+                        @endif
+                        • {{ $thread->created_at->format('M d, Y H:i') }}
                         @if($thread->user_id)
                             @include('components.admin-badge', ['user' => $thread->bitcoinUser])
                         @endif
@@ -301,7 +329,7 @@
         @endif
 
         <!-- Quick Reply -->
-        @if(!$thread->locked)
+        @if(!($thread->locked ?? false))
         <div style="text-align: center; margin-bottom: 16px;">
             <button onclick="toggleQuickReply()" id="quick-reply-btn" class="quick-reply-btn">Quick Reply</button>
         </div>
@@ -311,15 +339,22 @@
                   enctype="multipart/form-data" id="reply-form-actual"
                   data-original-action="/{{ strtolower($board->code) }}/{{ $thread->id }}/reply">
                 @csrf
-                <input type="hidden" name="pow_nonce" id="reply-pow-nonce" value="">
+                <input type="hidden" name="pow_nonce" id="reply-pow-nonce" value="0">
                 <input type="hidden" name="pow_hash" id="reply-pow-hash" value="">
-                <input type="hidden" name="pow_challenge_id" id="reply-pow-challenge-id" value="">
+                <input type="hidden" name="pow_challenge_id" id="reply-pow-challenge-id" value="quicksubmit">
 
                 <label for="reply-content">Comment</label>
                 <textarea name="content" id="reply-content" required rows="6" maxlength="5000"></textarea>
 
                 <label for="reply-file">Media (optional)</label>
                 <input type="file" id="reply-file" name="image" accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif">
+                
+                <!-- OR use existing image hash -->
+                <div style="margin-top: 10px; padding: 8px; background: #F0F8FF; border: 1px dashed #708B75; border-radius: 4px;">
+                    <label for="reply-image-hash" style="font-size: 11px; color: #444B6E; font-weight: bold;">OR use existing image hash:</label>
+                    <input type="text" name="image_hash" id="reply-image-hash" placeholder="Paste hash from library..."
+                           style="width: 100%; padding: 4px; margin: 4px 0; font-family: monospace; font-size: 10px;">
+                </div>
 
                 @if(session('bitcoin_auth_id'))
                 <div style="margin: 10px 0;">
@@ -339,8 +374,9 @@
                     </div>
                 </div>
 
-                <div style="text-align: center; margin-top: 12px;">
+                <div style="text-align: center; margin-top: 12px; display: flex; gap: 10px; justify-content: center;">
                     <button type="button" id="mine-reply-btn" class="reply-submit">Mine & Submit Reply</button>
+                    <button type="submit" id="quick-submit-btn" class="reply-submit" style="background: var(--primary-2);">Quick Submit (No Mining)</button>
                 </div>
             </form>
         </div>
@@ -371,7 +407,7 @@ class ReplyHashSystem {
             if (hashElement) hashElement.textContent = hash;
         } catch (error) {
             console.error('Reply hash calculation failed:', error);
-
+        }
     }
 
 
@@ -400,7 +436,8 @@ async function mineReplyProof(threadId, content, pattern) {
     let nonce = 0, startTime = Date.now(), hashCount = 0;
     const maxTime = 30000;
 
-
+    // Set the challenge ID in the form
+    document.getElementById('reply-pow-challenge-id').value = challengeId;
 
     const hashCountEl = document.getElementById('reply-hash-count');
     const hashRateEl = document.getElementById('reply-hash-rate');
@@ -410,7 +447,7 @@ async function mineReplyProof(threadId, content, pattern) {
     async function mineStep() {
         if (!replyMiningInProgress) return;
 
-
+        const elapsed = Date.now() - startTime;
         if (elapsed > maxTime) {
             document.getElementById('reply-pow-nonce').value = '0';
             document.getElementById('reply-pow-hash').value = '0'.repeat(64);
@@ -439,7 +476,7 @@ async function mineReplyProof(threadId, content, pattern) {
             hashRateEl.textContent = rate.toLocaleString();
 
             if (hashHex.startsWith(pattern.toLowerCase())) {
-
+                document.getElementById('reply-pow-nonce').value = nonce;
                 document.getElementById('reply-pow-hash').value = hashHex;
                 replyMiningInProgress = false;
                 statusEl.style.display = 'none';
@@ -460,7 +497,8 @@ async function mineReplyProof(threadId, content, pattern) {
 }
 
 function submitReplyForm(formData, url) {
-
+    console.log('📤 SUBMITTING REPLY FORM TO:', url);
+    fetch(url, {
         method: 'POST',
         body: formData,
         headers: {
@@ -469,44 +507,75 @@ function submitReplyForm(formData, url) {
         }
     })
     .then(response => {
+        console.log('📥 REPLY RESPONSE STATUS:', response.status);
         if (response.ok) {
+            console.log('✅ REPLY SUBMITTED SUCCESSFULLY');
             window.location.reload();
         } else {
             response.text().then(text => {
-                alert('Reply failed: ' + response.status);
-                console.error('Reply failed:', text);
+                console.error('❌ REPLY FAILED:', response.status, text);
+                alert('Reply failed: ' + response.status + '\n' + text.substring(0, 200));
             });
         }
     })
     .catch(error => {
+        console.error('❌ NETWORK ERROR:', error);
         alert('Network error: ' + error.message);
-        console.error('Network error:', error);
     })
     .finally(() => {
         const btn = document.getElementById('mine-reply-btn');
-        btn.disabled = false;
-        btn.textContent = 'Mine & Submit Reply';
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Mine & Submit Reply';
+        }
     });
 }
 
 const replyHashSystem = new ReplyHashSystem();
 
+window.toggleQuickReply = function() {
+    const replyForm = document.getElementById('reply-form');
+    const quickBtn = document.getElementById('quick-reply-btn');
+
+    if (replyForm.style.display === 'none' || !replyForm.style.display) {
+        replyForm.style.display = 'block';
+        replyForm.scrollIntoView({ behavior: 'smooth' });
+        quickBtn.textContent = 'Hide Reply';
+        quickBtn.style.background = 'var(--warning-color, #CD5C5C)';
+    } else {
+        replyForm.style.display = 'none';
+        quickBtn.textContent = 'Quick Reply';
+        quickBtn.style.background = 'var(--accent-color, #708B75)';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     replyHashSystem.processAllReplies();
 
     document.getElementById('mine-reply-btn').addEventListener('click', async () => {
+        console.log('🔄 Mine reply button clicked');
         const content = document.getElementById('reply-content').value.trim();
         if (!content) {
             alert('Please enter a reply first!');
             return;
         }
 
+        console.log('✅ Content validated, starting mining...');
         replyMiningInProgress = true;
         const btn = document.getElementById('mine-reply-btn');
         btn.disabled = true;
         btn.textContent = 'Mining...';
 
-        await mineReplyProof({{ $thread->id }}, content, '21e');
+        try {
+            await mineReplyProof({{ $thread->id }}, content, '21e');
+            console.log('✅ Mining completed');
+        } catch (error) {
+            console.error('❌ Mining error:', error);
+            alert('Mining failed: ' + error.message);
+            btn.disabled = false;
+            btn.textContent = 'Mine & Submit Reply';
+            replyMiningInProgress = false;
+        }
     });
 
     document.getElementById('stop-reply-mining').addEventListener('click', () => {
@@ -517,11 +586,28 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.textContent = 'Mine & Submit Reply';
     });
 
+    document.getElementById('quick-submit-btn').addEventListener('click', (e) => {
+        console.log('🚀 Quick submit button clicked');
+        const content = document.getElementById('reply-content').value.trim();
+        console.log('Content:', content);
+        if (!content) {
+            alert('Please enter a reply first!');
+            e.preventDefault();
+            return false;
+        }
+        console.log('✅ Quick submit validation passed, form should submit normally');
+    });
+
     function initThreadMining() {
-        if (window.simpleMiner) {
-            window.simpleMiner.switchTarget('thread', {{ $thread->id }}, '{{ addslashes($thread->title ?: "Thread #" . $thread->id) }}');
-        } else {
-            setTimeout(initThreadMining, 100);
+        // Set the current mining target to this thread
+        if (window.directMiner) {
+            window.directMiner.currentTarget = 'thread:{{ $thread->id }}';
+            console.log('🎯 SET THREAD MINING TARGET:', window.directMiner.currentTarget);
+        }
+        
+        // Also set for emergency miner if available
+        if (window.emergencyMiner) {
+            window.emergencyMiner.currentTarget = 'thread:{{ $thread->id }}';
         }
     }
     initThreadMining();
@@ -537,24 +623,22 @@ document.addEventListener('DOMContentLoaded', function() {
     if (replyForm) {
         const correctAction = '/{{ strtolower($board->code) }}/{{ $thread->id }}/reply';
         replyForm.action = correctAction;
+        console.log('📝 REPLY FORM ACTION SET TO:', correctAction);
+        
+        // Add form submission debug listener
+        replyForm.addEventListener('submit', function(e) {
+            console.log('📤 FORM SUBMISSION EVENT TRIGGERED');
+            console.log('📋 Form data:', new FormData(replyForm));
+            const content = document.getElementById('reply-content').value;
+            if (!content.trim()) {
+                alert('Please enter a reply first!');
+                e.preventDefault();
+                return false;
+            }
+            console.log('✅ Form validation passed');
+        });
     }
 });
-
-function toggleQuickReply() {
-    const replyForm = document.getElementById('reply-form');
-    const quickBtn = document.getElementById('quick-reply-btn');
-
-    if (replyForm.style.display === 'none' || !replyForm.style.display) {
-        replyForm.style.display = 'block';
-        replyForm.scrollIntoView({ behavior: 'smooth' });
-        quickBtn.textContent = 'Hide Reply';
-        quickBtn.style.background = '#CD5C5C';
-    } else {
-        replyForm.style.display = 'none';
-        quickBtn.textContent = 'Quick Reply';
-        quickBtn.style.background = '#708B75';
-    }
-}
 
 function getDynamicPoWPattern() {
     const replyCount = {{ count($posts ?? []) }};
@@ -598,6 +682,205 @@ function expandImage(img) {
         img.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }
+
+// Initialize theme selector functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const themeSelector = document.getElementById('theme-selector');
+    if (themeSelector) {
+        themeSelector.addEventListener('change', function() {
+            document.documentElement.setAttribute('data-theme', this.value);
+            localStorage.setItem('selected-theme', this.value);
+        });
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('selected-theme') || 'classic';
+        themeSelector.value = savedTheme;
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+});
+
+function toggleBoardDropdown() {
+    const dropdown = document.getElementById('board-dropdown');
+    if (dropdown.style.display === 'none' || !dropdown.style.display) {
+        dropdown.style.display = 'block';
+    } else {
+        dropdown.style.display = 'none';
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('board-dropdown');
+    const button = document.getElementById('board-dropdown-btn');
+    if (!dropdown.contains(event.target) && !button.contains(event.target)) {
+        dropdown.style.display = 'none';
+    }
+});
 </script>
+
+<!-- Elegant Bottom Toolbar -->
+<div id="elegant-toolbar" style="
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(135deg, 
+        var(--toolbar-bg-start, rgba(68, 75, 110, 0.95)) 0%, 
+        var(--toolbar-bg-end, rgba(112, 139, 117, 0.95)) 100%);
+    backdrop-filter: blur(20px);
+    border-top: 2px solid var(--toolbar-border, rgba(255, 255, 238, 0.2));
+    color: var(--toolbar-text, #FFFFEE);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 11px;
+    padding: 12px 20px;
+    z-index: 9997;
+    box-shadow: 0 -4px 20px var(--toolbar-shadow, rgba(0, 0, 0, 0.3));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+">
+    <!-- Left Section: Navigation -->
+    <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="
+            background: var(--nav-item-bg, rgba(255, 255, 238, 0.1));
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--nav-item-border, rgba(255, 255, 238, 0.2));
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        ">
+            <a href="/catalog" class="nav-link" style="
+                color: var(--nav-link-color, #E8FFE8);
+                text-decoration: none;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            " onmouseover="this.style.background='var(--nav-link-hover, rgba(255,255,238,0.2))'" onmouseout="this.style.background='transparent'">
+                🎯 <span>MC</span>
+            </a>
+            
+            <a href="/library" class="nav-link" style="
+                color: var(--nav-link-color, #E8FFE8);
+                text-decoration: none;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            " onmouseover="this.style.background='var(--nav-link-hover, rgba(255,255,238,0.2))'" onmouseout="this.style.background='transparent'">
+                🖼️ <span>LIB</span>
+            </a>
+            
+            <a href="/{{ $board->code }}" class="nav-link" style="
+                color: var(--nav-link-color, #E8FFE8);
+                text-decoration: none;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            " onmouseover="this.style.background='var(--nav-link-hover, rgba(255,255,238,0.2))'" onmouseout="this.style.background='transparent'">
+                📋 <span>/{{ $board->code }}/</span>
+            </a>
+            
+            @if(session('bitcoin_auth_user') && session('bitcoin_auth_user')->is_admin)
+            <a href="/admin" class="nav-link" style="
+                color: var(--nav-link-color, #E8FFE8);
+                text-decoration: none;
+                padding: 6px 10px;
+                border-radius: 6px;
+                font-size: 10px;
+                font-weight: 600;
+                transition: all 0.2s ease;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                background: rgba(255, 68, 68, 0.2);
+            " onmouseover="this.style.background='rgba(255, 68, 68, 0.3)'" onmouseout="this.style.background='rgba(255, 68, 68, 0.2)'">
+                ⚔️ <span>ADMIN</span>
+            </a>
+            @endif
+        </div>
+    </div>
+
+    <!-- Center Section: Logo & Mining Status -->
+    <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="text-align: center;">
+            <a href="/" style="
+                text-decoration: none;
+                color: var(--logo-color, #FFFFEE);
+                font-family: 'Nova Cut', serif;
+                font-size: 16px;
+                font-weight: 300;
+                letter-spacing: 1px;
+                text-shadow: 0 2px 4px var(--logo-shadow, rgba(0, 0, 0, 0.5));
+                transition: all 0.3s ease;
+            " onmouseover="this.style.textShadow='0 0 20px var(--logo-glow, rgba(255,255,238,0.6))'" onmouseout="this.style.textShadow='0 2px 4px var(--logo-shadow, rgba(0,0,0,0.5))'">
+                Haichan
+            </a>
+            <div style="font-size: 8px; color: var(--status-text, #FFFFEE); opacity: 0.8; margin-top: 2px;">
+                Thread #{{ $thread->id }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Section: Theme & Dashboard -->
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <!-- Theme Selector -->
+        <select id="theme-selector" style="
+            background: var(--theme-selector-bg, rgba(255, 255, 238, 0.1));
+            border: 1px solid var(--theme-selector-border, rgba(255, 255, 238, 0.2));
+            color: var(--theme-selector-text, #E8FFE8);
+            font-size: 9px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        ">
+            <option value="classic">Classic</option>
+            <option value="day">Day</option>
+            <option value="cyberpunk">Cyberpunk</option>
+            <option value="vaporwave">Vaporwave</option>
+            <option value="matrix">Matrix</option>
+            <option value="terminal">Terminal</option>
+            <option value="synthwave">Synthwave</option>
+            <option value="ocean">Ocean</option>
+            <option value="volcanic">Volcanic</option>
+            <option value="arctic">Arctic</option>
+        </select>
+
+        <!-- Mini Dashboard -->
+        <div style="
+            background: var(--dash-btn-bg, rgba(154, 184, 122, 0.8));
+            border: 1px solid var(--dash-btn-border, rgba(255, 255, 238, 0.3));
+            color: var(--dash-btn-text, #FFFFEE);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 9px;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 2px 8px var(--dash-btn-shadow, rgba(154, 184, 122, 0.3));
+            transition: all 0.2s ease;
+        ">
+            <div>⛏️ Mining</div>
+            <div style="font-size: 8px; opacity: 0.9;">Thread Focus</div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

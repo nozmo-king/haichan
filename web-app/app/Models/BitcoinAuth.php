@@ -16,6 +16,18 @@ class BitcoinAuth extends Authenticatable
         'public_key',
         'address',
         'username',
+        'bio',
+        'location',
+        'website',
+        'avatar_hash',
+        'display_name',
+        'tripcode',
+        'social_links',
+        'show_email',
+        'email',
+        'timezone',
+        'signature',
+        'profile_public',
         'mining_power',
         'total_pow_points',
         'invite_code',
@@ -46,7 +58,10 @@ class BitcoinAuth extends Authenticatable
         'level' => 'integer',
         'is_banned' => 'boolean',
         'is_admin' => 'boolean',
-        'admin_level' => 'integer'
+        'admin_level' => 'integer',
+        'social_links' => 'json',
+        'show_email' => 'boolean',
+        'profile_public' => 'boolean'
     ];
 
     /**
@@ -156,17 +171,17 @@ class BitcoinAuth extends Authenticatable
         // Check if this should be the first admin (user #1)
         if ($user->id === 1) {
             $user->is_admin = true;
-            $user->admin_level = 9; // Super admin
-            $user->username = 'Admin';
+            $user->admin_level = 5; // Administrator
+            $user->username = 'Administrator';
             $user->mining_power = 10.0; // Admin bonus
             $user->save();
         }
 
-        // Check if this should be the super moderator (user #2)
+        // Check if this should be a moderator (user #2)
         if ($user->id === 2) {
             $user->is_admin = true;
-            $user->admin_level = 7; // Super moderator
-            $user->username = 'SuperMod';
+            $user->admin_level = 3; // Moderator
+            $user->username = 'Moderator';
             $user->mining_power = 5.0; // Mod bonus
             $user->save();
         }
@@ -291,6 +306,31 @@ class BitcoinAuth extends Authenticatable
         $this->ban_reason = $reason;
         $this->banned_until = $until;
         $this->save();
+    }
+
+    /**
+     * Generate tripcode from Bitcoin address
+     */
+    public function getTripcode()
+    {
+        if (!$this->address) {
+            return 'Anonymous';
+        }
+        
+        // Take last 8 characters of bitcoin address for tripcode
+        $code = substr($this->address, -8);
+        return "!{$code}";
+    }
+
+    /**
+     * Get display name with tripcode
+     */
+    public function getDisplayName()
+    {
+        if ($this->username && $this->username !== 'Anonymous') {
+            return $this->username . ' ' . $this->getTripcode();
+        }
+        return $this->getTripcode();
     }
 
     /**

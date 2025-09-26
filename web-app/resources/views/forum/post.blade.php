@@ -9,7 +9,7 @@
     <div class="post-content">
         @if($post->image_path)
             <div class="post-image" style="margin: 10px 0;">
-                <img src="{{ asset('storage/' . $post->image_path) }}" alt="{{ $post->image_filename }}" 
+                <img src="{{ route('post.image', $post->id) }}" alt="{{ $post->image_filename }}" 
                      style="max-width: 300px; max-height: 300px; border: 1px solid #ccc; cursor: pointer;" 
                      onclick="toggleImageSize(this)">
                 <div style="font-size: 11px; color: #666; margin-top: 5px;">{{ $post->image_filename }}</div>

@@ -53,7 +53,9 @@ class ImageLibraryController extends Controller
             $totalPoints = $this->calculateImageMiningPoints($request->proof_hash, $pattern);
 
             // Create ProofOfWork record
+            $userId = session('bitcoin_auth_id');
             \App\Models\ProofOfWork::create([
+                'user_id' => $userId,
                 'thread_id' => null, // Image mining doesn't relate to threads
                 'hash' => $request->proof_hash,
                 'nonce' => $request->nonce,
@@ -63,6 +65,14 @@ class ImageLibraryController extends Controller
                 'ip_address' => $request->ip(),
                 'verified_at' => now()
             ]);
+
+            // Award points to user
+            if ($userId) {
+                $user = \App\Models\BitcoinAuth::find($userId);
+                if ($user) {
+                    $user->awardMiningPoints($totalPoints);
+                }
+            }
 
         } else {
             // Real mining calculation without dummy random values
@@ -101,6 +111,15 @@ class ImageLibraryController extends Controller
         }
 
         $image->awardPoW($totalPoints);
+
+        // Award points to user for mouseover mining too
+        $userId = session('bitcoin_auth_id');
+        if ($userId) {
+            $user = \App\Models\BitcoinAuth::find($userId);
+            if ($user) {
+                $user->awardMiningPoints($totalPoints);
+            }
+        }
 
         $message = "Mined {$totalPoints} PoW points!";
         if ($jackpot > 3) {
@@ -209,7 +228,7 @@ class ImageLibraryController extends Controller
     {
         $image = ImageLibrary::findOrFail($id);
 
-        $path = storage_path('app/public/' . $image->file_path);
+        $path = public_path($image->file_path);
 
         if (!file_exists($path)) {
             abort(404);
@@ -222,7 +241,7 @@ class ImageLibraryController extends Controller
     {
         $image = ImageLibrary::findOrFail($id);
 
-        $path = storage_path('app/public/' . $image->file_path);
+        $path = public_path($image->file_path);
 
         if (!file_exists($path)) {
             abort(404);
@@ -327,7 +346,7 @@ class ImageLibraryController extends Controller
      */
     protected function applyDithering(ImageLibrary $libraryImage)
     {
-        $sourcePath = storage_path('app/public/' . $libraryImage->file_path);
+        $sourcePath = public_path($libraryImage->file_path);
 
         if (!file_exists($sourcePath)) {
             return false;
@@ -384,7 +403,8 @@ class ImageLibraryController extends Controller
             ]);
 
             // Update file path to dithered version
-            $libraryImage->file_path = str_replace('public/', '', $ditheredPath);
+            $relativePath = str_replace(public_path() . '/', '', $ditheredPath);
+            $libraryImage->file_path = $relativePath;
             $libraryImage->save();
 
             return true;

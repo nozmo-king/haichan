@@ -13,13 +13,17 @@
         $badgeColor = '#4CAF50';
         $badgeIcon = '🛡️';
     } elseif ($user && $user->admin_level >= 5) {
-        $badgeText = 'MODERATOR';
+        $badgeText = 'ADMINISTRATOR';
         $badgeColor = '#2196F3';
         $badgeIcon = '⚔️';
-    } elseif ($user && $user->admin_level >= 1) {
-        $badgeText = 'ADMIN';
+    } elseif ($user && $user->admin_level >= 3) {
+        $badgeText = 'MODERATOR';
         $badgeColor = '#FFD700';
         $badgeIcon = '🔱';
+    } elseif ($user && $user->admin_level >= 1) {
+        $badgeText = 'Moderator';
+        $badgeColor = '#9AB87A';
+        $badgeIcon = '🎯';
     }
 @endphp
 

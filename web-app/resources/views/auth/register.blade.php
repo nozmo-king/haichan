@@ -57,28 +57,8 @@
                 <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
                     🎟️ Friend Code
                 </label>
-                <input type="text" name="invite_code" required
+                <input type="text" name="invite_code" id="invite_code" required
                        placeholder="Enter your friend code..."
-                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
-            </div>
-
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
-                    🔑 Private Key
-                </label>
-                <input type="password" name="private_key" required
-                       placeholder="Enter your 64-character private key..."
-                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
-            </div>
-
-            <input type="hidden" name="public_key" id="public_key">
-
-            <div style="margin-bottom: 20px;">
-                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
-                    📍 Bitcoin Address
-                </label>
-                <input type="text" name="address" required
-                       placeholder="Enter your Bitcoin address..."
                        style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
             </div>
 
@@ -86,9 +66,40 @@
                 <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
                     🔒 Password
                 </label>
-                <input type="password" name="password" required minlength="8"
+                <input type="password" name="password" id="password" required minlength="8"
                        placeholder="Create a secure password..."
                        style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
+            </div>
+
+            <!-- Auto-generated fields (hidden but will show info) -->
+            <input type="hidden" name="private_key" id="private_key">
+            <input type="hidden" name="public_key" id="public_key">
+            <input type="hidden" name="address" id="address">
+
+            <!-- Generated Keys Display -->
+            <div id="generated-keys" style="display: none; background: #E8F5E8; border: 2px solid #4CAF50; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
+                <div style="color: #2E7D32; font-weight: bold; margin-bottom: 10px;">
+                    🔑 Generated Cryptographic Keys
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <strong>Private Key:</strong>
+                    <div id="display-private-key" style="font-family: 'Courier New', monospace; font-size: 11px; word-break: break-all; background: rgba(46, 125, 50, 0.1); padding: 5px; border-radius: 4px; margin-top: 2px;"></div>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <strong>Bitcoin Address:</strong>
+                    <div id="display-address" style="font-family: 'Courier New', monospace; font-size: 11px; word-break: break-all; background: rgba(46, 125, 50, 0.1); padding: 5px; border-radius: 4px; margin-top: 2px;"></div>
+                </div>
+                <div style="text-align: center; margin: 15px 0;">
+                    <button type="button" id="download-keys" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; margin-right: 10px;">
+                        💾 Download haichan.key
+                    </button>
+                    <button type="button" id="download-pgp" style="background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">
+                        🔐 Download haichan.pgp
+                    </button>
+                </div>
+                <div style="color: #2E7D32; font-size: 12px; margin-top: 10px;">
+                    ⚠️ <strong>SAVE YOUR KEY FILES!</strong> These are your backup login methods.
+                </div>
             </div>
 
             <div style="background: #FFF3CD; border: 2px solid #FFC107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -117,31 +128,165 @@
 
 
 <script>
-// Auto-generate public key from private key (must match backend derivation)
+// Auto-generate keys when user enters friend code and password
 document.addEventListener('DOMContentLoaded', function() {
-    const privateKeyInput = document.querySelector('input[name="private_key"]');
-    const publicKeyInput = document.querySelector('input[name="public_key"]');
-    const addressInput = document.querySelector('input[name="address"]');
+    const inviteCodeInput = document.getElementById('invite_code');
+    const passwordInput = document.getElementById('password');
+    const privateKeyInput = document.getElementById('private_key');
+    const publicKeyInput = document.getElementById('public_key');
+    const addressInput = document.getElementById('address');
+    const generatedKeysDiv = document.getElementById('generated-keys');
+    const displayPrivateKey = document.getElementById('display-private-key');
+    const displayAddress = document.getElementById('display-address');
 
-    if (privateKeyInput) {
-        privateKeyInput.addEventListener('input', async function() {
-            const privateKey = this.value;
-            if (privateKey.length === 64 && /^[a-fA-F0-9]{64}$/.test(privateKey)) {
-                // Use the same SHA-256 derivation as the backend
+    async function generateKeys() {
+        const inviteCode = inviteCodeInput.value.trim();
+        const password = passwordInput.value.trim();
+        
+        if (inviteCode.length >= 8 && password.length >= 8) {
+            try {
+                // Generate deterministic private key from friend code + password
+                const seed = inviteCode + password + 'haichan_salt_2024';
+                const privateKey = await sha256(seed);
+                
+                // Generate public key from private key
                 const publicKey = await sha256(privateKey);
-                publicKeyInput.value = publicKey;
-
-                // Generate Bitcoin address from public key  
+                
+                // Generate Bitcoin address
                 const address = await generateAddress(publicKey);
+                
+                // Set hidden form fields
+                privateKeyInput.value = privateKey;
+                publicKeyInput.value = publicKey;
                 addressInput.value = address;
-            } else {
-                // Clear fields if private key is invalid
-                publicKeyInput.value = '';
-                addressInput.value = '';
+                
+                // Show generated keys
+                displayPrivateKey.textContent = privateKey;
+                displayAddress.textContent = address;
+                generatedKeysDiv.style.display = 'block';
+                
+                // Generate downloadable key file
+                generateKeyFile(privateKey, publicKey, address, inviteCode);
+                
+            } catch (error) {
+                console.error('Key generation failed:', error);
+                generatedKeysDiv.style.display = 'none';
             }
-        });
+        } else {
+            // Hide keys if inputs are incomplete
+            generatedKeysDiv.style.display = 'none';
+            privateKeyInput.value = '';
+            publicKeyInput.value = '';
+            addressInput.value = '';
+        }
     }
+
+    // Generate keys when user types
+    inviteCodeInput.addEventListener('input', generateKeys);
+    passwordInput.addEventListener('input', generateKeys);
+    
+    // Setup download buttons
+    document.getElementById('download-keys').addEventListener('click', function() {
+        const privateKey = privateKeyInput.value;
+        const publicKey = publicKeyInput.value;
+        const address = addressInput.value;
+        const inviteCode = inviteCodeInput.value;
+        if (privateKey) {
+            downloadKeyFile(privateKey, publicKey, address, inviteCode);
+        }
+    });
+    
+    document.getElementById('download-pgp').addEventListener('click', function() {
+        const privateKey = privateKeyInput.value;
+        const publicKey = publicKeyInput.value;
+        const address = addressInput.value;
+        const inviteCode = inviteCodeInput.value;
+        if (privateKey) {
+            downloadPGPFile(privateKey, publicKey, address, inviteCode);
+        }
+    });
 });
+
+// Generate and auto-trigger download of key files
+function generateKeyFile(privateKey, publicKey, address, inviteCode) {
+    // Files will be available via download buttons - no auto-download to avoid popup blockers
+    console.log('Key files ready for download');
+}
+
+// Download simple key file
+function downloadKeyFile(privateKey, publicKey, address, inviteCode) {
+    const timestamp = new Date().toISOString().split('T')[0];
+    const keyFileContent = `# HAICHAN CRYPTOGRAPHIC KEYS
+# Generated: ${new Date().toISOString()}
+# Friend Code: ${inviteCode}
+# 
+# KEEP THIS FILE SECURE - IT'S YOUR BACKUP LOGIN METHOD
+#
+
+[HAICHAN_KEYS]
+PRIVATE_KEY=${privateKey}
+PUBLIC_KEY=${publicKey}
+BITCOIN_ADDRESS=${address}
+FRIEND_CODE=${inviteCode}
+GENERATED_DATE=${timestamp}
+
+[BACKUP_LOGIN_INFO]
+# To login with this file, use the private key in the backup login form
+# Or use the Bitcoin address + your password in the regular login form
+# 
+# Website: https://haichan.org
+# Backup Login: Use PRIVATE_KEY field above
+# Regular Login: Use BITCOIN_ADDRESS + your password
+`;
+
+    const blob = new Blob([keyFileContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'haichan.key';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Download PGP-style key file
+function downloadPGPFile(privateKey, publicKey, address, inviteCode) {
+    const timestamp = new Date().toISOString();
+    const pgpContent = `-----BEGIN HAICHAN PRIVATE KEY-----
+Version: Haichan Cryptographic System v1.0
+Comment: Generated for friend code ${inviteCode}
+Comment: Date ${timestamp}
+
+${btoa(privateKey).match(/.{1,64}/g).join('\n')}
+-----END HAICHAN PRIVATE KEY-----
+
+-----BEGIN HAICHAN PUBLIC KEY-----
+Version: Haichan Cryptographic System v1.0
+Comment: Bitcoin Address ${address}
+
+${btoa(publicKey).match(/.{1,64}/g).join('\n')}
+-----END HAICHAN PUBLIC KEY-----
+
+-----BEGIN HAICHAN IDENTITY-----
+FRIEND_CODE: ${inviteCode}
+BITCOIN_ADDRESS: ${address}
+GENERATED: ${timestamp}
+BACKUP_LOGIN: Use private key above in backup login form
+REGULAR_LOGIN: Use Bitcoin address + password in regular login
+-----END HAICHAN IDENTITY-----
+`;
+
+    const blob = new Blob([pgpContent], { type: 'application/pgp-keys' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'haichan.pgp';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
 
 // SHA-256 implementation that matches PHP hash('sha256', $privateKey)
 async function sha256(message) {

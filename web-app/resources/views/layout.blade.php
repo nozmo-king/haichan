@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="classic">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/haichan.css">
-    <link rel="stylesheet" href="/css/themes.css">
+    <link rel="stylesheet" href="/css/elegant-themes.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -696,25 +696,6 @@
         opacity: 0.1;
     "></canvas>
 
-    <!-- Elegant Film Grain Mini Dashboard Toggle -->
-    <button id="mini-dash-toggle" style="
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, rgba(154,184,122,0.95) 0%, rgba(112,139,117,0.95) 100%);
-        border: none;
-        color: #FFFFEE;
-        padding: 12px 16px;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        z-index: 10001;
-        box-shadow: 0 4px 16px rgba(68, 75, 110, 0.4);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(255, 255, 238, 0.3);
-        transition: all 0.3s ease;
-    " title="Open Mining Dashboard" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">⛏️ MINE</button>
 
     <!-- Elegant Film Grain Mini Dashboard -->
     <div id="mini-dashboard" style="
@@ -742,7 +723,7 @@
             opacity: 0.15;
             mix-blend-mode: multiply;
             pointer-events: none;
-            z-index: 1;
+            z-index: -1;
         "></div>
         
         <!-- Dashboard Header -->
@@ -760,7 +741,7 @@
             border-bottom: 2px solid rgba(255, 255, 255, 0.1);
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
             position: relative;
-            z-index: 2;
+            z-index: 10;
         ">
             <span>⛏️ HAICHAN MINER</span>
             <div>
@@ -791,7 +772,7 @@
         </div>
 
         <!-- Dashboard Content -->
-        <div id="dashboard-content" style="padding: 20px; font-size: 10pt; position: relative; z-index: 2;">
+        <div id="dashboard-content" style="padding: 20px; font-size: 10pt; position: relative; z-index: 10;">
             <!-- Mining Target Display -->
             <div style="margin-bottom: 16px; padding: 12px; background: rgba(255, 255, 255, 0.4); border-radius: 8px; border: 1px solid rgba(154, 184, 122, 0.3);">
                 <div style="color: #444B6E; font-weight: bold; margin-bottom: 6px; font-size: 9pt;">🎯 Mining Target</div>
@@ -811,7 +792,7 @@
 
             <!-- Elegant Gradient Power Slider -->
             <div style="margin-bottom: 16px; padding: 12px; background: rgba(255, 255, 255, 0.4); border-radius: 8px; border: 1px solid rgba(154, 184, 122, 0.3);">
-                <div style="color: #444B6E; font-weight: bold; margin-bottom: 8px; font-size: 9pt;">⚡ Mining Power: <span id="power-level-display" style="color: #789922;">1</span>/10</div>
+                <div style="color: #444B6E; font-weight: bold; margin-bottom: 8px; font-size: 9pt;">⚡ Mining Power: <span id="power-level-display" style="color: #789922;">3</span>/10</div>
                 
                 <!-- Custom Gradient Slider -->
                 <div style="position: relative; height: 20px; margin: 10px 0;">
@@ -830,7 +811,7 @@
                         border-radius: 10px;
                         box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
                     "></div>
-                    <input type="range" id="dashboard-power-slider" min="1" max="10" value="1" style="
+                    <input type="range" id="dashboard-power-slider" min="0" max="10" value="0" oninput="directMining(this.value)" style="
                         position: absolute;
                         width: 100%;
                         height: 20px;
@@ -839,6 +820,8 @@
                         appearance: none;
                         cursor: pointer;
                         border-radius: 10px;
+                        z-index: 1000;
+                        pointer-events: auto;
                     ">
                 </div>
                 
@@ -865,32 +848,6 @@
                 ">calculating...</div>
             </div>
             
-            <!-- Theme Switcher -->
-            <div style="margin-top: 16px; padding: 12px; background: rgba(255, 255, 255, 0.4); border-radius: 8px; border: 1px solid rgba(154, 184, 122, 0.3);">
-                <div style="color: #444B6E; font-weight: bold; margin-bottom: 8px; font-size: 9pt;">🎨 Theme</div>
-                <select id="dashboard-theme-selector" onchange="switchTheme(this.value)" style="
-                    width: 100%;
-                    background: rgba(255, 255, 255, 0.8);
-                    color: #444B6E;
-                    border: 1px solid rgba(154, 184, 122, 0.4);
-                    padding: 6px 8px;
-                    border-radius: 6px;
-                    font-size: 8pt;
-                    font-weight: bold;
-                    cursor: pointer;
-                    outline: none;
-                ">
-                    <option value="classic">🏛️ Classic</option>
-                    <option value="cyberpunk">🤖 Cyberpunk</option>
-                    <option value="vaporwave">🌈 Vaporwave</option>
-                    <option value="matrix">💊 Matrix</option>
-                    <option value="terminal">💻 Terminal</option>
-                    <option value="synthwave">🌆 Synthwave</option>
-                    <option value="ocean">🌊 Ocean</option>
-                    <option value="volcanic">🌋 Volcanic</option>
-                    <option value="arctic">❄️ Arctic</option>
-                </select>
-            </div>
 
             <!-- Quick Navigation -->
             <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: space-between;">
@@ -937,25 +894,281 @@
         </div>
     </div>
 
-    <div class="container" style="margin-top: 20px; margin-bottom: 40px;">
+    <!-- Elegant Bottom Toolbar -->
+    <div id="elegant-toolbar" style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: linear-gradient(135deg, 
+            var(--toolbar-bg-start, rgba(68, 75, 110, 0.95)) 0%, 
+            var(--toolbar-bg-end, rgba(112, 139, 117, 0.95)) 100%);
+        backdrop-filter: blur(20px);
+        border-top: 2px solid var(--toolbar-border, rgba(255, 255, 238, 0.2));
+        color: var(--toolbar-text, #FFFFEE);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 11px;
+        padding: 12px 20px;
+        z-index: 9997;
+        box-shadow: 0 -4px 20px var(--toolbar-shadow, rgba(0, 0, 0, 0.3));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    ">
+        <!-- Left Section: Navigation -->
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="
+                background: var(--nav-item-bg, rgba(255, 255, 238, 0.1));
+                padding: 8px 12px;
+                border-radius: 8px;
+                border: 1px solid var(--nav-item-border, rgba(255, 255, 238, 0.2));
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            ">
+                <a href="/catalog" class="nav-link" style="
+                    color: var(--nav-link-color, #E8FFE8);
+                    text-decoration: none;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                " onmouseover="this.style.background='var(--nav-link-hover, rgba(255,255,238,0.2))'" onmouseout="this.style.background='transparent'">
+                    🎯 <span>MC</span>
+                </a>
+                
+                <a href="/library" class="nav-link" style="
+                    color: var(--nav-link-color, #E8FFE8);
+                    text-decoration: none;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                " onmouseover="this.style.background='var(--nav-link-hover, rgba(255,255,238,0.2))'" onmouseout="this.style.background='transparent'">
+                    🖼️ <span>LIB</span>
+                </a>
+                
+                <a href="/mining" class="nav-link" style="
+                    color: var(--nav-link-color, #E8FFE8);
+                    text-decoration: none;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                " onmouseover="this.style.background='var(--nav-link-hover, rgba(255,255,238,0.2))'" onmouseout="this.style.background='transparent'">
+                    ⛏️ <span>MINE</span>
+                </a>
+                
+                @if(session('bitcoin_auth_id'))
+                <a href="/user/{{ session('bitcoin_auth_id') }}" class="nav-link" style="
+                    color: var(--nav-link-color, #E8FFE8);
+                    text-decoration: none;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                " onmouseover="this.style.background='var(--nav-link-hover, rgba(255,255,238,0.2))'" onmouseout="this.style.background='transparent'">
+                    👤 <span>PROFILE</span>
+                </a>
+                @endif
+                
+                <div id="site-dither-toggle" style="
+                    color: var(--nav-link-color, #E8FFE8);
+                    background: transparent;
+                    border: none;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    font-weight: 500;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 11px;
+                " onmouseover="this.style.background='var(--nav-link-hover, rgba(255,255,238,0.2))'" onmouseout="this.style.background='transparent'" onclick="toggleSiteDither()">
+                    🎨 <span id="site-dither-status">Auto-Dither: OFF</span>
+                </div>
+                
+                @if(session('bitcoin_auth_user') && session('bitcoin_auth_user')->is_admin)
+                <a href="/admin" class="nav-link" style="
+                    color: var(--nav-link-color, #E8FFE8);
+                    text-decoration: none;
+                    padding: 6px 10px;
+                    border-radius: 6px;
+                    font-size: 10px;
+                    font-weight: 600;
+                    transition: all 0.2s ease;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    background: rgba(255, 68, 68, 0.2);
+                " onmouseover="this.style.background='rgba(255, 68, 68, 0.3)'" onmouseout="this.style.background='rgba(255, 68, 68, 0.2)'">
+                    ⚔️ <span>ADMIN</span>
+                </a>
+                @endif
+                
+                <!-- Board Dropdown -->
+                <div class="dropdown" style="position: relative;">
+                    <button id="board-dropdown-btn" style="
+                        color: var(--nav-link-color, #E8FFE8);
+                        background: transparent;
+                        border: none;
+                        padding: 6px 10px;
+                        border-radius: 6px;
+                        font-size: 10px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        display: flex;
+                        align-items: center;
+                        gap: 4px;
+                    " onmouseover="this.style.background='var(--nav-link-hover, rgba(255,255,238,0.2))'" onmouseout="this.style.background='transparent'" onclick="toggleBoardDropdown()">
+                        📋 <span>BOARDS</span> <span style="font-size: 8px;">▼</span>
+                    </button>
+                    <div id="board-dropdown" style="
+                        position: absolute;
+                        bottom: 100%;
+                        left: 0;
+                        min-width: 200px;
+                        background: var(--dropdown-bg, rgba(68, 75, 110, 0.98));
+                        border: 1px solid var(--dropdown-border, rgba(255, 255, 238, 0.3));
+                        border-radius: 8px;
+                        box-shadow: 0 8px 32px var(--dropdown-shadow, rgba(0, 0, 0, 0.4));
+                        backdrop-filter: blur(20px);
+                        margin-bottom: 8px;
+                        max-height: 300px;
+                        overflow-y: auto;
+                        display: none;
+                        z-index: 10000;
+                    ">
+                        @php
+                        $boardIcons = [
+                            'gen' => '💬', 'tech' => '💻', 'biz' => '💼', 'film' => '🎬',
+                            'x' => '👽', 'lit' => '📚', 'meta' => '⚙️', 'mu' => '🎵'
+                        ];
+                        $allBoards = \App\Models\Board::orderBy('code')->get() ?? [];
+                        @endphp
+                        @foreach($allBoards as $board)
+                        <a href="/{{ $board->code }}" style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            padding: 8px 12px;
+                            color: var(--dropdown-text, #E8FFE8);
+                            text-decoration: none;
+                            font-size: 10px;
+                            font-weight: 500;
+                            transition: all 0.2s ease;
+                        " onmouseover="this.style.background='var(--dropdown-hover, rgba(255,255,238,0.1))'" onmouseout="this.style.background='transparent'">
+                            <span>{{ $boardIcons[$board->code] ?? '📌' }}</span>
+                            <span>/{{ $board->code }}/</span>
+                        </a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Section: Logo & Status -->
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="text-align: center;">
+                <a href="/" style="
+                    text-decoration: none;
+                    color: var(--logo-color, #FFFFEE);
+                    font-family: 'Nova Cut', serif;
+                    font-size: 16px;
+                    font-weight: 300;
+                    letter-spacing: 1px;
+                    text-shadow: 0 2px 4px var(--logo-shadow, rgba(0,0,0,0.5));
+                    transition: all 0.3s ease;
+                " id="toolbar-logo" onmouseover="this.style.textShadow='0 0 12px var(--logo-glow, rgba(255,255,238,0.6))'" onmouseout="this.style.textShadow='0 2px 4px var(--logo-shadow, rgba(0,0,0,0.5))'">
+                    HAICHAN
+                </a>
+                <div style="
+                    font-size: 8px;
+                    opacity: 0.7;
+                    margin-top: 2px;
+                    color: var(--status-text, #FFFFEE);
+                ">
+                    <span id="toolbar-status">Ready</span> • <span id="toolbar-users">{{ $activeSessions ?? 1 }}</span> online
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section: Theme & Dashboard -->
+        <div style="display: flex; align-items: center; gap: 12px;">
+            
+            <!-- Dashboard Toggle -->
+            <button id="toolbar-mini-dash-toggle" style="
+                background: var(--dash-btn-bg, rgba(154, 184, 122, 0.8));
+                border: 1px solid var(--dash-btn-border, rgba(255, 255, 238, 0.3));
+                color: var(--dash-btn-text, #FFFFEE);
+                padding: 8px 12px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 10px;
+                font-weight: 700;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 2px 8px var(--dash-btn-shadow, rgba(154, 184, 122, 0.3));
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            " title="Open Mining Dashboard" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px var(--dash-btn-shadow, rgba(154, 184, 122, 0.4))'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px var(--dash-btn-shadow, rgba(154, 184, 122, 0.3))'">
+                ⛏️ <span>MINE</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="container" style="margin-top: 20px; margin-bottom: 80px;">
         <div class="header">
-            <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
-                <h1><a href="/" style="text-decoration: none; color: #3D315B; font-family: 'Nova Cut', serif; font-size: 28px; font-weight: 300; letter-spacing: 2px;" id="header-text">HAICHAN</a></h1>
+            <div style="display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 20px;">
+                <h1><a href="/" style="text-decoration: none; color: var(--header-color, #3D315B); font-family: 'Nova Cut', serif; font-size: 32px; font-weight: 300; letter-spacing: 3px; text-shadow: 0 2px 4px var(--header-shadow, rgba(0,0,0,0.1));" id="header-text">HAICHAN</a></h1>
             </div>
         </div>
         
         @yield('content')
     </div>
 
-    <!-- Simple Haichan Mining System -->
-    @vite('resources/js/simple-mining.js')
 
     <script>
+        // Board Dropdown Toggle
+        function toggleBoardDropdown() {
+            const dropdown = document.getElementById('board-dropdown');
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('board-dropdown');
+            const button = document.getElementById('board-dropdown-btn');
+            if (dropdown && !dropdown.contains(e.target) && !button.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
         // Mini Dashboard Controls
         document.addEventListener('DOMContentLoaded', function() {
             const dashboard = document.getElementById('mini-dashboard');
             const dashboardHeader = document.getElementById('dashboard-header');
             const toggleBtn = document.getElementById('mini-dash-toggle');
+            const toolbarToggleBtn = document.getElementById('toolbar-mini-dash-toggle');
             const minimizeBtn = document.getElementById('minimize-dashboard');
             const closeBtn = document.getElementById('close-dashboard');
             const dashboardContent = document.getElementById('dashboard-content');
@@ -964,14 +1177,19 @@
             let isDragging = false;
             let dragOffset = { x: 0, y: 0 };
 
-            // Open dashboard
-            toggleBtn.addEventListener('click', function() {
-                dashboard.style.display = 'block';
-                if (isMinimized) {
-                    dashboardContent.style.display = 'block';
-                    isMinimized = false;
+            // Open dashboard (from both buttons)
+            function openDashboard() {
+                if (dashboard) {
+                    dashboard.style.display = 'block';
+                    if (isMinimized) {
+                        dashboardContent.style.display = 'block';
+                        isMinimized = false;
+                    }
                 }
-            });
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', openDashboard);
+            if (toolbarToggleBtn) toolbarToggleBtn.addEventListener('click', openDashboard);
 
             // Minimize dashboard
             minimizeBtn.addEventListener('click', function() {
@@ -1025,21 +1243,26 @@
                 }
             });
 
-            // Update toolbar and dashboard with mining stats
+            // Update dashboard with mining stats (safely handle missing elements)
             function updateMiningDisplays() {
                 if (window.simpleMiner) {
                     const stats = window.simpleMiner.getStats();
 
-                    // Update bottom toolbar
-                    document.getElementById('toolbar-hashrate').textContent = stats.hashRate.toLocaleString() + ' H/s';
-                    document.getElementById('toolbar-target').textContent = stats.target || 'None';
-                    document.getElementById('toolbar-power').textContent = stats.powerLevel || 'IDLE';
+                    // Update dashboard elements only if they exist
+                    const elements = {
+                        'dashboard-hashrate': (stats.hashRate?.toLocaleString() || '0') + ' H/s',
+                        'dashboard-proofs': stats.proofsFound || '0',
+                        'dashboard-target': stats.target || 'No target selected',
+                        'dashboard-current-hash': stats.currentHash || 'calculating...',
+                        'dashboard-status': stats.powerLevel > 0 ? 'MINING' : 'IDLE'
+                    };
 
-                    // Update dashboard
-                    document.getElementById('dashboard-hashrate').textContent = stats.hashRate.toLocaleString() + ' H/s';
-                    document.getElementById('dashboard-proofs').textContent = stats.proofsFound || '0';
-                    document.getElementById('dashboard-target').textContent = stats.target || 'No target selected';
-                    document.getElementById('dashboard-current-hash').textContent = stats.currentHash || 'calculating...';
+                    Object.entries(elements).forEach(([id, value]) => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            element.textContent = value;
+                        }
+                    });
                 }
             }
 
@@ -1092,32 +1315,442 @@
                 headerText.style.textDecoration = 'none';
             });
 
-            // Granular power level control (1-10 scale)
+            // Granular power level control (0-10 scale with persistence)
             const powerSlider = document.getElementById('dashboard-power-slider');
             const powerDisplay = document.getElementById('power-level-display');
 
-            powerSlider.addEventListener('input', function(e) {
-                const level = parseInt(e.target.value);
-                powerDisplay.textContent = level;
-
-                // Update power level in mining system
-                if (window.simpleMiner && window.simpleMiner.setPowerLevel) {
-                    const powerLevels = {
-                        1: 'whisper',    // ~50 H/s
-                        2: 'quiet',      // ~100 H/s
-                        3: 'low',        // ~200 H/s
-                        4: 'medium-low', // ~400 H/s
-                        5: 'cruise',     // ~1K H/s
-                        6: 'active',     // ~2K H/s
-                        7: 'high',       // ~3K H/s
-                        8: 'turbo',      // ~5K H/s
-                        9: 'maximum',    // ~7K H/s
-                        10: 'overdrive'  // ~10K H/s
-                    };
-                    window.simpleMiner.setPowerLevel(powerLevels[level], level);
-                }
-            });
+            if (powerSlider && powerDisplay) {
+                // Restore saved power level from localStorage
+                const savedPower = localStorage.getItem('haichan_mining_power');
+                const initialLevel = savedPower !== null ? parseInt(savedPower) : 0; // Default to 0/10
+                powerSlider.value = initialLevel;
+                powerDisplay.textContent = initialLevel;
+                
+                // Initialize power level on page load
+                setTimeout(() => {
+                    console.log('🔥 POWER INITIALIZATION... Level:', initialLevel);
+                    // Apply initial power level to direct miner
+                    directMining(initialLevel);
+                    
+                    if (window.emergencyMiner || window.haichanMiner) {
+                        const miner = window.emergencyMiner || window.haichanMiner;
+                        const powerPercent = initialLevel * 10;
+                        console.log('⚡ SETTING INITIAL POWER:', powerPercent + '%');
+                        
+                        if (miner.power !== undefined) {
+                            miner.power = powerPercent;
+                        } else if (miner.powerLevel !== undefined) {
+                            miner.powerLevel = powerPercent;
+                        }
+                        
+                        if (powerPercent > 0) {
+                            if (miner.start) {
+                                miner.start();
+                            } else if (miner.startMining) {
+                                miner.startMining();
+                            }
+                        }
+                        
+                        if (miner.updateDashboard) {
+                            miner.updateDashboard();
+                        } else if (miner.updateUI) {
+                            miner.updateUI();
+                        }
+                        
+                        console.log('✅ MINER INITIALIZED');
+                    } else {
+                        console.log('❌ NO MINER FOUND');
+                    }
+                }, 1000);
+                
+                powerSlider.addEventListener('input', function(e) {
+                    const level = parseInt(e.target.value);
+                    powerDisplay.textContent = level;
+                    
+                    // Save power level to localStorage
+                    localStorage.setItem('haichan_mining_power', level.toString());
+                    
+                    // Convert 0-10 range to 0-100 range for mining system  
+                    const powerPercent = level * 10; // 0, 10, 20, 30, ..., 100
+                    
+                    console.log('🎚️ EMERGENCY SLIDER INPUT:', level, '->', powerPercent + '%');
+                    
+                    // Update emergency miner first, then fallback
+                    if (window.emergencyMiner) {
+                        console.log('✅ EmergencyMiner found, updating power');
+                        window.emergencyMiner.power = powerPercent;
+                        localStorage.setItem('emergency_power', powerPercent.toString());
+                        if (powerPercent > 0) {
+                            window.emergencyMiner.start();
+                        } else {
+                            window.emergencyMiner.stop();
+                        }
+                        window.emergencyMiner.updateDashboard();
+                        console.log('🔄 Updated dashboard, mining status:', window.emergencyMiner.isActive);
+                    } else if (window.haichanMiner) {
+                        console.log('✅ HaichanMiner fallback, updating power');
+                        window.haichanMiner.powerLevel = powerPercent;
+                        localStorage.setItem('haichan_power_level', powerPercent.toString());
+                        if (powerPercent > 0) {
+                            window.haichanMiner.startMining();
+                        } else {
+                            window.haichanMiner.stopMining();
+                        }
+                        window.haichanMiner.updateUI();
+                        console.log('🔄 Updated UI, mining status:', window.haichanMiner.isActive);
+                    } else {
+                        console.log('❌ NO MINER FOUND AT ALL');
+                    }
+                });
+            }
         });
+
+        // DIRECT MINING FUNCTION - INLINE SOLUTION
+        window.directMiner = {
+            isActive: false,
+            power: 30,
+            hashCount: 0,
+            proofs: 0,
+            startTime: 0,
+            nonce: 0,
+            currentTarget: 'direct:slider',
+            currentHash: ''
+        };
+
+        window.directMining = function(sliderValue) {
+            const power = parseInt(sliderValue) * 10;
+            console.log('🎚️ DIRECT SLIDER:', sliderValue, '->', power + '%');
+            
+            window.directMiner.power = power;
+            const powerDisplay = document.getElementById('power-level-display');
+            if (powerDisplay) powerDisplay.textContent = sliderValue;
+            
+            if (power > 0) {
+                if (!window.directMiner.isActive) {
+                    console.log('🔥 STARTING DIRECT MINING AT', power + '%');
+                    window.directMiner.isActive = true;
+                    window.directMiner.startTime = Date.now();
+                    directMineLoop();
+                }
+            } else {
+                console.log('⏹️ STOPPING DIRECT MINING - POWER SET TO 0');
+                if (window.directMiner.isActive) {
+                    window.directMiner.isActive = false;
+                }
+                window.directMiner.isActive = false;
+            }
+            
+            updateDirectDashboard();
+        };
+
+        async function directSha256(text) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function directMineLoop() {
+            while (window.directMiner.isActive) {
+                const batch = Math.max(50, window.directMiner.power);
+                
+                for (let i = 0; i < batch && window.directMiner.isActive; i++) {
+                    let data;
+                    if (window.directMiner.currentTarget === 'direct:slider') {
+                        // Mine the user themselves when no specific target
+                        const userId = '{{ session("bitcoin_auth_id") ?? "anon" }}';
+                        const userHash = '{{ session("bitcoin_auth_user")->public_key ?? "anonymous" }}';
+                        data = `user:${userId}:${userHash}:${Date.now()}:${window.directMiner.nonce}`;
+                    } else {
+                        // Use current target for specific mining
+                        data = `${window.directMiner.currentTarget}:${Date.now()}:${window.directMiner.nonce}`;
+                    }
+                    const hash = await directSha256(data);
+                    window.directMiner.currentHash = hash; // Update current hash
+                    window.directMiner.hashCount++;
+                    window.directMiner.nonce++;
+                    
+                    if (hash.startsWith('21e8')) {
+                        console.log('💎 DIRECT PROOF FOUND!', hash, 'TARGET:', window.directMiner.currentTarget);
+                        window.directMiner.proofs++;
+                        
+                        // Parse target for submission
+                        const [targetType, targetId] = window.directMiner.currentTarget.split(':', 2);
+                        
+                        try {
+                            const response = await fetch('/api/submit-proof', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                                },
+                                body: JSON.stringify({
+                                    hash: hash,
+                                    nonce: window.directMiner.nonce - 1,
+                                    data: data,
+                                    pattern: '21e8',
+                                    target_type: targetType,
+                                    target_id: targetId
+                                })
+                            });
+                            
+                            const result = await response.json();
+                            console.log('🚀 PROOF SUBMITTED FOR', window.directMiner.currentTarget, 'RESULT:', result);
+                            
+                            if (result.success && targetType === 'thread') {
+                                console.log('🎯 THREAD BUMPED! Points:', result.points);
+                                
+                                // Update thread score display if on thread page
+                                const threadPowDisplay = document.getElementById('thread-pow-number');
+                                if (threadPowDisplay) {
+                                    const currentScore = parseFloat(threadPowDisplay.textContent) || 0;
+                                    const newScore = currentScore + result.points;
+                                    threadPowDisplay.textContent = newScore.toFixed(2);
+                                    console.log('📈 UPDATED THREAD SCORE:', currentScore, '->', newScore);
+                                }
+                                
+                                // Update any thread badges on listing pages
+                                const threadBadges = document.querySelectorAll(`[data-thread-id="${targetId}"] .energy-badge, [data-thread-id="${targetId}"] .catalog-pow-badge`);
+                                threadBadges.forEach(badge => {
+                                    const currentValue = parseFloat(badge.textContent.replace(/[^\d.]/g, '')) || 0;
+                                    const newValue = currentValue + result.points;
+                                    badge.textContent = newValue.toFixed(1) + (badge.textContent.includes('⚡') ? '⚡' : ' PoW');
+                                });
+                            }
+                            
+                        } catch (error) {
+                            console.error('❌ DIRECT SUBMIT ERROR:', error);
+                        }
+                    }
+                }
+                
+                updateDirectDashboard();
+                await new Promise(resolve => setTimeout(resolve, Math.max(20, 100 - window.directMiner.power)));
+            }
+        }
+
+        function updateDirectDashboard() {
+            const elapsed = window.directMiner.startTime ? (Date.now() - window.directMiner.startTime) / 1000 : 0;
+            const rate = elapsed > 0 ? Math.floor(window.directMiner.hashCount / elapsed) : 0;
+            
+            document.getElementById('dashboard-status').textContent = window.directMiner.isActive ? 'DIRECT MINING' : 'IDLE';
+            // Show user-friendly target display
+            let targetDisplay = window.directMiner.currentTarget || 'direct:slider';
+            if (targetDisplay === 'direct:slider') {
+                const userName = '{{ session("bitcoin_auth_user")->username ?? "Anonymous" }}';
+                targetDisplay = `user: ${userName}`;
+            }
+            document.getElementById('dashboard-target').textContent = targetDisplay;
+            document.getElementById('dashboard-hashrate').textContent = rate + ' H/s';
+            document.getElementById('dashboard-proofs').textContent = window.directMiner.proofs.toString();
+            
+            // Update current hash display
+            const hashDisplay = window.directMiner.currentHash ? 
+                window.directMiner.currentHash.substring(0, 16) + '...' : 
+                'calculating...';
+            document.getElementById('dashboard-current-hash').textContent = hashDisplay;
+            
+            console.log('📊 DIRECT:', window.directMiner.isActive ? 'MINING' : 'IDLE', '| TARGET:', window.directMiner.currentTarget, '| POWER:', window.directMiner.power + '%', '| RATE:', rate, 'H/s', '| HASH:', hashDisplay);
+        }
+
+        // MOUSEOVER MINING SYSTEM
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add mouseover mining to threads
+            const threadElements = document.querySelectorAll('[data-thread-id]');
+            threadElements.forEach(thread => {
+                thread.addEventListener('mouseenter', () => {
+                    if (window.directMiner && window.directMiner.power > 0) {
+                        const threadId = thread.dataset.threadId;
+                        console.log('🎯 MOUSEOVER THREAD:', threadId);
+                        window.directMiner.currentTarget = `thread:${threadId}`;
+                        updateDirectDashboard();
+                    }
+                });
+                thread.addEventListener('mouseleave', () => {
+                    if (window.directMiner && window.directMiner.power > 0) {
+                        console.log('⏪ MOUSELEAVE THREAD - RESET TO USER');
+                        window.directMiner.currentTarget = 'direct:slider';
+                        updateDirectDashboard();
+                    }
+                });
+            });
+
+            // Add mouseover mining to images
+            const imageElements = document.querySelectorAll('img, .image, [data-image-id]');
+            imageElements.forEach(image => {
+                image.addEventListener('mouseenter', () => {
+                    if (window.directMiner && window.directMiner.power > 0) {
+                        const imageId = image.dataset.imageId || image.src?.split('/').pop() || 'unknown';
+                        console.log('🖼️ MOUSEOVER IMAGE:', imageId);
+                        window.directMiner.currentTarget = `image:${imageId}`;
+                        updateDirectDashboard();
+                    }
+                });
+                image.addEventListener('mouseleave', () => {
+                    if (window.directMiner && window.directMiner.power > 0) {
+                        console.log('⏪ MOUSELEAVE IMAGE - RESET TO USER');
+                        window.directMiner.currentTarget = 'direct:slider';
+                        updateDirectDashboard();
+                    }
+                });
+            });
+
+            // Add mouseover mining to posts/replies
+            const postElements = document.querySelectorAll('.post, .reply, [data-post-id]');
+            postElements.forEach(post => {
+                post.addEventListener('mouseenter', () => {
+                    if (window.directMiner && window.directMiner.power > 0) {
+                        const postId = post.dataset.postId || post.id || 'unknown';
+                        console.log('💬 MOUSEOVER POST:', postId);
+                        window.directMiner.currentTarget = `post:${postId}`;
+                        updateDirectDashboard();
+                    }
+                });
+                post.addEventListener('mouseleave', () => {
+                    if (window.directMiner && window.directMiner.power > 0) {
+                        console.log('⏪ MOUSELEAVE POST - RESET TO USER');
+                        window.directMiner.currentTarget = 'direct:slider';
+                        updateDirectDashboard();
+                    }
+                });
+            });
+
+            // Add mouseover mining to users
+            const userElements = document.querySelectorAll('.user-name, .author, [data-user-id]');
+            userElements.forEach(user => {
+                user.addEventListener('mouseenter', () => {
+                    if (window.directMiner && window.directMiner.power > 0) {
+                        const userId = user.dataset.userId || user.textContent || 'anonymous';
+                        console.log('👤 MOUSEOVER USER:', userId);
+                        window.directMiner.currentTarget = `user:${userId}`;
+                        updateDirectDashboard();
+                    }
+                });
+                user.addEventListener('mouseleave', () => {
+                    if (window.directMiner && window.directMiner.power > 0) {
+                        console.log('⏪ MOUSELEAVE USER - RESET TO SELF');
+                        window.directMiner.currentTarget = 'direct:slider';
+                        updateDirectDashboard();
+                    }
+                });
+            });
+
+            console.log('🎯 MOUSEOVER MINING ENABLED');
+        });
+
+        // NUCLEAR MINING FUNCTION - BYPASSES EVERYTHING
+        window.nuclearMining = function() {
+            console.log('🚀🚀🚀 NUCLEAR MINING ACTIVATED 🚀🚀🚀');
+            
+            // Create nuclear miner instance
+            window.nuclearMiner = {
+                isActive: false,
+                hashCount: 0,
+                startTime: Date.now(),
+                nonce: 0
+            };
+            
+            async function nuclearSha256(text) {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
+            
+            async function nuclearMine() {
+                window.nuclearMiner.isActive = true;
+                console.log('⚡ NUCLEAR MINING STARTED');
+                
+                // Update button
+                const btn = document.getElementById('nuclear-mine-btn');
+                btn.textContent = '⚡ MINING...';
+                btn.style.background = 'linear-gradient(135deg, #00FF00 0%, #00AA00 100%)';
+                
+                // Update dashboard immediately
+                document.getElementById('dashboard-status').textContent = 'NUCLEAR MINING';
+                document.getElementById('dashboard-target').textContent = 'nuclear:emergency';
+                
+                while (window.nuclearMiner.isActive) {
+                    for (let i = 0; i < 1000; i++) {
+                        const data = `nuclear:${Date.now()}:${window.nuclearMiner.nonce}`;
+                        const hash = await nuclearSha256(data);
+                        window.nuclearMiner.hashCount++;
+                        window.nuclearMiner.nonce++;
+                        
+                        // Update dashboard every 100 hashes
+                        if (window.nuclearMiner.hashCount % 100 === 0) {
+                            const elapsed = (Date.now() - window.nuclearMiner.startTime) / 1000;
+                            const rate = Math.floor(window.nuclearMiner.hashCount / elapsed);
+                            document.getElementById('dashboard-hashrate').textContent = rate + ' H/s';
+                            document.getElementById('dashboard-current-hash').textContent = hash.substring(0, 16) + '...';
+                            console.log('💥', window.nuclearMiner.hashCount, 'hashes,', rate, 'H/s');
+                        }
+                        
+                        // Check for proof
+                        if (hash.startsWith('21e8')) {
+                            console.log('💎💎💎 NUCLEAR PROOF FOUND! 💎💎💎', hash);
+                            
+                            try {
+                                const response = await fetch('/api/submit-proof', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                                    },
+                                    body: JSON.stringify({
+                                        hash: hash,
+                                        nonce: window.nuclearMiner.nonce - 1,
+                                        data: data,
+                                        pattern: '21e8',
+                                        target_type: 'nuclear',
+                                        target_id: 'emergency'
+                                    })
+                                });
+                                
+                                const result = await response.json();
+                                console.log('🚀 NUCLEAR PROOF RESULT:', result);
+                                
+                                // Update proof count
+                                const currentProofs = parseInt(document.getElementById('dashboard-proofs').textContent || '0');
+                                document.getElementById('dashboard-proofs').textContent = (currentProofs + 1).toString();
+                                
+                            } catch (error) {
+                                console.error('💥 NUCLEAR SUBMIT ERROR:', error);
+                            }
+                        }
+                    }
+                    
+                    // Small delay to prevent browser freeze
+                    await new Promise(resolve => setTimeout(resolve, 1));
+                }
+            }
+            
+            nuclearMine();
+        };
+        
+        // EMERGENCY DEBUG BUTTON
+        setTimeout(() => {
+            console.log('🔍 CHECKING ALL MINING SYSTEMS...');
+            console.log('emergencyMiner:', window.emergencyMiner ? '✅' : '❌');
+            console.log('haichanMiner:', window.haichanMiner ? '✅' : '❌');
+            console.log('nuclearMining:', window.nuclearMining ? '✅' : '❌');
+            
+            if (window.emergencyMiner) {
+                console.log('🚨 EMERGENCY MINER IS LOADED');
+                console.log('🎯 Current status:', window.emergencyMiner.isActive ? 'MINING' : 'IDLE');
+                console.log('⚡ Current power:', window.emergencyMiner.power + '%');
+                
+                // Force start if not active and power > 0
+                if (!window.emergencyMiner.isActive && window.emergencyMiner.power > 0) {
+                    console.log('🔥 FORCE STARTING EMERGENCY MINER...');
+                    window.emergencyMiner.start();
+                }
+            } else {
+                console.log('❌ EMERGENCY MINER NOT LOADED');
+            }
+        }, 2000);
     </script>
 
     <!-- Film Grain & Dashboard CSS -->
@@ -1194,6 +1827,14 @@
             background: linear-gradient(135deg, rgba(154,184,122,1) 0%, rgba(112,139,117,1) 100%) !important;
         }
 
+        /* Ensure dashboard elements are clickable */
+        #dashboard-power-slider, #minimize-dashboard, #close-dashboard, #mini-dash-toggle, #toolbar-mini-dash-toggle {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            z-index: 1000 !important;
+            position: relative !important;
+        }
+
         .film-grain-overlay {
             position: relative;
             overflow: hidden;
@@ -1214,7 +1855,7 @@
             animation: filmGrain 6s linear infinite;
             pointer-events: none;
             mix-blend-mode: overlay;
-            z-index: 3;
+            z-index: -1;
         }
 
         /* Thread expand button styling */
@@ -1348,74 +1989,51 @@
 
     <!-- Theme Switcher JavaScript -->
     <script>
-        // Theme System
-        let currentTheme = localStorage.getItem('haichan-theme') || 'classic';
+        // Permanent Day Mode - Green/Tan/Brown Theme
+        let currentTheme = 'classic';
+        
+        // Force classic/day theme on load
+        document.documentElement.setAttribute('data-theme', 'classic');
+        console.log('🎨 Day mode theme active - green/tan/brown color scheme');
 
-        function switchTheme(themeName) {
-            console.log('🎨 Switching to theme:', themeName);
+        // Ensure theme stays classic on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.documentElement.setAttribute('data-theme', 'classic');
+        });
 
-            // Update body data-theme
-            document.body.setAttribute('data-theme', themeName);
-            currentTheme = themeName;
+    </script>
 
-            // Save to localStorage
-            localStorage.setItem('haichan-theme', themeName);
 
-            // Update theme selector dropdown
-            const themeSelector = document.getElementById('theme-selector');
-            if (themeSelector) {
-                themeSelector.value = themeName;
-            }
+    <script>
+        // Site-wide Auto-Dithering System
+        let siteDitherEnabled = localStorage.getItem('haichan_site_dither') === 'true';
 
-            // Theme-specific effects
-            applyThemeEffects(themeName);
-
-            // Update neural network colors if it exists
-            updateNeuralNetworkTheme(themeName);
-
-            // Show theme change notification
-            showThemeNotification(themeName);
+        function toggleSiteDither() {
+            siteDitherEnabled = !siteDitherEnabled;
+            localStorage.setItem('haichan_site_dither', siteDitherEnabled.toString());
+            updateDitherToggle();
+            
+            // Apply to all images on current page
+            applyDitherToAllImages();
+            
+            // Show notification
+            showDitherNotification();
         }
 
-        function applyThemeEffects(theme) {
-            const body = document.body;
-
-            // Remove existing theme classes
-            body.classList.remove('matrix-effect', 'cyberpunk-effect', 'vaporwave-effect');
-
-            switch(theme) {
-                case 'matrix':
-                    body.classList.add('matrix-effect');
-                    if (!document.querySelector('.matrix-rain')) {
-                        createMatrixRain();
-                    }
-                    break;
-                case 'cyberpunk':
-                    body.classList.add('cyberpunk-effect');
-                    break;
-                case 'vaporwave':
-                    body.classList.add('vaporwave-effect');
-                    break;
+        function updateDitherToggle() {
+            const statusEl = document.getElementById('site-dither-status');
+            const toggleEl = document.getElementById('site-dither-toggle');
+            if (statusEl && toggleEl) {
+                statusEl.textContent = siteDitherEnabled ? 'Auto-Dither: ON' : 'Auto-Dither: OFF';
+                toggleEl.style.background = siteDitherEnabled ? 
+                    'var(--success-color, #9AB87A)' : 'var(--content-bg, #F5F5DC)';
+                toggleEl.style.color = siteDitherEnabled ? '#FFFFFF' : 'var(--text-primary, #3D315B)';
             }
         }
 
-        function createMatrixRain() {
-            const matrixContainer = document.createElement('div');
-            matrixContainer.className = 'matrix-rain';
-            matrixContainer.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                pointer-events: none;
-                z-index: -1;
-                overflow: hidden;
-            `;
-
-            // Create falling characters
-            for (let i = 0; i < 50; i++) {
-                const char = document.createElement('div');
+        function applyDitherToAllImages() {
+            const images = document.querySelectorAll('img:not([data-dithered])');
+            images.forEach(img => {
                 char.textContent = String.fromCharCode(0x30A0 + Math.random() * 96);
                 char.style.cssText = `
                     position: absolute;
@@ -1461,6 +2079,7 @@
 
             const themeNames = {
                 'classic': '🏛️ Classic',
+                'day': '☀️ Day',
                 'cyberpunk': '🤖 Cyberpunk',
                 'vaporwave': '🌈 Vaporwave',
                 'matrix': '💊 Matrix',
@@ -1519,27 +2138,154 @@
             document.addEventListener('keydown', function(e) {
                 if (e.ctrlKey && e.shiftKey && e.key === 'T') {
                     e.preventDefault();
-                    const themes = ['classic', 'cyberpunk', 'vaporwave', 'matrix', 'terminal', 'synthwave', 'ocean', 'volcanic', 'arctic'];
+                    const themes = ['classic', 'day', 'cyberpunk', 'vaporwave', 'matrix', 'terminal', 'synthwave', 'ocean', 'volcanic', 'arctic'];
                     const currentIndex = themes.indexOf(currentTheme);
                     const nextTheme = themes[(currentIndex + 1) % themes.length];
                     switchTheme(nextTheme);
                 }
             });
 
-            // Initialize theme selector dropdowns
-            const themeSelector = document.getElementById('theme-selector');
-            const dashboardThemeSelector = document.getElementById('dashboard-theme-selector');
-            
-            if (themeSelector && currentTheme !== 'classic') {
-                themeSelector.value = currentTheme;
-            }
-            if (dashboardThemeSelector && currentTheme !== 'classic') {
-                dashboardThemeSelector.value = currentTheme;
-            }
+            // Theme system removed - using permanent day mode
         });
 
-        console.log('🎨 Theme system initialized - Current theme:', currentTheme);
-        console.log('💡 Tip: Use Ctrl+Shift+T to cycle through themes!');
+        console.log('🎨 Day mode theme active - green/tan/brown color scheme');
+    </script>
+
+
+    <script>
+        // Site-wide Auto-Dithering System
+        let siteDitherEnabled = localStorage.getItem('haichan_site_dither') === 'true';
+
+        function toggleSiteDither() {
+            siteDitherEnabled = !siteDitherEnabled;
+            localStorage.setItem('haichan_site_dither', siteDitherEnabled.toString());
+            updateDitherToggle();
+            
+            // Apply to all images on current page
+            applyDitherToAllImages();
+            
+            // Show notification
+            showDitherNotification();
+        }
+
+        function updateDitherToggle() {
+            const statusEl = document.getElementById('site-dither-status');
+            const toggleEl = document.getElementById('site-dither-toggle');
+            if (statusEl && toggleEl) {
+                statusEl.textContent = siteDitherEnabled ? 'Auto-Dither: ON' : 'Auto-Dither: OFF';
+                toggleEl.style.background = siteDitherEnabled ? 
+                    'var(--success-color, #9AB87A)' : 'var(--content-bg, #F5F5DC)';
+                toggleEl.style.color = siteDitherEnabled ? '#FFFFFF' : 'var(--text-primary, #3D315B)';
+            }
+        }
+
+        function applyDitherToAllImages() {
+            const images = document.querySelectorAll('img:not([data-dithered])');
+            images.forEach(img => {
+                if (siteDitherEnabled) {
+                    applyDitherEffect(img);
+                } else {
+                    removeDitherEffect(img);
+                }
+            });
+        }
+
+        function applyDitherEffect(img) {
+            if (img.dataset.dithered === 'true') return;
+            
+            img.style.imageRendering = 'pixelated';
+            img.style.filter = 'contrast(1.2) brightness(0.9) saturate(0.8)';
+            img.dataset.dithered = 'true';
+            
+            // Add subtle dithering animation
+            img.style.animation = 'ditherPulse 2s infinite alternate ease-in-out';
+        }
+
+        function removeDitherEffect(img) {
+            img.style.imageRendering = '';
+            img.style.filter = '';
+            img.style.animation = '';
+            img.dataset.dithered = 'false';
+        }
+
+        function showDitherNotification() {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: var(--accent-color, #708B75);
+                color: #FFFFFF;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: bold;
+                z-index: 10000;
+                animation: ditherNotify 1.5s ease-in-out;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            `;
+            notification.innerHTML = `🎨 Auto-Dither ${siteDitherEnabled ? 'ENABLED' : 'DISABLED'}`;
+            document.body.appendChild(notification);
+
+            setTimeout(() => notification.remove(), 1500);
+        }
+
+        // Add CSS animations
+        const ditherStyles = document.createElement('style');
+        ditherStyles.textContent = `
+            @keyframes ditherPulse {
+                0% { filter: contrast(1.2) brightness(0.9) saturate(0.8); }
+                100% { filter: contrast(1.3) brightness(0.8) saturate(0.9); }
+            }
+            
+            @keyframes ditherNotify {
+                0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                10%, 90% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            }
+            
+            #site-dither-toggle:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+        `;
+        document.head.appendChild(ditherStyles);
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDitherToggle();
+            
+            // Apply to existing images if enabled
+            if (siteDitherEnabled) {
+                setTimeout(applyDitherToAllImages, 100);
+            }
+            
+            // Auto-apply to new images
+            const observer = new MutationObserver(mutations => {
+                if (siteDitherEnabled) {
+                    mutations.forEach(mutation => {
+                        mutation.addedNodes.forEach(node => {
+                            if (node.nodeType === Node.ELEMENT_NODE) {
+                                const newImages = node.querySelectorAll ? 
+                                    node.querySelectorAll('img:not([data-dithered])') : [];
+                                newImages.forEach(applyDitherEffect);
+                                
+                                if (node.tagName === 'IMG' && !node.dataset.dithered) {
+                                    applyDitherEffect(node);
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        });
+
+        console.log('🎨 Site-wide auto-dithering system initialized');
     </script>
 </body>
 </html>

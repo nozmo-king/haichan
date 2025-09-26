@@ -1,0 +1,2 @@
+## Game Mechanics
+- MOUSEOVER IS HOW MINING IS DICTATED
