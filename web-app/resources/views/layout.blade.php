@@ -11,16 +11,13 @@
     <link rel="stylesheet" href="/css/haichan.css">
     <link rel="stylesheet" href="/css/elegant-themes.css">
     <link rel="stylesheet" href="/css/quick-navigation.css">
-    <link rel="stylesheet" href="/css/enhanced-dashboard.css">
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <script src="/js/quick-navigation.js"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="/js/haichan-unified.js"></script>
-    <script src="/js/enhanced-dashboard.js"></script>
     <script src="/js/content-processor.js"></script>
-    <script src="/js/mouseover-mining-v2.js"></script>
     <script>
         // Unified Mining System Integration
         console.log('🚀 HAICHAN UNIFIED MINING - Loading...');

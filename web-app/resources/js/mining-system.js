@@ -134,44 +134,118 @@ class HaichanMiner {
         const data = `${type}-${target}-${Date.now()}`;
         const pattern = '21e8'; // Basic pattern
         let nonce = crypto.getRandomValues(new Uint32Array(1))[0];
-        const maxAttempts = 1000;
+        const maxAttempts = 50000; // Increased from 1000 to 50000
+        const batchSize = 100; // Process in larger batches
+        const startTime = Date.now();
         
-        for (let attempts = 0; attempts < maxAttempts; attempts++) {
-            const hashInput = `${data}:${nonce}`;
-            const hash = await this.sha256(hashInput);
+        for (let attempts = 0; attempts < maxAttempts; attempts += batchSize) {
+            // Process multiple hashes in parallel for better performance
+            const batchPromises = [];
+            const currentBatchSize = Math.min(batchSize, maxAttempts - attempts);
             
-            // Check for rare patterns
-            const rareMatch = this.checkRarePattern(hash);
-            if (rareMatch) {
-                return {
-                    hash,
-                    nonce,
-                    data: hashInput,
-                    pattern: rareMatch.pattern,
-                    points: rareMatch.points
-                };
+            for (let i = 0; i < currentBatchSize; i++) {
+                const currentNonce = nonce + i;
+                const hashInput = `${data}:${currentNonce}`;
+                batchPromises.push(
+                    this.sha256Fast(hashInput).then(hash => ({
+                        hash,
+                        nonce: currentNonce,
+                        hashInput
+                    }))
+                );
             }
             
-            // Check for basic pattern
-            if (hash.startsWith(pattern)) {
-                return {
-                    hash,
-                    nonce,
-                    data: hashInput,
-                    pattern,
-                    points: 1
-                };
+            const results = await Promise.all(batchPromises);
+            
+            // Check all results in batch
+            for (const { hash, nonce: resultNonce, hashInput } of results) {
+                this.sessionStats.hashes++;
+                
+                // Check for rare patterns first (higher value)
+                const rareMatch = this.checkRarePattern(hash);
+                if (rareMatch) {
+                    console.log(`💎 RARE PATTERN FOUND: ${rareMatch.pattern} (${rareMatch.points} points)`);
+                    this.updateSessionStats();
+                    return {
+                        hash,
+                        nonce: resultNonce,
+                        data: hashInput,
+                        pattern: rareMatch.pattern,
+                        points: rareMatch.points
+                    };
+                }
+                
+                // Check for basic pattern
+                if (hash.startsWith(pattern)) {
+                    const points = this.calculatePatternPoints(hash, pattern);
+                    console.log(`⚡ PROOF FOUND: ${pattern} (${points} points) - ${attempts + 1} attempts`);
+                    this.updateSessionStats();
+                    return {
+                        hash,
+                        nonce: resultNonce,
+                        data: hashInput,
+                        pattern,
+                        points
+                    };
+                }
             }
             
-            nonce++;
+            nonce += currentBatchSize;
             
-            // Yield control periodically
-            if (attempts % 50 === 0) {
+            // Update hash rate display
+            if (attempts % 1000 === 0) {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const hashRate = Math.round(attempts / elapsed);
+                this.updateHashRateDisplay(hashRate);
+            }
+            
+            // Yield control less frequently for better performance
+            if (attempts % 5000 === 0) {
                 await new Promise(resolve => setTimeout(resolve, 1));
             }
         }
         
+        console.log(`❌ No proof found after ${maxAttempts} attempts`);
+        this.updateSessionStats();
         return null;
+    }
+    
+    // Optimized SHA-256 function
+    async sha256Fast(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
+    // Calculate points based on pattern difficulty and bonus patterns
+    calculatePatternPoints(hash, basePattern) {
+        const pointValues = {
+            '21': 0.1,
+            '21e': 0.5, 
+            '21e8': 1.0,
+            '21e80': 5.0,
+            '21e800': 25.0,
+            '21e8000': 125.0
+        };
+        
+        let points = pointValues[basePattern] || 1.0;
+        
+        // Check for longer patterns (bonus multipliers)
+        if (hash.startsWith('21e8000')) points = Math.max(points, 125);
+        else if (hash.startsWith('21e800')) points = Math.max(points, 25);
+        else if (hash.startsWith('21e80')) points = Math.max(points, 5);
+        else if (hash.startsWith('21e8')) points = Math.max(points, 1);
+        
+        return points;
+    }
+    
+    // Update hash rate display in dashboard
+    updateHashRateDisplay(hashRate) {
+        const hashRateElement = document.querySelector('.hash-rate');
+        if (hashRateElement) {
+            hashRateElement.textContent = `${hashRate.toLocaleString()} H/s`;
+        }
     }
     
     async submitProof(proof, target, type) {

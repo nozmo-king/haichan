@@ -54,6 +54,66 @@ body {
     overflow: hidden;
 }
 
+/* Enhanced form styling for cleaner newthread layout */
+.tui-divider {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+    color: var(--ib-text-muted);
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.tui-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--ib-border);
+}
+
+.tui-divider span {
+    background: var(--ib-panel);
+    padding: 0 15px;
+    position: relative;
+}
+
+.image-upload-section, .hash-input-section {
+    padding: 15px;
+    background: var(--ib-bg);
+    border: 1px solid var(--ib-border);
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.image-upload-section:hover, .hash-input-section:hover {
+    border-color: var(--ib-accent);
+    box-shadow: 0 2px 8px rgba(74, 93, 35, 0.2);
+}
+
+.tui-preview {
+    margin-top: 10px;
+    padding: 10px;
+    background: var(--ib-header);
+    border-radius: 4px;
+    border: 1px solid var(--ib-border);
+}
+
+.tui-preview img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 4px;
+    border: 1px solid var(--ib-border);
+}
+
+.tui-preview-info {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--ib-text-muted);
+}
+
 .tui-window::before {
     content: '';
     position: absolute;

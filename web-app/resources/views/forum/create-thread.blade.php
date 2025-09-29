@@ -51,26 +51,34 @@
             </div>
             @endif
             
-            <!-- Image Upload -->
+            <!-- Image Upload - Cleaner Layout -->
             <div class="tui-field">
-                <label class="tui-label" for="image">Image Upload</label>
-                <input type="file" name="image" id="image" class="tui-file" 
-                       accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif" 
-                       onchange="previewImage(this)">
-                <div class="tui-hint">Max 25MB. Supports: JPEG, PNG, GIF, WebP, WebM, MP4, SVG, etc.</div>
+                <label class="tui-label" for="image">Image (Required)</label>
                 
-                <!-- Preview -->
-                <div id="image-preview" class="tui-preview" style="display: none;">
-                    <img id="preview-img" alt="Preview">
-                    <div id="file-info" class="tui-preview-info"></div>
+                <!-- File Upload -->
+                <div class="image-upload-section">
+                    <input type="file" name="image" id="image" class="tui-file" 
+                           accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif" 
+                           onchange="previewImage(this)">
+                    <div class="tui-hint">Upload: Max 25MB • Formats: JPEG, PNG, GIF, WebP, WebM, MP4, SVG</div>
+                    
+                    <!-- Preview -->
+                    <div id="image-preview" class="tui-preview" style="display: none;">
+                        <img id="preview-img" alt="Preview">
+                        <div id="file-info" class="tui-preview-info"></div>
+                    </div>
                 </div>
                 
-                <!-- Hash Option -->
-                <div class="tui-alternative">
-                    <label class="tui-label" for="image_hash">OR use existing hash (required if no upload):</label>
+                <!-- OR Divider -->
+                <div class="tui-divider">
+                    <span>OR</span>
+                </div>
+                
+                <!-- Hash Input -->
+                <div class="hash-input-section">
                     <input type="text" name="image_hash" id="image_hash" class="tui-input tui-mono" 
-                           placeholder="Paste image hash from library..." onchange="handleHashInput()">
-                    <div class="tui-hint">Copy hash from Image Library instead of uploading. Either upload an image OR provide a hash.</div>
+                           placeholder="Enter 64-character image hash from library..." onchange="handleHashInput()">
+                    <div class="tui-hint">Use existing image from <a href="/image-library" target="_blank">Image Library</a></div>
                 </div>
                 
                 @error('image')
