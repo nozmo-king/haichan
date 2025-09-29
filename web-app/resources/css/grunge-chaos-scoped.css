@@ -7,22 +7,22 @@
 /* Apply grunge chaos effects only to classic theme */
 .theme-classic,
 [data-theme="classic"] {
-    /* Dark Grunge Color Palette */
-    --grunge-black: #0a0a0a;
-    --grunge-dark: #1a1a1a;
-    --grunge-medium: #2a2a2a;
-    --grunge-light: #3a3a3a;
-    --grunge-accent: #ff4444;
-    --grunge-secondary: #44ff44;
-    --grunge-tertiary: #4444ff;
+    /* Use original forest colors as base with grunge enhancements */
+    --grunge-black: #1a1a0f;
+    --grunge-dark: #2a2a1a;
+    --grunge-medium: #3a3a2a;
+    --grunge-light: #4a4a3a;
+    --grunge-accent: #e6cc80;
+    --grunge-secondary: #9fd971;
+    --grunge-tertiary: #4a5d23;
     --grunge-warning: #ffaa00;
     --grunge-danger: #ff0044;
     --grunge-neon: #00ffaa;
     --grunge-purple: #aa00ff;
     
-    /* Text Colors */
-    --grunge-text: #e0e0e0;
-    --grunge-text-dim: #a0a0a0;
+    /* Text Colors - use original forest theme */
+    --grunge-text: #b8d4a0;
+    --grunge-text-dim: #708b75;
     --grunge-text-bright: #ffffff;
     
     /* Animation Speeds */
@@ -34,20 +34,16 @@
 
 .theme-classic body,
 [data-theme="classic"] body {
-    background: var(--grunge-black);
-    color: var(--grunge-text);
-    font-family: 'Courier New', monospace;
-    margin: 0;
-    padding: 0;
-    overflow-x: hidden;
-    position: relative;
+    /* Keep original forest background */
+    background: var(--ib-bg);
+    color: var(--ib-text);
+    padding: 20px;
     
-    /* Multiple animated background layers */
+    /* Add subtle animated overlay effects without changing base color */
     background-image: 
-        radial-gradient(circle at 20% 80%, rgba(255, 68, 68, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(68, 255, 68, 0.1) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(68, 68, 255, 0.1) 0%, transparent 50%),
-        linear-gradient(45deg, transparent 30%, rgba(170, 0, 255, 0.05) 50%, transparent 70%);
+        radial-gradient(circle at 20% 80%, rgba(159, 217, 113, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(230, 204, 128, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(74, 93, 35, 0.1) 0%, transparent 50%);
     
     animation: 
         backgroundPulse var(--chaos-ultra-slow) infinite alternate,
