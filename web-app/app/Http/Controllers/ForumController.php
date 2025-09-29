@@ -147,24 +147,11 @@ class ForumController extends Controller
 
     public function storeThread(Request $request, $board)
     {
-        Log::info('=== THREAD CREATION ATTEMPT ===', [
+        // Log thread creation for monitoring (production-safe)
+        Log::info('Thread creation attempt', [
             'board' => $board,
-            'method' => $request->method(),
-            'url' => $request->url(),
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-            'has_title' => $request->has('title'),
-            'has_content' => $request->has('content'),
-            'has_image' => $request->hasFile('image'),
-            'has_pow_hash' => $request->has('pow_hash'),
-            'pow_hash_value' => $request->pow_hash,
-            'pow_nonce_value' => $request->pow_nonce,
-            'pow_challenge_id' => $request->pow_challenge_id,
-            'title_value' => $request->title,
-            'session_data' => [
-                'bitcoin_auth_id' => session('bitcoin_auth_id'),
-                'authenticated' => auth()->check()
-            ]
+            'has_required_fields' => $request->has(['title', 'content', 'pow_hash']),
+            'user_authenticated' => (bool) session('bitcoin_auth_id')
         ]);
 
         // Comprehensive input validation - image OR image_hash required
@@ -180,11 +167,7 @@ class ForumController extends Controller
                 'post_anonymous' => 'boolean',
             ]);
             
-            Log::info('Validation passed', [
-                'validated_keys' => array_keys($validated),
-                'pow_nonce_type' => gettype($validated['pow_nonce']),
-                'pow_nonce_value' => $validated['pow_nonce']
-            ]);
+            // Validation successful
             
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation failed', [
@@ -194,17 +177,7 @@ class ForumController extends Controller
             throw $e;
         }
 
-        // Log image validation details
-        Log::info('Image validation check', [
-            'has_image_file' => $request->hasFile('image'),
-            'has_image_hash' => $request->filled('image_hash'),
-            'image_hash_value' => $request->input('image_hash'),
-            'image_file_info' => $request->hasFile('image') ? [
-                'name' => $request->file('image')->getClientOriginalName(),
-                'size' => $request->file('image')->getSize(),
-                'mime' => $request->file('image')->getMimeType()
-            ] : null
-        ]);
+        // Image validation check
 
         // Validate that either image file OR image hash is provided
         if (!$request->hasFile('image') && !$request->filled('image_hash')) {

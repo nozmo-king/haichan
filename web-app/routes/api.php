@@ -50,10 +50,12 @@ Route::post('/friend-codes/validate', [AuthApiController::class, 'validateFriend
 // DEBUG ENDPOINTS REMOVED FOR SECURITY
 // These exposed sensitive authentication information and have been disabled
 
-// Mining API endpoints (no auth required)
-Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
-Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
-Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
+// Mining API endpoints (protected with throttling)
+Route::middleware(['throttle:120,1'])->group(function () {
+    Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
+    Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
+    Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
+});
 Route::get('/mining-stats', [App\Http\Controllers\ProofOfWorkController::class, 'getStats']);
 Route::get('/random-hash', [App\Http\Controllers\RandomHashController::class, 'getRandomHash']);
 
