@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -41,8 +40,6 @@ class BitcoinAuth extends Authenticatable
         'is_banned',
         'ban_reason',
         'banned_until',
-        'is_admin',
-        'admin_level'
     ];
 
     protected $hidden = [
@@ -61,7 +58,7 @@ class BitcoinAuth extends Authenticatable
         'admin_level' => 'integer',
         'social_links' => 'json',
         'show_email' => 'boolean',
-        'profile_public' => 'boolean'
+        'profile_public' => 'boolean',
     ];
 
     /**
@@ -78,14 +75,14 @@ class BitcoinAuth extends Authenticatable
         $ripemd160 = hash('ripemd160', $sha256, true);
 
         // Step 3: Add version byte (0x00 for Bitcoin mainnet)
-        $versionedPayload = "\x00" . $ripemd160;
+        $versionedPayload = "\x00".$ripemd160;
 
         // Step 4: Double SHA256 for checksum
         $checksum = hash('sha256', hash('sha256', $versionedPayload, true), true);
         $checksum = substr($checksum, 0, 4);
 
         // Step 5: Concatenate version + payload + checksum
-        $binaryAddress = $versionedPayload . $checksum;
+        $binaryAddress = $versionedPayload.$checksum;
 
         // Step 6: Base58 encode
         return self::base58encode($binaryAddress);
@@ -100,12 +97,12 @@ class BitcoinAuth extends Authenticatable
         $base = strlen($alphabet);
 
         // Convert binary to integer
-        $num = gmp_init('0x' . bin2hex($data), 16);
+        $num = gmp_init('0x'.bin2hex($data), 16);
 
         $encoded = '';
         while (gmp_cmp($num, 0) > 0) {
-            list($num, $remainder) = gmp_div_qr($num, $base);
-            $encoded = $alphabet[gmp_intval($remainder)] . $encoded;
+            [$num, $remainder] = gmp_div_qr($num, $base);
+            $encoded = $alphabet[gmp_intval($remainder)].$encoded;
         }
 
         // Add leading '1's for leading zero bytes
@@ -114,7 +111,7 @@ class BitcoinAuth extends Authenticatable
             $leadingZeros++;
         }
 
-        return str_repeat('1', $leadingZeros) . $encoded;
+        return str_repeat('1', $leadingZeros).$encoded;
     }
 
     /**
@@ -138,7 +135,7 @@ class BitcoinAuth extends Authenticatable
     public static function createUser($publicKey, $signature, $inviteCode = null, $passwordHash = null, $passwordSalt = null)
     {
         // Verify invite code if required
-        if ($inviteCode && !InviteCode::where('code', $inviteCode)->where('uses_remaining', '>', 0)->exists()) {
+        if ($inviteCode && ! InviteCode::where('code', $inviteCode)->where('uses_remaining', '>', 0)->exists()) {
             throw new \Exception('Invalid invite code');
         }
 
@@ -152,7 +149,7 @@ class BitcoinAuth extends Authenticatable
         $user = self::create([
             'public_key' => $publicKey,
             'address' => $address,
-            'username' => 'Anon' . substr($address, -8),
+            'username' => 'Anon'.substr($address, -8),
             'mining_power' => 1.0,
             'total_pow_points' => 0,
             'invite_code' => self::generateInviteCode(),
@@ -165,7 +162,7 @@ class BitcoinAuth extends Authenticatable
             'private_key_hash' => $privateKeyHash,
             'is_banned' => false,
             'is_admin' => false,
-            'admin_level' => 0
+            'admin_level' => 0,
         ]);
 
         // Check if this should be the first admin (user #1)
@@ -191,7 +188,7 @@ class BitcoinAuth extends Authenticatable
             InviteCode::create([
                 'code' => self::generateInviteCode(),
                 'created_by' => $user->id,
-                'uses_remaining' => 1
+                'uses_remaining' => 1,
             ]);
         }
 
@@ -205,7 +202,8 @@ class BitcoinAuth extends Authenticatable
     {
         // In production, use proper secp256k1 signature verification
         // For now, simplified verification
-        $expectedHash = hash('sha256', $message . $this->public_key);
+        $expectedHash = hash('sha256', $message.$this->public_key);
+
         return hash('sha256', $signature) === $expectedHash;
     }
 
@@ -251,9 +249,9 @@ class BitcoinAuth extends Authenticatable
     public static function getLeaderboard($limit = 50)
     {
         return self::orderBy('total_pow_points', 'desc')
-                  ->orderBy('level', 'desc')
-                  ->limit($limit)
-                  ->get();
+            ->orderBy('level', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     /**
@@ -313,12 +311,13 @@ class BitcoinAuth extends Authenticatable
      */
     public function getTripcode()
     {
-        if (!$this->address) {
+        if (! $this->address) {
             return 'Anonymous';
         }
-        
+
         // Take last 8 characters of bitcoin address for tripcode
         $code = substr($this->address, -8);
+
         return "!{$code}";
     }
 
@@ -328,8 +327,9 @@ class BitcoinAuth extends Authenticatable
     public function getDisplayName()
     {
         if ($this->username && $this->username !== 'Anonymous') {
-            return $this->username . ' ' . $this->getTripcode();
+            return $this->username.' '.$this->getTripcode();
         }
+
         return $this->getTripcode();
     }
 

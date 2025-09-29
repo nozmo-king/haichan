@@ -15,7 +15,7 @@ return new class extends Migration
             $table->decimal('total_pow_points', 10, 2)->default(0)->after('posts_count');
             $table->integer('pow_submissions_count')->default(0)->after('total_pow_points');
             $table->timestamp('last_pow_at')->nullable()->after('pow_submissions_count');
-            
+
             $table->index('total_pow_points');
             $table->index('last_pow_at');
         });

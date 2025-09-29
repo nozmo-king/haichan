@@ -2,8 +2,8 @@
 
 namespace App\View\Composers;
 
-use Illuminate\View\View;
 use App\Models\ProofOfWork;
+use Illuminate\View\View;
 
 class GlobalStatsComposer
 {

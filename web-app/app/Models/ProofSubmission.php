@@ -18,19 +18,19 @@ class ProofSubmission extends Model
         'difficulty',
         'hashes_computed',
         'ip_address',
-        'metadata'
+        'metadata',
     ];
 
     protected $casts = [
         'nonce' => 'integer',
         'difficulty' => 'decimal:2',
         'hashes_computed' => 'integer',
-        'metadata' => 'array'
+        'metadata' => 'array',
     ];
 
     public static function generateUserSession($ip)
     {
-        return hash('sha256', $ip . time() . config('app.key'));
+        return hash('sha256', $ip.time().config('app.key'));
     }
 
     public static function recordProof($userSession, $targetType, $targetId, $pattern, $hash, $nonce, $challengeData, $contentHash = null, $ip = null, $metadata = [], $hashesComputed = null)
@@ -52,7 +52,7 @@ class ProofSubmission extends Model
             'difficulty' => $difficulty,
             'hashes_computed' => $hashesComputed,
             'ip_address' => $ip,
-            'metadata' => $metadata
+            'metadata' => $metadata,
         ]);
     }
 
@@ -64,7 +64,7 @@ class ProofSubmission extends Model
             '21e80' => 5.0,
             '21e800' => 25.0,
             '21e8000' => 100.0,
-            '000021e8' => 625.0
+            '000021e8' => 625.0,
         ];
 
         return $difficulties[$pattern] ?? 1.0;

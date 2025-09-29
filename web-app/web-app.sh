@@ -2,7 +2,7 @@
 
 echo "=== Fixing Haichan Homepage ==="
 
-cd ~/Downloads/hai3-master/web-app
+cd /root/haichan/web-app
 
 # First, let's check what's in the current routes file
 echo "Current routes file:"

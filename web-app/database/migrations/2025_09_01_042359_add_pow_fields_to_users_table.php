@@ -13,7 +13,7 @@ return new class extends Migration
             $table->timestamp('last_mining_activity')->nullable()->after('pow_points');
             $table->string('bitcoin_address', 62)->nullable()->unique()->after('last_mining_activity');
             $table->boolean('mining_enabled')->default(true)->after('bitcoin_address');
-            
+
             $table->index(['pow_points', 'created_at']);
             $table->index('bitcoin_address');
         });

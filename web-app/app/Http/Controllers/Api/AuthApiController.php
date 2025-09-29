@@ -3,39 +3,40 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AllowedPublicKey;
+use App\Models\User;
+use App\Services\FriendCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use App\Models\User;
-use App\Models\AllowedPublicKey;
-use App\Services\FriendCodeService;
 
 class AuthApiController extends Controller
 {
     public function __construct(
         private FriendCodeService $friendCodeService
     ) {}
+
     public function getChallenge(Request $request)
     {
         $request->validate([
-            'public_key' => 'required|string'
+            'public_key' => 'required|string',
         ]);
 
         Log::info('Challenge request received', [
             'public_key' => $request->public_key,
             'public_key_length' => strlen($request->public_key),
             'ip' => $request->ip(),
-            'user_agent' => $request->userAgent()
+            'user_agent' => $request->userAgent(),
         ]);
 
         $user = User::findOrCreateForPublicKey($request->public_key);
 
-        if (!$user) {
+        if (! $user) {
             Log::warning('Public key not authorized for challenge', [
                 'public_key' => $request->public_key,
-                'ip' => $request->ip()
+                'ip' => $request->ip(),
             ]);
+
             return response()->json(['error' => 'Public key not authorized'], 403);
         }
 
@@ -45,12 +46,12 @@ class AuthApiController extends Controller
             'user_id' => $user->id,
             'public_key' => $request->public_key,
             'challenge' => $challenge,
-            'challenge_expires_at' => $user->challenge_expires_at
+            'challenge_expires_at' => $user->challenge_expires_at,
         ]);
 
         return response()->json([
             'challenge' => $challenge,
-            'user_id' => $user->id
+            'user_id' => $user->id,
         ]);
     }
 
@@ -59,42 +60,43 @@ class AuthApiController extends Controller
         Log::info('API login request received', [
             'user_agent' => $request->userAgent(),
             'ip' => $request->ip(),
-            'has_signature' => !empty($request->signature),
-            'has_challenge' => !empty($request->challenge),
-            'has_user_id' => !empty($request->user_id),
+            'has_signature' => ! empty($request->signature),
+            'has_challenge' => ! empty($request->challenge),
+            'has_user_id' => ! empty($request->user_id),
             'signature_length' => strlen($request->signature ?? ''),
             'challenge_length' => strlen($request->challenge ?? ''),
-            'request_data_keys' => array_keys($request->all())
+            'request_data_keys' => array_keys($request->all()),
         ]);
 
         $request->validate([
             'signature' => 'required|string',
             'challenge' => 'required|string',
-            'user_id' => 'required|integer'
+            'user_id' => 'required|integer',
         ]);
 
         Log::info('API login validation passed', [
             'user_id' => $request->user_id,
-            'signature_sample' => substr($request->signature, 0, 20) . '...',
-            'challenge_sample' => substr($request->challenge, 0, 20) . '...'
+            'signature_sample' => substr($request->signature, 0, 20).'...',
+            'challenge_sample' => substr($request->challenge, 0, 20).'...',
         ]);
 
         $user = User::find($request->user_id);
 
-        if (!$user) {
+        if (! $user) {
             Log::warning('User not found for login', [
                 'requested_user_id' => $request->user_id,
-                'ip' => $request->ip()
+                'ip' => $request->ip(),
             ]);
+
             return response()->json(['error' => 'User not found'], 404);
         }
 
         Log::info('User found for login attempt', [
             'user_id' => $user->id,
-            'has_allowed_public_key' => !empty($user->allowedPublicKey),
+            'has_allowed_public_key' => ! empty($user->allowedPublicKey),
             'public_key' => $user->allowedPublicKey->public_key ?? 'not_loaded',
-            'last_challenge_exists' => !empty($user->last_challenge),
-            'challenge_expires_at' => $user->challenge_expires_at
+            'last_challenge_exists' => ! empty($user->last_challenge),
+            'challenge_expires_at' => $user->challenge_expires_at,
         ]);
 
         // Verify signature using your existing verification method
@@ -103,15 +105,16 @@ class AuthApiController extends Controller
         Log::info('Signature verification completed', [
             'user_id' => $user->id,
             'signature_valid' => $signatureValid,
-            'about_to_return_result' => true
+            'about_to_return_result' => true,
         ]);
 
-        if (!$signatureValid) {
+        if (! $signatureValid) {
             Log::warning('Authentication failed - invalid signature', [
                 'user_id' => $user->id,
                 'ip' => $request->ip(),
-                'user_agent' => $request->userAgent()
+                'user_agent' => $request->userAgent(),
             ]);
+
             return response()->json(['error' => 'Invalid signature'], 401);
         }
 
@@ -133,7 +136,7 @@ class AuthApiController extends Controller
             Log::info('Authentication successful (web session)', [
                 'user_id' => $user->id,
                 'session_created' => true,
-                'ip' => $request->ip()
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
@@ -141,9 +144,9 @@ class AuthApiController extends Controller
                 'session_created' => true,
                 'user' => [
                     'id' => $user->id,
-                    'public_key' => $user->allowedPublicKey->public_key
+                    'public_key' => $user->allowedPublicKey->public_key,
                 ],
-                'redirect_url' => route('dashboard')
+                'redirect_url' => route('dashboard'),
             ]);
         } else {
             // For mobile apps: create API token
@@ -151,16 +154,16 @@ class AuthApiController extends Controller
 
             Log::info('Authentication successful (API token)', [
                 'user_id' => $user->id,
-                'token_created' => !empty($token),
-                'ip' => $request->ip()
+                'token_created' => ! empty($token),
+                'ip' => $request->ip(),
             ]);
 
             return response()->json([
                 'token' => $token,
                 'user' => [
                     'id' => $user->id,
-                    'public_key' => $user->allowedPublicKey->public_key
-                ]
+                    'public_key' => $user->allowedPublicKey->public_key,
+                ],
             ]);
         }
     }
@@ -176,12 +179,12 @@ class AuthApiController extends Controller
     {
         $request->validate([
             'friend_code' => 'required|string',
-            'public_key' => 'required|string|size:66'
+            'public_key' => 'required|string|size:66',
         ]);
 
         $friendCode = $this->friendCodeService->validateFriendCode($request->friend_code);
 
-        if (!$friendCode) {
+        if (! $friendCode) {
             return response()->json(['error' => 'Invalid or expired friend code'], 400);
         }
 
@@ -220,7 +223,7 @@ class AuthApiController extends Controller
         return response()->json([
             'message' => 'Registration successful',
             'user_id' => $user->id,
-            'public_key' => $allowedKey->public_key
+            'public_key' => $allowedKey->public_key,
         ]);
     }
 
@@ -233,12 +236,12 @@ class AuthApiController extends Controller
         $request->validate([
             'signature' => 'required|string',
             'challenge' => 'required|string',
-            'user_id' => 'required|integer'
+            'user_id' => 'required|integer',
         ]);
 
         $user = User::find($request->user_id);
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'User not found'], 404);
         }
 
@@ -248,7 +251,7 @@ class AuthApiController extends Controller
             'challenge' => $request->challenge,
             'signature' => $request->signature,
             'challenge_length' => strlen($request->challenge),
-            'signature_length' => strlen($request->signature)
+            'signature_length' => strlen($request->signature),
         ]);
 
         // Don't actually verify - just test the signature verification logic
@@ -260,7 +263,7 @@ class AuthApiController extends Controller
             'challenge_provided' => $request->challenge,
             'signature_provided' => $request->signature,
             'debug_complete' => true,
-            'message' => 'Check logs for detailed verification process'
+            'message' => 'Check logs for detailed verification process',
         ]);
     }
 
@@ -270,12 +273,12 @@ class AuthApiController extends Controller
      */
     public function createTestChallenge(Request $request)
     {
-        $testChallenge = bin2hex(random_bytes(32)) . time();
+        $testChallenge = bin2hex(random_bytes(32)).time();
 
         return response()->json([
             'test_challenge' => $testChallenge,
             'message' => 'Use this challenge to generate a signature for testing',
-            'note' => 'This challenge is not stored - use debugSignature endpoint to test'
+            'note' => 'This challenge is not stored - use debugSignature endpoint to test',
         ]);
     }
 
@@ -285,7 +288,7 @@ class AuthApiController extends Controller
     public function compareImplementations(Request $request)
     {
         // Support both iOS format (combined signature) and website format (separate components)
-        if ($request->has('signature') && !$request->has('signature_full')) {
+        if ($request->has('signature') && ! $request->has('signature_full')) {
             // iOS format - extract components from combined signature
             $request->validate([
                 'platform' => 'required|string',
@@ -293,7 +296,7 @@ class AuthApiController extends Controller
                 'public_key' => 'required|string',
                 'challenge' => 'required|string',
                 'challenge_hash' => 'required|string',
-                'signature' => 'required|string|size:128'
+                'signature' => 'required|string|size:128',
             ]);
 
             $signature = $request->signature;
@@ -321,7 +324,7 @@ class AuthApiController extends Controller
                 'signature_s' => 'required|string',
                 'signature_full' => 'required|string',
                 's_was_high' => 'required|boolean',
-                's_normalized' => 'required|string'
+                's_normalized' => 'required|string',
             ]);
 
             $signature_r = $request->signature_r;
@@ -331,9 +334,9 @@ class AuthApiController extends Controller
             $s_normalized = $request->s_normalized;
         }
 
-        Log::info('COMPARISON TEST - ' . strtoupper($request->platform) . ' DATA', [
+        Log::info('COMPARISON TEST - '.strtoupper($request->platform).' DATA', [
             'platform' => $request->platform,
-            'private_key_sample' => substr($request->private_key, 0, 8) . '...',
+            'private_key_sample' => substr($request->private_key, 0, 8).'...',
             'public_key' => $request->public_key,
             'challenge' => $request->challenge,
             'challenge_hash' => $request->challenge_hash,
@@ -341,7 +344,7 @@ class AuthApiController extends Controller
             'signature_s' => $signature_s,
             'signature_full' => $signature_full,
             's_was_high' => $s_was_high,
-            's_normalized' => $s_normalized
+            's_normalized' => $s_normalized,
         ]);
 
         // Verify the data step by step
@@ -356,12 +359,12 @@ class AuthApiController extends Controller
             $y = $publicKeyPoint->getY();
             $prefix = gmp_strval(gmp_mod($y, 2)) == '0' ? '02' : '03';
             $xHex = str_pad(gmp_strval($x, 16), 64, '0', STR_PAD_LEFT);
-            $serverPublicKey = $prefix . $xHex;
+            $serverPublicKey = $prefix.$xHex;
 
             $verification['public_key'] = [
                 'provided' => $request->public_key,
                 'server_generated' => $serverPublicKey,
-                'matches' => $request->public_key === $serverPublicKey
+                'matches' => $request->public_key === $serverPublicKey,
             ];
         } catch (\Exception $e) {
             $verification['public_key'] = ['error' => $e->getMessage()];
@@ -372,7 +375,7 @@ class AuthApiController extends Controller
         $verification['challenge_hash'] = [
             'provided' => $request->challenge_hash,
             'server_generated' => $serverChallengeHash,
-            'matches' => $request->challenge_hash === $serverChallengeHash
+            'matches' => $request->challenge_hash === $serverChallengeHash,
         ];
 
         // Step 3: Verify S-value normalization
@@ -391,7 +394,7 @@ class AuthApiController extends Controller
                 'server_calculated_high' => $isHighS,
                 'server_calculated_normalized' => $normalizedSHex,
                 'high_matches' => $s_was_high === $isHighS,
-                'normalized_matches' => $s_normalized === $normalizedSHex
+                'normalized_matches' => $s_normalized === $normalizedSHex,
             ];
         } catch (\Exception $e) {
             $verification['s_normalization'] = ['error' => $e->getMessage()];
@@ -407,14 +410,14 @@ class AuthApiController extends Controller
                     // Set test challenge
                     $user->update([
                         'last_challenge' => $request->challenge,
-                        'challenge_expires_at' => \Carbon\Carbon::now()->addMinutes(5)
+                        'challenge_expires_at' => \Carbon\Carbon::now()->addMinutes(5),
                     ]);
 
                     // Test signature verification
                     $verificationResult = $user->verifySignature($signature_full, $request->challenge);
                     $verification['signature_verification'] = [
                         'result' => $verificationResult,
-                        'user_id' => $user->id
+                        'user_id' => $user->id,
                     ];
                 } else {
                     $verification['signature_verification'] = ['error' => 'No user found for public key'];
@@ -433,8 +436,8 @@ class AuthApiController extends Controller
                 'public_key_ok' => $verification['public_key']['matches'] ?? false,
                 'challenge_hash_ok' => $verification['challenge_hash']['matches'] ?? false,
                 's_normalization_ok' => $verification['s_normalization']['normalized_matches'] ?? false,
-                'signature_verifies' => $verification['signature_verification']['result'] ?? false
-            ]
+                'signature_verifies' => $verification['signature_verification']['result'] ?? false,
+            ],
         ]);
     }
 }

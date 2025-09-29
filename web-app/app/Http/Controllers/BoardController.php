@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use App\Models\Board;
-use App\Models\Thread;
 use App\Models\Post;
+use App\Models\Thread;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class BoardController extends Controller
 {
@@ -24,9 +23,9 @@ class BoardController extends Controller
     public function show(Request $request, $boardName)
     {
         $board = Board::where('name', $boardName)->where('active', true)->firstOrFail();
-        
+
         $threads = $board->threads()
-            ->with(['posts' => function($query) {
+            ->with(['posts' => function ($query) {
                 $query->latest()->limit(3);
             }])
             ->orderBy('sticky', 'desc')
@@ -40,7 +39,7 @@ class BoardController extends Controller
     {
         $board = Board::where('name', $boardName)->where('active', true)->firstOrFail();
         $thread = Thread::where('board_id', $board->id)->findOrFail($threadId);
-        
+
         $posts = $thread->posts()
             ->orderBy('created_at', 'asc')
             ->get();
@@ -51,11 +50,11 @@ class BoardController extends Controller
     public function storeThread(Request $request, $boardName)
     {
         $board = Board::where('name', $boardName)->where('active', true)->firstOrFail();
-        
+
         $request->validate([
             'subject' => 'nullable|string|max:200',
             'content' => 'required|string|max:8000',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:10240'
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:10240',
         ]);
 
         $imageData = null;
@@ -77,12 +76,12 @@ class BoardController extends Controller
             'bumped_at' => now(),
             'bump_score' => 0,
             'reply_count' => 0,
-            'image_count' => $imageData ? 1 : 0
+            'image_count' => $imageData ? 1 : 0,
         ]);
 
         // Update poster hash with actual thread ID
         $thread->update([
-            'poster_hash' => Thread::generatePosterHash($request->ip(), $thread->id)
+            'poster_hash' => Thread::generatePosterHash($request->ip(), $thread->id),
         ]);
 
         $board->incrementPostCount();
@@ -94,14 +93,14 @@ class BoardController extends Controller
     {
         $board = Board::where('name', $boardName)->where('active', true)->firstOrFail();
         $thread = Thread::where('board_id', $board->id)->findOrFail($threadId);
-        
+
         if ($thread->locked) {
             return back()->withErrors(['error' => 'Thread is locked']);
         }
 
         $request->validate([
             'content' => 'required|string|max:8000',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:10240'
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:10240',
         ]);
 
         $imageData = null;
@@ -118,7 +117,7 @@ class BoardController extends Controller
             'image_original_name' => $imageData['original_name'] ?? null,
             'image_size' => $imageData['size'] ?? null,
             'ip_address' => $request->ip(),
-            'poster_hash' => $posterHash
+            'poster_hash' => $posterHash,
         ]);
 
         $thread->addReply($post);
@@ -128,7 +127,7 @@ class BoardController extends Controller
 
     private function handleImageUpload($file)
     {
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
         $originalName = $file->getClientOriginalName();
         $size = $file->getSize();
 
@@ -141,7 +140,7 @@ class BoardController extends Controller
         return [
             'filename' => $filename,
             'original_name' => $originalName,
-            'size' => $size
+            'size' => $size,
         ];
     }
 }

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\ImageIndexingService;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Intervention\Image\Laravel\Facades\Image;
 
@@ -27,73 +27,41 @@ class ImageLibrary extends Model
         'dither_settings',
         'first_thread_id',
         'first_post_id',
-        'uploader_ip'
+        'uploader_ip',
     ];
 
     protected $casts = [
         'dither_settings' => 'array',
         'auto_dither' => 'boolean',
         'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 
     /**
-     * Store a new image in the library or return existing one if already exists
+     * Store a new image in the library using the ImageIndexingService
      */
-    public static function storeImage(UploadedFile $file, ?string $uploaderIp = null, ?int $threadId = null, ?int $postId = null, bool $applyDither = false): self
+    public static function storeImage(UploadedFile $file, ?string $uploaderIp = null, ?int $threadId = null, ?int $postId = null): self
     {
-        // Calculate SHA256 hash of the file
-        $hash = hash_file('sha256', $file->path());
+        $indexingService = new ImageIndexingService();
+        
+        $result = $indexingService->processAndIndexImage(
+            $file,
+            (string) $threadId,
+            (string) $postId,
+            $uploaderIp
+        );
 
-        // Check if image already exists
-        $existingImage = static::where('hash', $hash)->first();
-        if ($existingImage) {
-            $existingImage->increment('usage_count');
-            $existingImage->increment('unique_posts');
-            return $existingImage;
+        if (!$result['success']) {
+            throw new \Exception('Failed to process image: ' . ($result['error'] ?? 'Unknown error'));
         }
 
-        // Get image dimensions
-        $imageInfo = getimagesize($file->path());
-        $width = $imageInfo[0] ?? 0;
-        $height = $imageInfo[1] ?? 0;
-
-        // Generate unique filename
-        $extension = $file->getClientOriginalExtension();
-        $filename = time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
-        $filePath = "forum/images/" . $filename;
-
-        // Store the file directly in public directory so it's web-accessible
-        $publicPath = public_path('forum/images');
-        if (!file_exists($publicPath)) {
-            mkdir($publicPath, 0755, true);
-        }
-        $fullPath = $publicPath . '/' . $filename;
-        $file->move($publicPath, $filename);
-
-        // Apply dither effect if requested
-        if ($applyDither) {
-            \App\Helpers\ImageHelper::applyDither($fullPath);
+        $image = static::find($result['image_id']);
+        
+        if (!$image) {
+            throw new \Exception('Image was processed but not found in database');
         }
 
-        // Create database record
-        return static::create([
-            'filename' => $filename,
-            'original_name' => $file->getClientOriginalName(),
-            'hash' => $hash,
-            'file_path' => $filePath,
-            'file_size' => $file->getSize(),
-            'mime_type' => $file->getMimeType(),
-            'width' => $width,
-            'height' => $height,
-            'total_pow_earned' => 0,
-            'usage_count' => 1,
-            'unique_posts' => 1,
-            'auto_dither' => false,
-            'first_thread_id' => $threadId,
-            'first_post_id' => $postId,
-            'uploader_ip' => $uploaderIp,
-        ]);
+        return $image;
     }
 
     /**
@@ -138,9 +106,9 @@ class ImageLibrary extends Model
         // Get images with weighted random selection based on PoW and usage
         // Use RANDOM() for SQLite instead of RAND() for MySQL
         return static::selectRaw('*, (total_pow_earned * 2 + usage_count) as weight')
-                    ->orderByRaw('weight DESC, RANDOM()')
-                    ->limit($limit)
-                    ->get();
+            ->orderByRaw('weight DESC, RANDOM()')
+            ->limit($limit)
+            ->get();
     }
 
     /**
@@ -149,9 +117,9 @@ class ImageLibrary extends Model
     public static function getTopPoWEarners(int $limit = 50)
     {
         return static::orderBy('total_pow_earned', 'desc')
-                    ->orderBy('usage_count', 'desc')
-                    ->limit($limit)
-                    ->get();
+            ->orderBy('usage_count', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     /**
@@ -160,9 +128,9 @@ class ImageLibrary extends Model
     public static function getMostPopular(int $limit = 50)
     {
         return static::orderBy('usage_count', 'desc')
-                    ->orderBy('unique_posts', 'desc')
-                    ->limit($limit)
-                    ->get();
+            ->orderBy('unique_posts', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     /**
@@ -171,8 +139,8 @@ class ImageLibrary extends Model
     public static function getRecent(int $limit = 50)
     {
         return static::orderBy('created_at', 'desc')
-                    ->limit($limit)
-                    ->get();
+            ->limit($limit)
+            ->get();
     }
 
     /**
@@ -181,10 +149,10 @@ class ImageLibrary extends Model
     public static function search(string $query, int $limit = 50)
     {
         return static::where('original_name', 'LIKE', "%{$query}%")
-                    ->orderBy('total_pow_earned', 'desc')
-                    ->orderBy('usage_count', 'desc')
-                    ->limit($limit)
-                    ->get();
+            ->orderBy('total_pow_earned', 'desc')
+            ->orderBy('usage_count', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     /**
@@ -193,10 +161,10 @@ class ImageLibrary extends Model
     public static function getMovingLibrary(int $limit = 200)
     {
         return static::selectRaw('*, (total_pow_earned + usage_count * 10) as power_level')
-                    ->orderBy('power_level', 'desc')
-                    ->limit($limit)
-                    ->get()
-                    ->shuffle(); // Randomize initial positions
+            ->orderBy('power_level', 'desc')
+            ->limit($limit)
+            ->get()
+            ->shuffle(); // Randomize initial positions
     }
 
     /**
@@ -207,28 +175,30 @@ class ImageLibrary extends Model
         try {
             // Ensure directory exists
             $directory = dirname($thumbnailPath);
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 mkdir($directory, 0755, true);
             }
 
             // Create thumbnail using basic PHP (since Intervention Image may not be installed)
             $sourceImage = imagecreatefromstring(file_get_contents($sourcePath));
-            if ($sourceImage === false) return;
+            if ($sourceImage === false) {
+                return;
+            }
 
             $originalWidth = imagesx($sourceImage);
             $originalHeight = imagesy($sourceImage);
-            
+
             // Calculate thumbnail dimensions (max 150x150, maintain aspect ratio)
             $thumbSize = 150;
             $ratio = min($thumbSize / $originalWidth, $thumbSize / $originalHeight);
-            $thumbWidth = (int)($originalWidth * $ratio);
-            $thumbHeight = (int)($originalHeight * $ratio);
-            
+            $thumbWidth = (int) ($originalWidth * $ratio);
+            $thumbHeight = (int) ($originalHeight * $ratio);
+
             $thumbnail = imagecreatetruecolor($thumbWidth, $thumbHeight);
             imagecopyresampled($thumbnail, $sourceImage, 0, 0, 0, 0, $thumbWidth, $thumbHeight, $originalWidth, $originalHeight);
-            
+
             imagejpeg($thumbnail, $thumbnailPath, 85);
-            
+
             imagedestroy($sourceImage);
             imagedestroy($thumbnail);
         } catch (\Exception $e) {
@@ -242,7 +212,7 @@ class ImageLibrary extends Model
     protected static function extractMetadata(string $filePath): array
     {
         $metadata = [];
-        
+
         try {
             // Get basic image info
             $imageInfo = getimagesize($filePath);

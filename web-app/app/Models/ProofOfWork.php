@@ -7,14 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class ProofOfWork extends Model
 {
     protected $fillable = [
-        'user_id', 'thread_id', 'hash', 'nonce', 'data', 
-        'pattern', 'points', 'verified_at', 'ip_address'
+        'user_id', 'thread_id', 'hash', 'nonce', 'data',
+        'pattern', 'points', 'verified_at', 'ip_address',
     ];
 
     protected $casts = [
         'nonce' => 'integer',
         'points' => 'decimal:2',
-        'verified_at' => 'datetime'
+        'verified_at' => 'datetime',
     ];
 
     public function thread()

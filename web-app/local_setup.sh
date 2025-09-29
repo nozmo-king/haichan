@@ -7,7 +7,7 @@
 # This script sets up Haichan for local development on your machine.
 # Run this in your existing web-app directory.
 #
-# Usage: cd ~/Downloads/hai3-master/web-app && ./local_setup.sh
+# Usage: cd /root/haichan/web-app && ./local_setup.sh
 # =================================================================
 
 echo "=== Haichan Local Development Setup ==="
@@ -15,7 +15,7 @@ echo "=== Haichan Local Development Setup ==="
 # Check if we're in the right directory
 if [ ! -f "artisan" ]; then
     echo "Error: Please run this script from your Laravel project root directory"
-    echo "Expected: ~/Downloads/hai3-master/web-app/"
+    echo "Expected: /root/haichan/web-app/"
     exit 1
 fi
 

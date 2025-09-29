@@ -12,7 +12,7 @@ class PowSubmission extends Model
         'nonce',
         'hash',
         'difficulty_prefix',
-        'mining_duration_ms'
+        'mining_duration_ms',
     ];
 
     public function thread()

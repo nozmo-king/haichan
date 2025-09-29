@@ -870,3 +870,75 @@ a, button, .clickable, [role="button"], input[type="submit"], input[type="button
     }
 }
 
+/* PoW Notification System - Theme-aligned styling */
+
+#pow-notifications {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10000;
+    pointer-events: none;
+    max-width: 300px;
+}
+
+.pow-notification {
+    background: #FFFACD;
+    border: 2px solid #708B75;
+    color: #444B6E;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 10pt;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(68, 75, 110, 0.3);
+    border-radius: 0;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease-out;
+    position: relative;
+    pointer-events: auto;
+}
+
+.pow-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.pow-notification.hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+/* Rarity-based styling */
+.pow-notification.legendary {
+    background: #FFD700;
+    border-color: #FF4444;
+    color: #000;
+}
+
+.pow-notification.epic {
+    background: #FF6600;
+    border-color: #FF0000;
+    color: #FFF;
+}
+
+.pow-notification.rare {
+    background: #4444FF;
+    border-color: #0000FF;
+    color: #FFF;
+}
+
+.pow-notification .close-btn {
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    cursor: pointer;
+    font-size: 14pt;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.pow-notification .close-btn:hover {
+    opacity: 1;
+}

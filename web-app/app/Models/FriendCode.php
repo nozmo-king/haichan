@@ -13,12 +13,12 @@ class FriendCode extends Model
         'code',
         'is_used',
         'used_by_user_id',
-        'expires_at'
+        'expires_at',
     ];
 
     protected $casts = [
         'is_used' => 'boolean',
-        'expires_at' => 'datetime'
+        'expires_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -38,7 +38,7 @@ class FriendCode extends Model
 
     public function isValid(): bool
     {
-        return !$this->is_used && 
+        return ! $this->is_used &&
                ($this->expires_at === null || $this->expires_at->isFuture());
     }
 }

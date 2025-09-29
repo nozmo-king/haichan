@@ -37,7 +37,7 @@ return new class extends Migration
             $table->dropColumn([
                 'bio', 'location', 'website', 'avatar_hash', 'display_name',
                 'tripcode', 'social_links', 'show_email', 'email', 'timezone',
-                'signature', 'profile_public'
+                'signature', 'profile_public',
             ]);
         });
     }

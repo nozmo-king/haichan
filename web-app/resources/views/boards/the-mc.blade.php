@@ -69,6 +69,7 @@
             @if($thread->image_path)
             <div style="margin-bottom: 10px;">
                 <img src="{{ route('thread.image', $thread->id) }}" alt="Thread image"
+                     data-hash="{{ $thread->image_hash ?? '' }}" data-thread-id="{{ $thread->id }}"
                      style="max-width: 100%; height: auto; max-height: 80px; border-radius: 4px; object-fit: cover;">
             </div>
             @endif

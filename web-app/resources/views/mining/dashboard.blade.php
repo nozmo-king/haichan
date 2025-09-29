@@ -1,210 +1,248 @@
-@extends('layout')
-
-@section('title', 'Mining Dashboard - Haichan')
-
-@section('content')
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Mining Dashboard - Haichan</title>
+    <link rel="stylesheet" href="/css/haichan.css">
     <style>
+        /* Mining-specific styles */
+        .mining-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #FFFFEE;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .mining-header {
+            background: #708B75;
+            padding: 15px;
+            text-align: center;
+            color: #FFFFEE;
+            margin-bottom: 20px;
+            border: 2px solid #444B6E;
+        }
+        
+        .mining-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .mining-panel {
+            background: #F5F5DC;
+            border: 1px solid #708B75;
+            padding: 15px;
+        }
+        
+        .mining-panel h3 {
+            color: #444B6E;
+            margin-bottom: 10px;
+            font-size: 14pt;
+        }
+        
+        .mining-button {
+            background: #9AB87A;
+            color: #444B6E;
+            border: 1px solid #708B75;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 10pt;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .mining-button:hover {
+            background: #708B75;
+            color: #FFFFEE;
+        }
+        
+        .mining-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .mining-input, .mining-select {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #708B75;
+            font-family: inherit;
+            font-size: 9pt;
+            background: #FFFFEE;
+            color: #444B6E;
+        }
+        
+        .hash-display {
+            background: #444B6E;
+            color: #FFFFEE;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            padding: 10px;
+            word-break: break-all;
+            border: 1px solid #708B75;
+        }
+        
+        .mining-log {
+            background: #444B6E;
+            color: #FFFFEE;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #708B75;
+        }
+        
+        .log-entry {
+            margin-bottom: 2px;
+        }
+        
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 10pt;
+        }
+        
+        .stat-value {
+            color: #708B75;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .mining-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
         /* Proof celebration animations */
+        @keyframes celebrate {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .celebrating {
+            animation: celebrate 0.5s ease-in-out 3;
+        }
+        
+        .floating-points {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            font-weight: bold;
+            color: #9AB87A;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            z-index: 9999;
+            animation: floatUp 2s ease-out forwards;
+        }
+        
         @keyframes floatUp {
             0% {
                 opacity: 1;
-                transform: translate(-50%, -50%) scale(1);
+                transform: translate(-50%, -50%);
             }
             100% {
                 opacity: 0;
-                transform: translate(-50%, -70%) scale(1.2);
+                transform: translate(-50%, -100px);
             }
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
-            20%, 40%, 60%, 80% { transform: translateX(2px); }
-        }
-        
-        @keyframes rainbow {
-            0% { filter: hue-rotate(0deg); }
-            100% { filter: hue-rotate(360deg); }
-        }
-        
-        @keyframes pulse {
-            0%, 100% { 
-                box-shadow: 0 0 5px rgba(154, 184, 122, 0.5);
-                transform: scale(1);
-            }
-            50% { 
-                box-shadow: 0 0 20px rgba(154, 184, 122, 0.8);
-                transform: scale(1.02);
-            }
-        }
-        
-        @keyframes glow {
-            0%, 100% { 
-                text-shadow: 0 0 5px rgba(154, 184, 122, 0.5);
-            }
-            50% { 
-                text-shadow: 0 0 15px rgba(154, 184, 122, 1);
-            }
-        }
-        
-        /* Celebration styles by rarity */
-        body.proof-celebration {
-            animation: shake 0.5s ease-in-out;
-        }
-        
-        body.celebration-common h2,
-        body.celebration-common h3 {
-            animation: pulse 1s ease-in-out 3;
-            color: #9AB87A !important;
-        }
-        
-        body.celebration-uncommon {
-            animation: shake 0.3s ease-in-out 3;
-        }
-        
-        body.celebration-uncommon h2,
-        body.celebration-uncommon h3 {
-            animation: pulse 0.8s ease-in-out 4;
-            color: #708B75 !important;
-        }
-        
-        body.celebration-rare {
-            animation: shake 0.2s ease-in-out 5;
-        }
-        
-        body.celebration-rare h2,
-        body.celebration-rare h3 {
-            animation: glow 0.6s ease-in-out 5;
-            color: #ff6b35 !important;
-        }
-        
-        body.celebration-epic {
-            animation: shake 0.15s ease-in-out 8;
-        }
-        
-        body.celebration-epic h2,
-        body.celebration-epic h3 {
-            animation: rainbow 2s linear 1.5, glow 0.4s ease-in-out 8;
-            color: #9AB87A !important;
-        }
-        
-        body.celebration-legendary {
-            animation: shake 0.1s ease-in-out 15;
-        }
-        
-        body.celebration-legendary h2,
-        body.celebration-legendary h3 {
-            animation: rainbow 1s linear 3, glow 0.2s ease-in-out 15;
-            color: #ffd700 !important;
-        }
-        
-        body.celebration-legendary {
-            background: linear-gradient(45deg, #3D315B, #444B6E, #708B75, #9AB87A) !important;
-            background-size: 400% 400% !important;
-            animation: rainbow 2s linear infinite, shake 0.1s ease-in-out 15 !important;
-        }
-        
-        /* Floating points animation */
-        .floating-points {
-            font-family: 'Times New Roman', serif !important;
         }
     </style>
-    <div style="padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px;">
-            <h2 style="color: var(--text-primary); margin-bottom: 10px; font-size: 24px;">
-                <span class="strobing-emoji">⛏️</span> Mining Dashboard <span class="strobing-emoji">⛏️</span>
-            </h2>
-            <p style="color: var(--text-muted); font-size: 14px; margin: 0;">Client-side SHA-256 computation for discourse validation</p>
+</head>
+<body>
+    <div class="mining-container">
+        <div class="mining-header">
+            <h1><a href="/" style="color: #FFFFEE; text-decoration: none;">Haichan</a></h1>
+            <h2>⛏️ Mining Dashboard ⛏️</h2>
+            <p>Client-side SHA-256 computation for discourse validation</p>
+            <nav style="margin-top: 10px;">
+                <a href="/boards" style="color: #FFFFEE; margin: 0 10px;">📋 Boards</a>
+                <a href="/catalog" style="color: #FFFFEE; margin: 0 10px;">🗂️ Catalog</a>
+            </nav>
         </div>
 
         <!-- Mining Controls -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-            <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px;">
-                <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Mining Controls</h3>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <button class="btn-primary" id="start-mining" onclick="startMining()">Start Mining</button>
-                    <button class="btn" id="stop-mining" onclick="stopMining()" disabled>Stop Mining</button>
+        <div class="mining-grid">
+            <div class="mining-panel">
+                <h3>Mining Controls</h3>
+                <div style="margin-bottom: 10px;">
+                    <button class="mining-button" id="start-mining" onclick="startMining()">Start Mining</button>
+                    <button class="mining-button" id="stop-mining" onclick="stopMining()" disabled>Stop Mining</button>
                 </div>
                 <div style="margin-bottom: 10px;">
-                    <label style="font-size: 12px; color: var(--text-muted);">Mining Mode:</label>
-                    <select id="mining-mode" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--content-bg); color: var(--text-primary);">
+                    <label style="font-size: 10pt; color: #444B6E;">Mining Mode:</label>
+                    <select id="mining-mode" class="mining-select">
                         <option value="idle">IDLE (~100 H/s)</option>
-                        <option value="active">ACTIVE (~1K H/s)</option>
+                        <option value="active" selected>ACTIVE (~1K H/s)</option>
                         <option value="hyper">HYPER (~3K H/s)</option>
                     </select>
                 </div>
                 <div>
-                    <label style="font-size: 12px; color: var(--text-muted);">Target Pattern:</label>
-                    <select id="target-pattern" style="width: 100%; padding: 5px; border: 1px solid var(--border-color); border-radius: 3px; background: var(--content-bg); color: var(--text-primary);">
-                        <option value="21">21 (0.1 points)</option>
-                        <option value="21e8" selected>21e8 (1 point)</option>
-                        <option value="21e80">21e80 (5 points)</option>
-                        <option value="21e800">21e800 (25 points)</option>
-                        <option value="21e8000">21e8000 (100 points)</option>
-                        <option value="21e80000">21e80000 (500 points)</option>
+                    <label style="font-size: 10pt; color: #444B6E;">Target Pattern:</label>
+                    <select id="target-pattern" class="mining-select">
+                        <optgroup label="Testing Patterns (Mining Page Only)">
+                            <option value="21">21 (0.1 points) - Easy</option>
+                            <option value="21e">21e (0.5 points) - Testing</option>
+                        </optgroup>
+                        <optgroup label="Production Patterns (Required for Threads/Replies)">
+                            <option value="21e8" selected>21e8 (100 points) - Standard</option>
+                            <option value="21e80">21e80 (500 points) - Hard</option>
+                            <option value="21e800">21e800 (2500 points) - Very Hard</option>
+                            <option value="21e8000">21e8000 (10000 points) - Extreme</option>
+                        </optgroup>
                     </select>
                 </div>
             </div>
             
-            <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px;">
-                <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Mining Stats</h3>
-                <div style="font-size: 12px; line-height: 1.6;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Hash Rate:</span>
-                        <span id="hash-rate" style="color: var(--accent-color); font-weight: bold;">0 H/s</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Total Hashes:</span>
-                        <span id="total-hashes" style="color: var(--accent-color); font-weight: bold;">0</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Proofs Found:</span>
-                        <span id="proofs-found" style="color: var(--accent-color); font-weight: bold;">0</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Mining Time:</span>
-                        <span id="mining-time" style="color: var(--accent-color); font-weight: bold;">00:00</span>
-                    </div>
+            <div class="mining-panel">
+                <h3>Mining Stats</h3>
+                <div class="stat-row">
+                    <span>Hash Rate:</span>
+                    <span id="hash-rate" class="stat-value">0 H/s</span>
+                </div>
+                <div class="stat-row">
+                    <span>Total Hashes:</span>
+                    <span id="total-hashes" class="stat-value">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Proofs Found:</span>
+                    <span id="proofs-found" class="stat-value">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Session Points:</span>
+                    <span id="session-points" class="stat-value">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Mining Time:</span>
+                    <span id="mining-time" class="stat-value">00:00</span>
                 </div>
             </div>
         </div>
 
-        <!-- Targeted Mining Section -->
-        <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px; margin-bottom: 20px;">
-            <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">🎯 Targeted Mining</h3>
-            <div style="margin-bottom: 10px;">
-                <label style="font-size: 12px; color: var(--text-muted);">Mine specific thread/post (enter SHA256 hash):</label>
-                <input type="text" id="target-hash" placeholder="Enter SHA256 hash of thread or post content..."
-                       style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 3px; font-family: monospace; font-size: 11px; background: var(--content-bg); color: var(--text-primary);">
-            </div>
-            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button class="btn" onclick="setTargetHash()">Set Target</button>
-                <button class="btn" onclick="getRandomTarget()">🎲 Random Target</button>
-                <button class="btn" onclick="clearTargetHash()">Clear (Global Mining)</button>
-                <span id="target-status" style="font-size: 11px; color: var(--text-muted); font-style: italic;">Global mining mode</span>
-            </div>
-            <div style="margin-top: 10px; font-size: 11px; color: var(--text-muted);">
-                💡 Tip: Copy SHA256 hash from thread/post headers or use browser dev tools to inspect content hashes
-            </div>
-        </div>
-
         <!-- Current Hash Display -->
-        <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px; margin-bottom: 20px;">
-            <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Current Hash</h3>
-            <div style="background: var(--content-bg); color: var(--text-primary); font-family: 'Courier New', monospace; font-size: 12px; padding: 10px; border-radius: 3px; word-break: break-all; border: 1px solid var(--border-color);" id="current-hash-display">
+        <div class="mining-panel" style="margin-bottom: 20px;">
+            <h3>Current Hash</h3>
+            <div class="hash-display" id="current-hash-display">
                 waiting for hash...
             </div>
-            <div style="margin-top: 10px; font-size: 12px; color: var(--text-muted);">
-                Mining target: <span id="current-target" style="color: var(--text-primary); font-weight: bold;">global</span>
+            <div style="margin-top: 10px; font-size: 10pt; color: #444B6E;">
+                Mining target: <span id="current-target" style="color: #708B75; font-weight: bold;">global</span>
             </div>
         </div>
 
         <!-- Mining Log -->
-        <div style="background: var(--primary-bg); border: 1px solid var(--border-color); border-radius: 5px; padding: 15px;">
-            <h3 style="color: var(--text-primary); margin-bottom: 10px; font-size: 16px;">Mining Log</h3>
-            <div id="mining-log" style="background: var(--content-bg); color: var(--text-primary); font-family: 'Courier New', monospace; font-size: 11px; padding: 10px; border-radius: 3px; height: 200px; overflow-y: auto; border: 1px solid var(--border-color);">
+        <div class="mining-panel">
+            <h3>Mining Log</h3>
+            <div id="mining-log" class="mining-log">
                 <div class="log-entry">🚀 Haichan Mining Dashboard Ready</div>
                 <div class="log-entry">💡 Configure mining settings and click 'Start Mining'</div>
+                <div class="log-entry">⚠️ PoW is MANDATORY for thread creation and replies</div>
             </div>
         </div>
     </div>
@@ -218,7 +256,6 @@
         let proofsFound = 0;
         let sessionPoints = 0;
         let nonce = crypto.getRandomValues(new Uint32Array(1))[0];
-        let targetHash = null;
 
         function startMining() {
             if (miningActive) return;
@@ -239,21 +276,21 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
                 }
-            });
+            }).catch(e => logMessage('⚠️ Session start failed: ' + e.message));
             
-            // Start mining loop with optimized batch sizes and timing
+            // Start mining loop
             const mode = document.getElementById('mining-mode').value;
             let batchSize, intervalMs;
             
             if (mode === 'idle') {
-                batchSize = 5;   // ~100 H/s
-                intervalMs = 50;
+                batchSize = 10;
+                intervalMs = 100;
             } else if (mode === 'active') {
-                batchSize = 50;  // ~1000 H/s  
+                batchSize = 50;
                 intervalMs = 50;
             } else if (mode === 'hyper') {
-                batchSize = 150; // ~3000 H/s
-                intervalMs = 50;
+                batchSize = 100;
+                intervalMs = 30;
             }
             
             miningInterval = setInterval(() => {
@@ -291,129 +328,49 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
                 }
-            });
+            }).catch(e => logMessage('⚠️ Session end failed: ' + e.message));
         }
         
         async function mineBatch(batchSize) {
             if (!miningActive) return;
             
             const pattern = document.getElementById('target-pattern').value;
-            const baseData = generateMiningData();
-            
-            // Process hashes in parallel for better performance
-            const promises = [];
+            const baseData = `global:haichan:${Date.now()}`;
             
             for (let i = 0; i < batchSize; i++) {
+                if (!miningActive) break;
+                
                 const currentNonce = nonce + i;
                 const testData = `${baseData}:${currentNonce}`;
                 
-                promises.push(
-                    sha256(testData).then(hash => {
-                        hashCount++;
-                        
-                        // Update current hash display occasionally
-                        if (i % 10 === 0) {
-                            document.getElementById('current-hash-display').textContent = hash;
-                        }
-                        
-                        // Check if hash matches pattern
-                        if (hash.toLowerCase().startsWith(pattern.toLowerCase())) {
-                            foundProof(hash, currentNonce, testData, pattern);
-                        }
-                        
-                        return hash;
-                    }).catch(error => {
-                        logMessage(`❌ Hashing error: ${error.message}`);
-                        return null;
-                    })
-                );
-            }
-            
-            try {
-                await Promise.all(promises);
-                nonce += batchSize;
-            } catch (error) {
-                logMessage(`❌ Batch error: ${error.message}`);
-            }
-        }
-        
-        function generateMiningData() {
-            const timestamp = Date.now();
-            if (targetHash) {
-                return `target:${targetHash}:${timestamp}`;
-            } else {
-                return `global:haichan:${timestamp}`;
-            }
-        }
-
-        function setTargetHash() {
-            const hashInput = document.getElementById('target-hash').value.trim();
-            if (!hashInput) {
-                alert('Please enter a SHA256 hash');
-                return;
-            }
-
-            // Validate hash format (64 hex characters)
-            if (!/^[a-fA-F0-9]{64}$/.test(hashInput)) {
-                alert('Invalid SHA256 hash format. Must be 64 hexadecimal characters.');
-                return;
-            }
-
-            targetHash = hashInput.toLowerCase();
-            document.getElementById('target-status').textContent = `Targeting: ${targetHash}`;
-            document.getElementById('current-target').textContent = `custom hash (${targetHash})`;
-
-            logMessage(`🎯 Target set: ${targetHash}`);
-        }
-
-        function clearTargetHash() {
-            targetHash = null;
-            document.getElementById('target-hash').value = '';
-            document.getElementById('target-status').textContent = 'Global mining mode';
-            document.getElementById('current-target').textContent = 'global';
-
-            logMessage('🌐 Switched to global mining mode');
-        }
-
-        async function getRandomTarget() {
-            logMessage('🎲 Fetching random target...');
-            
-            try {
-                const response = await fetch('/api/random-hash', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to fetch random hash');
-                }
-                
-                const result = await response.json();
-                
-                if (result.success && result.hash) {
-                    const randomHash = result.hash.toLowerCase();
-                    document.getElementById('target-hash').value = randomHash;
+                try {
+                    const hash = await sha256(testData);
+                    hashCount++;
                     
-                    targetHash = randomHash;
-                    document.getElementById('target-status').textContent = `Random target: ${result.type} #${result.id}`;
-                    document.getElementById('current-target').textContent = `${result.type} #${result.id} (${randomHash.substring(0, 12)}...)`;
-
-                    logMessage(`🎯 Random target set: ${result.type} #${result.id}`);
-                    logMessage(`📝 "${result.preview}"`);
-                } else {
-                    throw new Error(result.message || 'No random hash available');
+                    // Update current hash display occasionally
+                    if (i % 10 === 0) {
+                        document.getElementById('current-hash-display').textContent = hash;
+                    }
+                    
+                    // Check if hash matches pattern
+                    if (hash.toLowerCase().startsWith(pattern.toLowerCase())) {
+                        foundProof(hash, currentNonce, testData, pattern);
+                        break; // Found proof, reset and continue
+                    }
+                } catch (error) {
+                    logMessage(`❌ Hashing error: ${error.message}`);
                 }
-            } catch (error) {
-                logMessage(`❌ Random target failed: ${error.message}`);
-                alert('Failed to get random target: ' + error.message);
             }
+            
+            nonce += batchSize;
         }
         
         async function sha256(message) {
-            // Check if crypto.subtle is available (HTTPS/localhost context)
+            // Check for secure context (HTTPS or localhost)
+            if (!window.isSecureContext) {
+                throw new Error('Secure context required - Please use HTTPS');
+            }
+            
             if (crypto && crypto.subtle) {
                 try {
                     const msgBuffer = new TextEncoder().encode(message);
@@ -421,18 +378,12 @@
                     const hashArray = Array.from(new Uint8Array(hashBuffer));
                     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
                 } catch (error) {
-                    // Fallback to JavaScript implementation
-                    return sha256Fallback(message);
+                    logMessage(`❌ Crypto error: ${error.message}`);
+                    throw new Error('SHA-256 computation failed: ' + error.message);
                 }
             } else {
-                // Fallback to JavaScript implementation
-                return sha256Fallback(message);
+                throw new Error('Web Crypto API not available - HTTPS required for mining');
             }
-        }
-        
-        function sha256Fallback(message) {
-            // NO FALLBACK - This is a production system requiring real SHA-256
-            throw new Error('Crypto.subtle unavailable - Real SHA-256 computation required for production');
         }
         
         async function foundProof(hash, nonce, data, pattern) {
@@ -442,8 +393,8 @@
             
             logMessage(`🎯 PROOF FOUND! ${hash} (${points} points)`);
             
-            // Trigger celebration animations
-            celebrateProof(pattern, points);
+            // Celebrate
+            celebrateProof(points);
             
             // Submit proof to server
             try {
@@ -458,8 +409,8 @@
                         nonce: nonce,
                         data: data,
                         pattern: pattern,
-                        target_type: targetHash ? 'custom' : 'global',
-                        target_id: targetHash ? targetHash : 'haichan'
+                        target_type: 'global',
+                        target_id: 'haichan'
                     })
                 });
                 
@@ -478,70 +429,39 @@
             nonce = crypto.getRandomValues(new Uint32Array(1))[0];
         }
         
-        function celebrateProof(pattern, points) {
-            // Add celebration class to body
-            document.body.classList.add('proof-celebration');
+        function celebrateProof(points) {
+            // Add celebration class
+            document.body.classList.add('celebrating');
+            setTimeout(() => document.body.classList.remove('celebrating'), 1500);
             
-            // Get celebration intensity based on rarity
-            let intensity = 'common';
-            if (pattern === '000021e8') intensity = 'legendary';
-            else if (pattern === '21e8000') intensity = 'epic';
-            else if (pattern === '21e800') intensity = 'rare';
-            else if (pattern === '21e80') intensity = 'uncommon';
-            
-            document.body.classList.add(`celebration-${intensity}`);
-            
-            // Create floating points animation
-            createFloatingPoints(points);
-            
-            // Remove celebration after 3 seconds
-            setTimeout(() => {
-                document.body.classList.remove('proof-celebration');
-                document.body.classList.remove(`celebration-${intensity}`);
-            }, 3000);
-        }
-        
-        function createFloatingPoints(points) {
+            // Create floating points
             const pointsElement = document.createElement('div');
             pointsElement.className = 'floating-points';
             pointsElement.textContent = `+${points} points!`;
-            pointsElement.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                font-size: 48px;
-                font-weight: bold;
-                color: #9AB87A;
-                text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-                pointer-events: none;
-                z-index: 9999;
-                animation: floatUp 3s ease-out forwards;
-            `;
-            
             document.body.appendChild(pointsElement);
             
-            // Remove after animation
             setTimeout(() => {
                 if (pointsElement.parentNode) {
                     pointsElement.parentNode.removeChild(pointsElement);
                 }
-            }, 3000);
+            }, 2000);
         }
         
         function calculatePoints(pattern) {
             const points = {
                 '21': 0.1,
-                '21e8': 1,
-                '21e80': 5,
-                '21e800': 25,
-                '21e8000': 100,
-                '21e80000': 500
+                '21e': 0.5,
+                '21e8': 100,
+                '21e80': 500,
+                '21e800': 2500,
+                '21e8000': 10000
             };
             return points[pattern] || 0.1;
         }
         
         function updateStats() {
+            if (!startTime) return;
+            
             const elapsed = (Date.now() - startTime) / 1000;
             const hashRate = Math.floor(hashCount / elapsed);
             
@@ -565,8 +485,8 @@
             log.appendChild(entry);
             log.scrollTop = log.scrollHeight;
             
-            // Keep only last 50 entries
-            while (log.children.length > 50) {
+            // Keep only last 100 entries
+            while (log.children.length > 100) {
                 log.removeChild(log.firstChild);
             }
         }
@@ -574,6 +494,32 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             logMessage('🔄 Mining dashboard initialized');
+            
+            // Check secure context and Web Crypto API availability
+            if (!window.isSecureContext) {
+                logMessage('⚠️ HTTPS required for mining - crypto.subtle unavailable over HTTP');
+                logMessage('🔐 Please access this page via HTTPS for full functionality');
+                document.getElementById('start-mining').disabled = true;
+                document.getElementById('start-mining').textContent = 'HTTPS Required';
+                document.getElementById('start-mining').style.background = '#dc3545';
+            } else if (!crypto || !crypto.subtle) {
+                logMessage('❌ Web Crypto API not available');
+                document.getElementById('start-mining').disabled = true;
+                document.getElementById('start-mining').textContent = 'Crypto API Missing';
+                document.getElementById('start-mining').style.background = '#dc3545';
+            } else {
+                logMessage('✅ HTTPS secure context detected');
+                logMessage('✅ Web Crypto API available - ready for mining');
+                logMessage('💡 You can now mine real SHA-256 proofs!');
+            }
+        });
+        
+        // Auto-stop mining on page unload
+        window.addEventListener('beforeunload', function() {
+            if (miningActive) {
+                stopMining();
+            }
         });
     </script>
-@endsection
+</body>
+</html>

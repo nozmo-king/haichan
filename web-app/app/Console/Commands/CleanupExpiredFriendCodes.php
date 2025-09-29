@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Services\FriendCodeService;
+use Illuminate\Console\Command;
 
 class CleanupExpiredFriendCodes extends Command
 {
@@ -33,11 +33,11 @@ class CleanupExpiredFriendCodes extends Command
     public function handle()
     {
         $this->info('Starting friend code cleanup...');
-        
+
         $deletedCount = $this->friendCodeService->cleanupExpiredCodes();
-        
+
         $this->info("Cleaned up {$deletedCount} expired friend codes.");
-        
+
         return Command::SUCCESS;
     }
 }

@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class UserSession extends Model
 {
     protected $primaryKey = 'user_token';
+
     public $incrementing = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
@@ -15,10 +17,10 @@ class UserSession extends Model
         'friend_code_used',
         'username',
         'last_seen',
-        'total_pow_score'
+        'total_pow_score',
     ];
 
     protected $casts = [
-        'last_seen' => 'datetime'
+        'last_seen' => 'datetime',
     ];
 }

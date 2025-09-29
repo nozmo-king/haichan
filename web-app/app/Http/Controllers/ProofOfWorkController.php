@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log;
 use App\Models\Board;
-use App\Models\Thread;
 use App\Models\ProofOfWork;
+use App\Models\Thread;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class ProofOfWorkController extends Controller
 {
@@ -16,22 +16,37 @@ class ProofOfWorkController extends Controller
         Log::info('=== PROOF SUBMISSION RECEIVED ===', [
             'request_data' => $request->all(),
             'ip' => $request->ip(),
-            'user_agent' => $request->userAgent()
+            'user_agent' => $request->userAgent(),
         ]);
+
+        // Check if this is thread/reply related mining vs general mining
+        $isThreadReply = in_array($request->input('target_type'), ['thread', 'reply']) ||
+                        str_contains($request->input('data', ''), 'thread-') ||
+                        str_contains($request->input('data', ''), 'post_bump:');
+
+        // Define allowed patterns based on context
+        $allowedPatterns = $isThreadReply ?
+            ['21e8', '21e80', '21e800', '21e8000', '000021e8', '000', '111', '222', '333', '444', '555', '666', '777', '888', '999', 'aaa', 'bbb', 'ccc', 'ddd', 'eee', 'fff', 'ace', 'bad', 'cab', 'dad', 'ded', 'fab', 'fed', 'beef', 'cafe', 'face', 'babe', 'fade', 'dead', 'deed', 'feed', 'c0de', 'b00b', '1337', 'pwnd', 'rekt', 'epic', 'Chad', 'deadbeef'] :
+            ['21', '21e', '21e8', '21e80', '21e800', '21e8000', '000021e8', '000', '111', '222', '333', '444', '555', '666', '777', '888', '999', 'aaa', 'bbb', 'ccc', 'ddd', 'eee', 'fff', 'ace', 'bad', 'cab', 'dad', 'ded', 'fab', 'fed', 'beef', 'cafe', 'face', 'babe', 'fade', 'dead', 'deed', 'feed', 'c0de', 'b00b', '1337', 'pwnd', 'rekt', 'epic', 'Chad', 'deadbeef'];
 
         $validator = Validator::make($request->all(), [
             'hash' => 'required|string|size:64',
             'nonce' => 'required|integer|min:0',
             'data' => 'required|string',
-            'pattern' => 'required|string|in:21,21e,21e8,21e80,21e800,21e8000,000021e8,000,111,222,333,444,555,666,777,888,999,aaa,bbb,ccc,ddd,eee,fff,ace,bad,cab,dad,ded,fab,fed,beef,cafe,face,babe,fade,dead,deed,feed,c0de,b00b,1337,pwnd,rekt,epic,Chad,deadbeef',
+            'pattern' => 'required|string|in:'.implode(',', $allowedPatterns),
             'target_type' => 'nullable|string',
-            'target_id' => 'nullable|string'
+            'target_id' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
+            $errorMessage = 'Invalid proof format';
+            if ($isThreadReply && in_array($request->input('pattern'), ['21', '21e'])) {
+                $errorMessage = 'Thread creation and replies require minimum 21e8 pattern. Use mining dashboard to experiment with easier patterns.';
+            }
+
             return response()->json([
-                'success' => false, 
-                'message' => 'Invalid proof format'
+                'success' => false,
+                'message' => $errorMessage,
             ], 422);
         }
 
@@ -42,16 +57,16 @@ class ProofOfWorkController extends Controller
             $request->input('pattern')
         );
 
-        if (!$verificationResult['valid']) {
+        if (! $verificationResult['valid']) {
             return response()->json([
                 'success' => false,
-                'message' => $verificationResult['error']
+                'message' => $verificationResult['error'],
             ], 400);
         }
 
         $points = $this->calculatePoints($request->input('pattern'));
 
-        // Link proof to thread if target is thread-related  
+        // Link proof to thread if target is thread-related
         $threadId = null;
         if ($request->input('target_type') === 'thread') {
             $threadId = $request->input('target_id');
@@ -72,7 +87,7 @@ class ProofOfWorkController extends Controller
             'pattern' => $request->input('pattern'),
             'points' => $points,
             'ip_address' => $request->ip(),
-            'verified_at' => now()
+            'verified_at' => now(),
         ]);
 
         // Add PoW points and bump thread if this is thread-related mining
@@ -82,17 +97,17 @@ class ProofOfWorkController extends Controller
                 // Increment thread bump score with PoW points
                 $thread->increment('bump_score', $points);
                 $thread->update(['bumped_at' => now()]);
-                
+
                 // Also add to board if method exists
                 if ($thread->board && method_exists($thread->board, 'addPowPoints')) {
                     $thread->board->addPowPoints($points);
                 }
-                
+
                 Log::info('THREAD BUMPED WITH POW', [
                     'thread_id' => $threadId,
                     'points_added' => $points,
                     'new_bump_score' => $thread->fresh()->bump_score,
-                    'pattern' => $request->input('pattern')
+                    'pattern' => $request->input('pattern'),
                 ]);
             }
         }
@@ -101,7 +116,7 @@ class ProofOfWorkController extends Controller
             'success' => true,
             'message' => 'Proof accepted!',
             'points' => $points,
-            'total_points' => $points
+            'total_points' => $points,
         ]);
     }
 
@@ -111,13 +126,13 @@ class ProofOfWorkController extends Controller
             'hash' => 'required|string|size:64',
             'nonce' => 'required|integer|min:0',
             'data' => 'required|string',
-            'pattern' => 'required|string|in:21,21e8,21e80,21e800'
+            'pattern' => 'required|string|in:21e8,21e80,21e800,21e8000',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid proof format'
+                'message' => 'Invalid proof format',
             ], 422);
         }
 
@@ -131,10 +146,10 @@ class ProofOfWorkController extends Controller
             $request->input('pattern')
         );
 
-        if (!$verificationResult['valid']) {
+        if (! $verificationResult['valid']) {
             return response()->json([
                 'success' => false,
-                'message' => $verificationResult['error']
+                'message' => $verificationResult['error'],
             ], 400);
         }
 
@@ -148,7 +163,7 @@ class ProofOfWorkController extends Controller
             'pattern' => $request->input('pattern'),
             'points' => $points,
             'verified_at' => now(),
-            'ip_address' => $request->ip()
+            'ip_address' => $request->ip(),
         ]);
 
         $thread->increment('bump_score', $points);
@@ -158,7 +173,7 @@ class ProofOfWorkController extends Controller
             'success' => true,
             'message' => 'Thread bumped successfully',
             'points' => $points,
-            'thread_bump_score' => $thread->bump_score
+            'thread_bump_score' => $thread->bump_score,
         ]);
     }
 
@@ -168,16 +183,17 @@ class ProofOfWorkController extends Controller
             'data' => $data,
             'nonce' => $nonce,
             'submitted_hash' => $submittedHash,
-            'pattern' => $pattern
+            'pattern' => $pattern,
         ]);
 
         // First verify the submitted hash matches the pattern
-        if (!str_starts_with(strtolower($submittedHash), strtolower($pattern))) {
+        if (! str_starts_with(strtolower($submittedHash), strtolower($pattern))) {
             Log::error('PATTERN MISMATCH', [
                 'submitted_hash' => $submittedHash,
                 'pattern' => $pattern,
-                'hash_start' => substr($submittedHash, 0, 10)
+                'hash_start' => substr($submittedHash, 0, 10),
             ]);
+
             return ['valid' => false, 'error' => 'Hash does not match the expected pattern.'];
         }
 
@@ -189,12 +205,12 @@ class ProofOfWorkController extends Controller
         // Server-side verification: recompute hash and verify
         // The client already includes nonce in data, so use data directly
         $serverHash = hash('sha256', $data);
-        
+
         Log::info('SERVER HASH VERIFICATION', [
             'data' => $data,
             'server_hash' => $serverHash,
             'client_hash' => $submittedHash,
-            'hashes_match' => $serverHash === $submittedHash
+            'hashes_match' => $serverHash === $submittedHash,
         ]);
 
         // Strict hash validation - no fallback allowed in production
@@ -202,19 +218,19 @@ class ProofOfWorkController extends Controller
             Log::error('HASH VERIFICATION FAILED', [
                 'server_sha256' => $serverHash,
                 'client_submitted' => $submittedHash,
-                'data' => $data
+                'data' => $data,
             ]);
-            return ['valid' => false, 'error' => 'Hash verification failed - server computed: ' . $serverHash];
+
+            return ['valid' => false, 'error' => 'Hash verification failed - server computed: '.$serverHash];
         }
 
         Log::info('PROOF VERIFIED SUCCESSFULLY', [
             'hash' => $submittedHash,
-            'verification_type' => 'SHA256'
+            'verification_type' => 'SHA256',
         ]);
-        
+
         return ['valid' => true];
     }
-
 
     private function calculatePoints($pattern)
     {
@@ -224,7 +240,7 @@ class ProofOfWorkController extends Controller
             '21e' => 0.5, // Easy pattern for replies
             '21e8' => 100, // MAIN MINING PATTERN - 100 POINTS
             '21e80' => 500, // 5x harder
-            '21e800' => 2500, // 25x harder 
+            '21e800' => 2500, // 25x harder
             '21e8000' => 10000, // 100x harder
             '000021e8' => 50000, // Ultra rare
 
@@ -276,8 +292,9 @@ class ProofOfWorkController extends Controller
             'rekt' => 400,  // Rekt
             'epic' => 300,  // Epic
             'chad' => 250,  // Chad (case insensitive)
-            'Chad' => 250   // Chad (proper case)
+            'Chad' => 250,   // Chad (proper case)
         ];
+
         return $points[$pattern] ?? 0.1;
     }
 
@@ -287,13 +304,13 @@ class ProofOfWorkController extends Controller
             'post_id' => 'required|integer',
             'hash' => 'required|string|size:64',
             'multiplier' => 'required|integer|min:1|max:100',
-            'thread_id' => 'required|integer'
+            'thread_id' => 'required|integer',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid bump request'
+                'message' => 'Invalid bump request',
             ], 422);
         }
 
@@ -303,10 +320,10 @@ class ProofOfWorkController extends Controller
         $postId = $request->input('post_id');
 
         // Verify hash starts with 21e8
-        if (!str_starts_with(strtolower($hash), '21e8')) {
+        if (! str_starts_with(strtolower($hash), '21e8')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Hash does not start with 21e8'
+                'message' => 'Hash does not start with 21e8',
             ], 400);
         }
 
@@ -318,16 +335,20 @@ class ProofOfWorkController extends Controller
         if ($existingBump) {
             return response()->json([
                 'success' => false,
-                'message' => 'Bump already processed for this hash'
+                'message' => 'Bump already processed for this hash',
             ], 400);
         }
 
         // Calculate bump points
         $basePoints = 1;
-        if (str_starts_with($hash, '21e8000')) $basePoints = 25;
-        elseif (str_starts_with($hash, '21e800')) $basePoints = 5;
-        elseif (str_starts_with($hash, '21e80')) $basePoints = 2;
-        
+        if (str_starts_with($hash, '21e8000')) {
+            $basePoints = 25;
+        } elseif (str_starts_with($hash, '21e800')) {
+            $basePoints = 5;
+        } elseif (str_starts_with($hash, '21e80')) {
+            $basePoints = 2;
+        }
+
         $bumpPoints = $basePoints * $multiplier;
 
         // Create ProofOfWork record for the bump
@@ -339,7 +360,7 @@ class ProofOfWorkController extends Controller
             'pattern' => $this->detectPattern($hash),
             'points' => $bumpPoints,
             'ip_address' => $request->ip(),
-            'verified_at' => now()
+            'verified_at' => now(),
         ]);
 
         // Apply bump to thread
@@ -349,29 +370,38 @@ class ProofOfWorkController extends Controller
             $thread->update(['bumped_at' => now()]);
         }
 
-        Log::info("21e8 POST BUMP APPLIED", [
+        Log::info('21e8 POST BUMP APPLIED', [
             'post_id' => $postId,
             'thread_id' => $threadId,
             'hash' => $hash,
             'bump_points' => $bumpPoints,
-            'multiplier' => $multiplier
+            'multiplier' => $multiplier,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => '21e8 bump applied successfully!',
             'bump_points' => $bumpPoints,
-            'thread_bump_score' => $thread->bump_score ?? 0
+            'thread_bump_score' => $thread->bump_score ?? 0,
         ]);
     }
 
     private function detectPattern($hash)
     {
         $hash = strtolower($hash);
-        if (str_starts_with($hash, '21e8000')) return '21e8000';
-        if (str_starts_with($hash, '21e800')) return '21e800';
-        if (str_starts_with($hash, '21e80')) return '21e80';
-        if (str_starts_with($hash, '21e8')) return '21e8';
+        if (str_starts_with($hash, '21e8000')) {
+            return '21e8000';
+        }
+        if (str_starts_with($hash, '21e800')) {
+            return '21e800';
+        }
+        if (str_starts_with($hash, '21e80')) {
+            return '21e80';
+        }
+        if (str_starts_with($hash, '21e8')) {
+            return '21e8';
+        }
+
         return '21';
     }
 
@@ -399,7 +429,7 @@ class ProofOfWorkController extends Controller
                 ->count(),
             'top_patterns' => $topPatterns,
             'network_hashrate' => $this->estimateNetworkHashrate(),
-            'total_points_awarded' => ProofOfWork::sum('points')
+            'total_points_awarded' => ProofOfWork::sum('points'),
         ]);
     }
 
@@ -423,7 +453,7 @@ class ProofOfWorkController extends Controller
             'status' => 'success',
             'message' => 'Mining session started',
             'session_id' => uniqid(),
-            'timestamp' => time()
+            'timestamp' => time(),
         ]);
     }
 
@@ -431,10 +461,9 @@ class ProofOfWorkController extends Controller
     {
         // For now, just return success - could track session stats later
         return response()->json([
-            'status' => 'success', 
+            'status' => 'success',
             'message' => 'Mining session ended',
-            'timestamp' => time()
+            'timestamp' => time(),
         ]);
     }
-
 }

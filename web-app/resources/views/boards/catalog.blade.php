@@ -1,297 +1,73 @@
 @extends('layout')
 
-@section('title', '/' . $board->code . '/ - Catalog')
+@section('title', '/{{ $board->code }}/ - Catalog')
 
 @section('content')
-<style>
-.catalog-container {
-    max-width: 900px;
-    margin: 60px auto 40px auto;
-    background: #F5F5DC;
-    border: 2px solid #708B75;
-    box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);
-}
-
-
-.catalog-header {
-    text-align: center;
-    margin-bottom: 0;
-    padding: 25px 40px;
-    background: linear-gradient(135deg, #FFFACD 0%, #F5F5DC 100%);
-    border-bottom: 2px solid #708B75;
-}
-
-.catalog-header h2 {
-    color: #3D315B;
-    margin: 0 0 15px 0;
-    font-size: 24px;
-    font-weight: 300;
-    letter-spacing: 1.5px;
-    font-family: 'Nova Cut', serif;
-}
-
-.catalog-header p {
-    color: #708B75;
-    margin: 15px 0 0 0;
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 1.5;
-}
-
-.catalog-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 20px;
-    margin: 0;
-    padding: 40px;
-    background: #FFFFEE;
-}
-
-.catalog-thread {
-    border: 2px solid #708B75;
-    background: #F5F5DC;
-    padding: 20px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    min-height: 160px;
-    display: flex;
-    flex-direction: column;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(68, 75, 110, 0.2);
-}
-
-.catalog-thread:hover {
-    border-color: #444B6E;
-    background: #FEFEFE;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.catalog-thread-image {
-    width: 100%;
-    max-height: 120px;
-    object-fit: cover;
-    border: 1px solid #CCCCCC;
-    margin-bottom: 8px;
-    display: block;
-}
-
-.catalog-thread-title {
-    font-weight: bold;
-    font-size: 12px;
-    color: #0f0c5d;
-    margin-bottom: 6px;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-}
-
-.catalog-thread-excerpt {
-    font-size: 11px;
-    color: #000;
-    margin-bottom: auto;
-    line-height: 1.3;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-}
-
-.catalog-thread-stats {
-    font-size: 10px;
-    color: #117743;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid #EEEEEE;
-}
-
-.catalog-pow-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: #9AB87A;
-    color: #444B6E;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 9px;
-    font-weight: bold;
-    border: 1px solid #708B75;
-}
-
-.catalog-thread-number {
-    color: #444B6E;
-    font-weight: bold;
-}
-
-.catalog-empty {
-    text-align: center;
-    padding: 60px 20px;
-    color: #666;
-    font-style: italic;
-}
-
-.catalog-empty a {
-    color: #444B6E;
-    text-decoration: none;
-}
-
-.catalog-empty a:hover {
-    text-decoration: underline;
-}
-
-@media (max-width: 600px) {
-    .catalog-container {
-        padding: 10px;
-    }
-
-    .catalog-grid {
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 10px;
-    }
-
-    .catalog-thread {
-        min-height: 120px;
-        padding: 8px;
-    }
-}
-</style>
-<div class="catalog-container">
-    <!-- Navigation breadcrumb -->
-    <div class="nav-breadcrumb">
-        [<a href="{{ route('boards.index') }}">Boards</a>]
-        [<a href="/{{ $board->code }}">/{{ $board->code }}/</a>]
-        <span class="thread-info">Catalog</span>
-    </div>
-
-    <!-- Board header -->
-    <div class="catalog-header">
-        <h2>/{{ $board->code }}/ - {{ $board->name }}</h2>
-        <p>{{ $board->description }}</p>
-    </div>
-
-    @if($errors->any())
-    <div class="alert alert-danger" style="background: #ffeeee; border: 1px solid #dd0000; padding: 10px; margin: 10px 0; color: #dd0000;">
-        @foreach($errors->all() as $error)
-            <p>{{ $error }}</p>
-        @endforeach
-    </div>
-    @endif
-
-    <div class="catalog-grid">
-        @forelse($threads as $thread)
-        <div class="catalog-thread" onclick="window.location.href='/{{ $board->code }}/{{ $thread->id }}'"
-             data-thread-id="{{ $thread->id }}"
-             data-thread-title="{{ $thread->title }}">
-
-            @if($thread->accumulated_points > 0)
-            <div class="catalog-pow-badge" data-pow-value="{{ $thread->accumulated_points }}">{{ number_format($thread->accumulated_points, 1) }}⚡</div>
-            @endif
-
-            @if($thread->image_path)
-            <img src="{{ route('thread.image', $thread->id) }}" class="catalog-thread-image" alt="Thread image">
-            @endif
-
-            <div class="catalog-thread-title">
-                {{ $thread->title ?: 'No Subject' }}
-            </div>
-
-            <div class="catalog-thread-excerpt">
-                {{ Str::limit(strip_tags($thread->content), 120) }}
-            </div>
-
-            <div class="catalog-thread-stats">
-                <span>R: {{ $thread->posts_count ?? 0 }}</span>
-                <span class="catalog-thread-number">No.{{ $thread->id }}</span>
-            </div>
-        </div>
-        @empty
-        <div class="catalog-empty">
-            <p>No threads found.</p>
-            <p><a href="/{{ $board->code }}">← Back to board</a> or <a href="/{{ $board->code }}">create the first thread</a></p>
-        </div>
-        @endforelse
-    </div>
-
-    @if(count($threads) >= 20)
-    <div style="text-align: center; padding: 20px; color: #708B75; font-size: 14px;">
-        <em>Showing top 20 threads by energy expenditure</em>
-    </div>
-    @endif
+<div style="text-align: center; margin: 10px 0;">
+    <h1>/{{ $board->code }}/ - Catalog</h1>
+    <p style="font-size: 12px; color: var(--ib-text-muted);">{{ $board->description }}</p>
 </div>
 
-<script>
-// Auto-shifting catalog system
-class CatalogShiftingSystem {
-    constructor() {
-        this.threads = Array.from(document.querySelectorAll('.catalog-thread'));
-        this.grid = document.querySelector('.catalog-grid');
-        this.startShifting();
-    }
+<div class="nav-links">
+    <a href="/">Board List</a> |
+    <a href="/{{ $board->code }}">Board Index</a> |
+    <a href="#bottom">Bottom</a>
+</div>
 
-    startShifting() {
-        if (this.threads.length > 1) {
-            // Shift every 10 seconds
-            setInterval(() => {
-                this.performShift();
-            }, 10000);
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; margin: 20px 0;">
+    @forelse($threads as $thread)
+    <div class="catalog-thread" style="cursor: pointer; transition: all 0.2s; background: var(--ib-panel); border: 1px solid var(--ib-border); box-shadow: 0 1px 3px rgba(0,0,0,0.1);" 
+         onclick="window.location.href='/{{ $board->code }}/{{ $thread->id }}'"
+         data-thread-id="{{ $thread->id }}">
+        
+        <div style="background: var(--ib-header); border-bottom: 1px solid var(--ib-border); padding: 8px 12px;">
+            <div style="font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                {{ $thread->title ?: 'No Subject' }}
+            </div>
+            @if($thread->accumulated_points > 0)
+            <div style="font-size: 11px; color: var(--ib-accent); margin-top: 2px;">
+                ⚡{{ number_format($thread->accumulated_points, 1) }}
+            </div>
+            @endif
+        </div>
 
-            console.log('🔄 Thread catalog automatic shifting started (every 10 seconds)');
-        }
-    }
+        @if($thread->image_path)
+        <div style="padding: 0; text-align: center;">
+            <img src="{{ route('thread.image', $thread->id) }}" 
+                 data-hash="{{ $thread->image_hash ?? '' }}" data-thread-id="{{ $thread->id }}"
+                 style="max-width: 100%; max-height: 150px; object-fit: cover;">
+        </div>
+        @endif
 
-    performShift() {
-        if (this.threads.length < 2) return;
+        <div style="padding: 12px;">
+            <div style="font-size: 12px; color: var(--ib-text); line-height: 1.4; margin-bottom: 8px; 
+                       overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">
+                {{ Str::limit($thread->content, 150) }}
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--ib-text-muted); border-top: 1px solid var(--ib-border-light); padding-top: 8px;">
+                <span>No.{{ $thread->id }}</span>
+                <div style="display: flex; gap: 10px;">
+                    <span>R: {{ $thread->reply_count }}</span>
+                    <span>I: {{ $thread->image_count }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    @empty
+    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; background: var(--ib-panel); border: 1px solid var(--ib-border);">
+        <p style="color: var(--ib-text-muted); margin: 0;">No threads in catalog yet.</p>
+        <p style="color: var(--ib-text-muted); margin: 10px 0 0 0; font-size: 12px;">
+            <a href="/{{ $board->code }}">Create the first thread</a>
+        </p>
+    </div>
+    @endforelse
+</div>
 
-        // Randomly select 2-4 threads to swap positions
-        const swapCount = Math.min(Math.floor(Math.random() * 3) + 2, this.threads.length);
-
-        for (let i = 0; i < swapCount; i++) {
-            const idx1 = Math.floor(Math.random() * this.threads.length);
-            const idx2 = Math.floor(Math.random() * this.threads.length);
-
-            if (idx1 !== idx2) {
-                // Add shift animation
-                this.threads[idx1].style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-                this.threads[idx2].style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
-
-                // Temporarily highlight shifting threads
-                this.threads[idx1].style.transform = 'scale(0.95) rotate(2deg)';
-                this.threads[idx2].style.transform = 'scale(0.95) rotate(-2deg)';
-
-                setTimeout(() => {
-                    // Swap elements in DOM
-                    const parent = this.threads[idx1].parentNode;
-                    const next1 = this.threads[idx1].nextSibling;
-                    const next2 = this.threads[idx2].nextSibling;
-
-                    if (next1 === this.threads[idx2]) {
-                        parent.insertBefore(this.threads[idx2], this.threads[idx1]);
-                    } else if (next2 === this.threads[idx1]) {
-                        parent.insertBefore(this.threads[idx1], this.threads[idx2]);
-                    } else {
-                        parent.insertBefore(this.threads[idx1], next2);
-                        parent.insertBefore(this.threads[idx2], next1);
-                    }
-
-                    // Reset styles
-                    this.threads[idx1].style.transform = '';
-                    this.threads[idx2].style.transform = '';
-                }, 400);
-            }
-        }
-    }
-}
-
-// Initialize shifting system when DOM loads
-document.addEventListener('DOMContentLoaded', () => {
-    new CatalogShiftingSystem();
-});
-</script>
+<div class="nav-links">
+    <a name="bottom"></a>
+    <a href="#">Top</a> |
+    <a href="/">Board List</a> |
+    <a href="/{{ $board->code }}">Board Index</a>
+</div>
 @endsection

@@ -9,9 +9,12 @@ class Thread extends Model
     protected $fillable = [
         'board_id', 'title', 'content', 'user_id', 'author_name',
         'image_path', 'image_filename', 'image_original_name', 'image_size',
-        'sticky', 'locked', 'reply_count', 'image_count',
-        'bump_score', 'bumped_at', 'ip_address', 'poster_hash',
-        'pow_nonce', 'pow_hash', 'pow_challenge_id', 'pow_pattern', 'pow_difficulty', 'pow_verified_at'
+        'reply_count', 'image_count', 'ip_address', 'poster_hash',
+        'pow_nonce', 'pow_hash', 'pow_challenge_id', 'pow_pattern', 'pow_difficulty', 'pow_verified_at',
+    ];
+
+    protected $guarded = [
+        'sticky', 'locked', 'bump_score', 'bumped_at',
     ];
 
     protected $casts = [
@@ -24,7 +27,7 @@ class Thread extends Model
         'bumped_at' => 'datetime',
         'pow_nonce' => 'integer',
         'pow_difficulty' => 'decimal:2',
-        'pow_verified_at' => 'datetime'
+        'pow_verified_at' => 'datetime',
     ];
 
     public function board()
@@ -91,7 +94,7 @@ class Thread extends Model
             '666' => 666,
             '777' => 777,
             'deadbeef' => 3133,
-            '1337' => 1337
+            '1337' => 1337,
         ];
 
         $totalPoints = 0;
@@ -123,11 +126,11 @@ class Thread extends Model
     public function addReply(Post $post)
     {
         $this->increment('reply_count');
-        
+
         if ($post->image_filename) {
             $this->increment('image_count');
         }
-        
+
         if ($this->reply_count < 500) {
             $this->update(['bumped_at' => now()]);
         }
@@ -142,7 +145,7 @@ class Thread extends Model
 
     public static function generatePosterHash($ip, $threadId)
     {
-        return substr(hash('sha256', $ip . $threadId . config('app.key', 'haichan')), 0, 8);
+        return substr(hash('sha256', $ip.$threadId.config('app.key', 'haichan')), 0, 8);
     }
 
     public static function generateChallenge()
@@ -152,16 +155,16 @@ class Thread extends Model
 
     public static function verifyProofOfWork($data, $nonce, $hash, $pattern)
     {
-        $calculatedHash = hash('sha256', $data . ':' . $nonce);
-        
+        $calculatedHash = hash('sha256', $data.':'.$nonce);
+
         if ($calculatedHash !== strtolower($hash)) {
             return ['valid' => false, 'error' => 'Hash mismatch'];
         }
-        
-        if (!str_starts_with(strtolower($calculatedHash), strtolower($pattern))) {
+
+        if (! str_starts_with(strtolower($calculatedHash), strtolower($pattern))) {
             return ['valid' => false, 'error' => 'Pattern mismatch'];
         }
-        
+
         return ['valid' => true];
     }
 
@@ -172,25 +175,25 @@ class Thread extends Model
 
     public function validateAndSetProofOfWork($nonce, $hash, $challengeId, $pattern = '21e8')
     {
-        $data = "thread:{$this->board->name}:{$this->title}:{$challengeId}";
+        $data = "thread:{$this->board->code}:{$this->title}:{$challengeId}";
         $verification = self::verifyProofOfWork($data, $nonce, $hash, $pattern);
-        
-        if (!$verification['valid']) {
+
+        if (! $verification['valid']) {
             return $verification;
         }
-        
+
         $this->update([
             'pow_nonce' => $nonce,
             'pow_hash' => $hash,
             'pow_challenge_id' => $challengeId,
             'pow_pattern' => $pattern,
             'pow_difficulty' => $this->calculateDifficulty($pattern),
-            'pow_verified_at' => now()
+            'pow_verified_at' => now(),
         ]);
-        
+
         return ['valid' => true];
     }
-    
+
     private function calculateDifficulty($pattern)
     {
         $difficulties = [
@@ -199,9 +202,9 @@ class Thread extends Model
             '21e80' => 5,
             '21e800' => 25,
             '21e8000' => 100,
-            '21e80000' => 500
+            '21e80000' => 500,
         ];
-        
+
         return $difficulties[$pattern] ?? 1.0;
     }
 }

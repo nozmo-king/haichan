@@ -9,14 +9,25 @@ class GeoHelper
      */
     public static function getCountryFlag($ip)
     {
-        // Real IP geolocation using free service
+        // Validate IP address first
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            return '🌍';
+        }
+        
+        // Real IP geolocation using free service (HTTPS for security)
         try {
-            $geoData = @file_get_contents("http://ip-api.com/json/{$ip}?fields=countryCode");
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 5,
+                    'user_agent' => 'HaichanApp/1.0'
+                ]
+            ]);
+            $geoData = @file_get_contents("https://ip-api.com/json/{$ip}?fields=countryCode", false, $context);
             if ($geoData) {
                 $data = json_decode($geoData, true);
                 $countryCode = $data['countryCode'] ?? null;
 
-                if ($countryCode) {
+                if ($countryCode && preg_match('/^[A-Z]{2}$/', $countryCode)) {
                     return self::getEmojiFlag($countryCode);
                 }
             }
@@ -60,7 +71,7 @@ class GeoHelper
             'SY' => '🇸🇾', 'LB' => '🇱🇧', 'JO' => '🇯🇴', 'PS' => '🇵🇸', 'KW' => '🇰🇼',
             'QA' => '🇶🇦', 'BH' => '🇧🇭', 'OM' => '🇴🇲', 'YE' => '🇾🇪', 'CL' => '🇨🇱',
             'PE' => '🇵🇪', 'BO' => '🇧🇴', 'PY' => '🇵🇾', 'UY' => '🇺🇾', 'EC' => '🇪🇨',
-            'CO' => '🇨🇴', 'VE' => '🇻🇪', 'GY' => '🇬🇾', 'SR' => '🇸🇷', 'GF' => '🇬🇫'
+            'CO' => '🇨🇴', 'VE' => '🇻🇪', 'GY' => '🇬🇾', 'SR' => '🇸🇷', 'GF' => '🇬🇫',
         ];
 
         return $flags[$countryCode] ?? '🏁';
@@ -75,7 +86,7 @@ class GeoHelper
             'US' => 'United States', 'CA' => 'Canada', 'GB' => 'United Kingdom',
             'FR' => 'France', 'DE' => 'Germany', 'JP' => 'Japan', 'KR' => 'South Korea',
             'CN' => 'China', 'RU' => 'Russia', 'IN' => 'India', 'BR' => 'Brazil',
-            'MX' => 'Mexico', 'AR' => 'Argentina', 'AU' => 'Australia', 'NZ' => 'New Zealand'
+            'MX' => 'Mexico', 'AR' => 'Argentina', 'AU' => 'Australia', 'NZ' => 'New Zealand',
         ];
 
         return $countries[$countryCode] ?? 'Unknown';

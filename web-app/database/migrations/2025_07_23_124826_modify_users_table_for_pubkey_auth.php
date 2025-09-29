@@ -18,7 +18,7 @@ return new class extends Migration
             } catch (\Exception $e) {
                 // Index might not exist
             }
-            
+
             if (Schema::hasColumn('users', 'name')) {
                 $table->dropColumn('name');
             }
@@ -34,11 +34,11 @@ return new class extends Migration
             if (Schema::hasColumn('users', 'remember_token')) {
                 $table->dropColumn('remember_token');
             }
-            
-            if (!Schema::hasColumn('users', 'public_key')) {
+
+            if (! Schema::hasColumn('users', 'public_key')) {
                 $table->string('public_key', 64)->unique();
             }
-            if (!Schema::hasColumn('users', 'private_key_hash')) {
+            if (! Schema::hasColumn('users', 'private_key_hash')) {
                 $table->string('private_key_hash', 64);
             }
         });

@@ -2,19 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\AllowedPublicKey;
 use App\Models\BitcoinAuth;
-use App\Models\Thread;
-use App\Models\Post;
 use App\Models\InviteCode;
+use App\Models\Post;
+use App\Models\Thread;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class AdminController extends Controller
 {
     public function index()
     {
         // Check if user is admin
-        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+        if (! session('bitcoin_auth_user') || ! session('bitcoin_auth_user')->is_admin) {
             return redirect('/')->with('error', 'Admin access required');
         }
 
@@ -36,6 +37,7 @@ class AdminController extends Controller
     public function keys()
     {
         $allowedKeys = AllowedPublicKey::with('users')->orderBy('created_at', 'desc')->paginate(20);
+
         return view('admin.keys.index', compact('allowedKeys'));
     }
 
@@ -49,18 +51,18 @@ class AdminController extends Controller
         $request->validate([
             'public_key' => 'required|string|size:66|unique:allowed_public_keys,public_key',
             'label' => 'nullable|string|max:255',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         // Validate public key format (compressed secp256k1)
-        if (!preg_match('/^(02|03)[a-f0-9]{64}$/i', $request->public_key)) {
+        if (! preg_match('/^(02|03)[a-f0-9]{64}$/i', $request->public_key)) {
             return back()->withErrors(['public_key' => 'Invalid secp256k1 public key format']);
         }
 
         AllowedPublicKey::create([
             'public_key' => strtolower($request->public_key),
             'label' => $request->label,
-            'is_active' => $request->boolean('is_active', true)
+            'is_active' => $request->boolean('is_active', true),
         ]);
 
         return redirect()->route('admin.keys.index')->with('success', 'Public key added successfully');
@@ -75,12 +77,12 @@ class AdminController extends Controller
     {
         $request->validate([
             'label' => 'nullable|string|max:255',
-            'is_active' => 'boolean'
+            'is_active' => 'boolean',
         ]);
 
         $allowedKey->update([
             'label' => $request->label,
-            'is_active' => $request->boolean('is_active')
+            'is_active' => $request->boolean('is_active'),
         ]);
 
         return redirect()->route('admin.keys.index')->with('success', 'Public key updated successfully');
@@ -89,13 +91,14 @@ class AdminController extends Controller
     public function destroy(AllowedPublicKey $allowedKey)
     {
         $allowedKey->delete();
+
         return redirect()->route('admin.keys.index')->with('success', 'Public key removed successfully');
     }
 
     // User Management
     public function users(Request $request)
     {
-        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+        if (! session('bitcoin_auth_user') || ! session('bitcoin_auth_user')->is_admin) {
             return redirect('/')->with('error', 'Admin access required');
         }
 
@@ -122,6 +125,7 @@ class AdminController extends Controller
     {
         $user = BitcoinAuth::findOrFail($id);
         $user->update(['is_banned' => true, 'banned_until' => null, 'ban_reason' => 'Banned by admin']);
+
         return back()->with('success', 'User banned successfully');
     }
 
@@ -129,6 +133,7 @@ class AdminController extends Controller
     {
         $user = BitcoinAuth::findOrFail($id);
         $user->update(['is_banned' => false, 'banned_until' => null, 'ban_reason' => null]);
+
         return back()->with('success', 'User unbanned successfully');
     }
 
@@ -137,6 +142,7 @@ class AdminController extends Controller
         $user = BitcoinAuth::findOrFail($id);
         $newLevel = min(5, $user->admin_level + 1);
         $user->update(['admin_level' => $newLevel, 'is_admin' => $newLevel > 0]);
+
         return back()->with('success', 'User promoted successfully');
     }
 
@@ -145,13 +151,14 @@ class AdminController extends Controller
         $user = BitcoinAuth::findOrFail($id);
         $newLevel = max(0, $user->admin_level - 1);
         $user->update(['admin_level' => $newLevel, 'is_admin' => $newLevel > 0]);
+
         return back()->with('success', 'User demoted successfully');
     }
 
     // Forum Moderation
     public function forum(Request $request)
     {
-        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+        if (! session('bitcoin_auth_user') || ! session('bitcoin_auth_user')->is_admin) {
             return redirect('/')->with('error', 'Admin access required');
         }
 
@@ -159,7 +166,7 @@ class AdminController extends Controller
             'threads' => Thread::count(),
             'posts' => Post::count(),
             'pinned' => Thread::where('sticky', true)->count(),
-            'locked' => Thread::where('locked', true)->count()
+            'locked' => Thread::where('locked', true)->count(),
         ];
 
         $threads = Thread::with(['board', 'bitcoinUser'])
@@ -179,6 +186,7 @@ class AdminController extends Controller
     {
         $thread = Thread::findOrFail($id);
         $thread->update(['sticky' => true]);
+
         return back()->with('success', 'Thread pinned successfully');
     }
 
@@ -186,6 +194,7 @@ class AdminController extends Controller
     {
         $thread = Thread::findOrFail($id);
         $thread->update(['locked' => true]);
+
         return back()->with('success', 'Thread locked successfully');
     }
 
@@ -195,6 +204,7 @@ class AdminController extends Controller
         // Also delete related posts
         Post::where('thread_id', $id)->delete();
         $thread->delete();
+
         return back()->with('success', 'Thread deleted successfully');
     }
 
@@ -202,6 +212,7 @@ class AdminController extends Controller
     {
         $post = Post::findOrFail($id);
         $post->delete();
+
         return back()->with('success', 'Post deleted successfully');
     }
 
@@ -210,14 +221,14 @@ class AdminController extends Controller
     {
         $request->validate([
             'code' => 'required|string|max:32|unique:invite_codes,code',
-            'uses' => 'required|integer|min:1|max:50'
+            'uses' => 'required|integer|min:1|max:50',
         ]);
 
         InviteCode::create([
             'code' => strtoupper($request->code),
             'max_uses' => $request->uses,
             'uses_remaining' => $request->uses,
-            'created_by' => session('bitcoin_auth_id')
+            'created_by' => session('bitcoin_auth_id'),
         ]);
 
         return back()->with('success', 'Genesis code created successfully');
@@ -237,7 +248,7 @@ class AdminController extends Controller
         foreach ($recentUsers as $user) {
             $activities[] = [
                 'description' => "New user registered: {$user->username}",
-                'time' => $user->created_at->diffForHumans()
+                'time' => $user->created_at->diffForHumans(),
             ];
         }
 
@@ -249,13 +260,13 @@ class AdminController extends Controller
 
         foreach ($recentThreads as $thread) {
             $activities[] = [
-                'description' => "New thread: " . Str::limit($thread->title, 40),
-                'time' => $thread->created_at->diffForHumans()
+                'description' => 'New thread: '.Str::limit($thread->title, 40),
+                'time' => $thread->created_at->diffForHumans(),
             ];
         }
 
         // Sort by time
-        usort($activities, function($a, $b) {
+        usort($activities, function ($a, $b) {
             return strcmp($b['time'], $a['time']);
         });
 
@@ -265,46 +276,46 @@ class AdminController extends Controller
     // API endpoint for invite codes modal
     public function getInviteCodes()
     {
-        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+        if (! session('bitcoin_auth_user') || ! session('bitcoin_auth_user')->is_admin) {
             return response()->json(['error' => 'Admin access required'], 403);
         }
 
         $codes = InviteCode::orderBy('created_at', 'desc')->get();
-        
+
         return response()->json($codes);
     }
 
     public function deactivateInviteCode($code)
     {
-        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+        if (! session('bitcoin_auth_user') || ! session('bitcoin_auth_user')->is_admin) {
             return response()->json(['error' => 'Admin access required'], 403);
         }
 
         $inviteCode = InviteCode::where('code', strtoupper($code))->first();
-        
-        if (!$inviteCode) {
+
+        if (! $inviteCode) {
             return response()->json(['error' => 'Code not found'], 404);
         }
 
         $inviteCode->update(['uses_remaining' => 0]);
-        
+
         return response()->json(['success' => 'Code deactivated successfully']);
     }
 
     public function deleteInviteCode($code)
     {
-        if (!session('bitcoin_auth_user') || !session('bitcoin_auth_user')->is_admin) {
+        if (! session('bitcoin_auth_user') || ! session('bitcoin_auth_user')->is_admin) {
             return response()->json(['error' => 'Admin access required'], 403);
         }
 
         $inviteCode = InviteCode::where('code', strtoupper($code))->first();
-        
-        if (!$inviteCode) {
+
+        if (! $inviteCode) {
             return response()->json(['error' => 'Code not found'], 404);
         }
 
         $inviteCode->delete();
-        
+
         return response()->json(['success' => 'Code deleted successfully']);
     }
 }

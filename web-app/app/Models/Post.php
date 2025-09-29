@@ -10,14 +10,14 @@ class Post extends Model
         'thread_id', 'content', 'user_id', 'author_name', 'parent_id',
         'image_path', 'image_filename',
         'ip_address', 'poster_hash',
-        'pow_nonce', 'pow_hash', 'pow_challenge_id', 'pow_pattern', 'pow_difficulty', 'pow_verified_at'
+        'pow_nonce', 'pow_hash', 'pow_challenge_id', 'pow_pattern', 'pow_difficulty', 'pow_verified_at',
     ];
 
     protected $casts = [
         'image_size' => 'integer',
         'pow_nonce' => 'integer',
         'pow_difficulty' => 'decimal:2',
-        'pow_verified_at' => 'datetime'
+        'pow_verified_at' => 'datetime',
     ];
 
     public function thread()
@@ -68,18 +68,18 @@ class Post extends Model
     public function getFormattedContentAttribute()
     {
         $content = htmlspecialchars($this->content);
-        
+
         // Convert >>123456 to links
         $content = preg_replace('/&gt;&gt;(\d+)/', '<a href="#post$1" class="quote-link">&gt;&gt;$1</a>', $content);
-        
+
         // Convert line breaks first
         $content = nl2br($content);
-        
-        // Convert >pinktext (changed from greentext) - handle each line individually  
-        $content = preg_replace_callback('/^&gt;(.+?)(<br\s*\/?>|$)/m', function($matches) {
-            return '<span class="pinktext">&gt;' . $matches[1] . '</span>' . ($matches[2] ?? '');
+
+        // Convert >pinktext (changed from greentext) - handle each line individually
+        $content = preg_replace_callback('/^&gt;(.+?)(<br\s*\/?>|$)/m', function ($matches) {
+            return '<span class="pinktext">&gt;'.$matches[1].'</span>'.($matches[2] ?? '');
         }, $content);
-        
+
         return $content;
     }
 
@@ -91,14 +91,14 @@ class Post extends Model
     public static function verifyProofOfWork($data, $nonce, $hash, $pattern)
     {
         // Frontend includes nonce in the hash calculation: challengeData + ':' + nonce
-        $fullData = $data . ':' . $nonce;
+        $fullData = $data.':'.$nonce;
         $calculatedHash = hash('sha256', $fullData);
 
         if ($calculatedHash !== strtolower($hash)) {
             return ['valid' => false, 'error' => 'Hash mismatch'];
         }
 
-        if (!str_starts_with(strtolower($calculatedHash), strtolower($pattern))) {
+        if (! str_starts_with(strtolower($calculatedHash), strtolower($pattern))) {
             return ['valid' => false, 'error' => 'Pattern mismatch'];
         }
 
@@ -114,23 +114,23 @@ class Post extends Model
     {
         $data = "post:{$this->thread_id}:{$this->content}:{$challengeId}";
         $verification = self::verifyProofOfWork($data, $nonce, $hash, $pattern);
-        
-        if (!$verification['valid']) {
+
+        if (! $verification['valid']) {
             return $verification;
         }
-        
+
         $this->update([
             'pow_nonce' => $nonce,
             'pow_hash' => $hash,
             'pow_challenge_id' => $challengeId,
             'pow_pattern' => $pattern,
             'pow_difficulty' => $this->calculateDifficulty($pattern),
-            'pow_verified_at' => now()
+            'pow_verified_at' => now(),
         ]);
-        
+
         return ['valid' => true];
     }
-    
+
     private function calculateDifficulty($pattern)
     {
         $difficulties = [
@@ -139,9 +139,9 @@ class Post extends Model
             '21e80' => 5,
             '21e800' => 25,
             '21e8000' => 100,
-            '21e80000' => 500
+            '21e80000' => 500,
         ];
-        
+
         return $difficulties[$pattern] ?? 1.0;
     }
 }

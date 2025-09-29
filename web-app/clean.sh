@@ -2,7 +2,7 @@
 
 echo "=== Fixing Board Data Issue ==="
 
-cd ~/Downloads/hai3-master/web-app
+cd /root/haichan/web-app
 
 # Let's check what's actually in the boards table
 echo "Checking boards table contents..."

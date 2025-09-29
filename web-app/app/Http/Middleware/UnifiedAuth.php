@@ -21,10 +21,10 @@ class UnifiedAuth
 
         if ($isApiRequest) {
             // For API requests, use Sanctum token authentication
-            if (!Auth::guard('sanctum')->check()) {
+            if (! Auth::guard('sanctum')->check()) {
                 return response()->json([
                     'error' => 'Unauthenticated',
-                    'message' => 'Authentication token required'
+                    'message' => 'Authentication token required',
                 ], 401);
             }
 
@@ -34,7 +34,7 @@ class UnifiedAuth
             });
         } else {
             // For web requests, use session-based authentication
-            if (!Auth::check()) {
+            if (! Auth::check()) {
                 return redirect()->route('login');
             }
         }

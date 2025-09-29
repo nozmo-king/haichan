@@ -2,7 +2,7 @@
 
 echo "=== Fixing Routes File ==="
 
-cd ~/Downloads/hai3-master/web-app
+cd /root/haichan/web-app
 
 # Backup the current routes file
 cp routes/web.php routes/web.php.backup

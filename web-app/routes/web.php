@@ -1,11 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     try {
         $boards = \App\Models\Board::getActiveBoards();
+
         return view('boards.index', compact('boards'));
     } catch (Exception $e) {
         return response()->json(['error' => $e->getMessage()]);
@@ -16,6 +17,7 @@ Route::get('/', function () {
 Route::get('/anon', function () {
     try {
         $boards = \App\Models\Board::getActiveBoards();
+
         return view('boards.anon', compact('boards'));
     } catch (Exception $e) {
         return response()->json(['error' => $e->getMessage()]);
@@ -28,7 +30,7 @@ Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('auth.logi
 Route::get('/auth/register', [AuthController::class, 'showRegister'])->name('register');
 Route::get('/auth/generate-keys', [AuthController::class, 'generateKeys']);
 Route::post('/auth/generate-address', [AuthController::class, 'generateAddress']);
-Route::get('/auth/invite-status', function() {
+Route::get('/auth/invite-status', function () {
     return response()->json(\App\Models\InviteCode::getInviteStatus());
 });
 
@@ -55,6 +57,11 @@ Route::post('/register', [AuthController::class, 'register'])->name('auth.regist
 Route::get('/image/thread/{id}', [App\Http\Controllers\ForumController::class, 'serveThreadImage'])->name('thread.image');
 Route::get('/image/post/{id}', [App\Http\Controllers\ForumController::class, 'servePostImage'])->name('post.image');
 
+// Mining dashboard - public access
+Route::get('/mining', function () {
+    return view('mining.dashboard');
+})->name('mining.dashboard');
+
 // Protected routes - require authentication
 Route::middleware('bitcoin.auth')->group(function () {
     Route::get('/', function () {
@@ -78,6 +85,7 @@ Route::middleware('bitcoin.auth')->group(function () {
     Route::get('/boards', function () {
         try {
             $boards = \App\Models\Board::getActiveBoards();
+
             return view('boards.index', compact('boards'));
         } catch (Exception $e) {
             return response()->json(['error' => $e->getMessage()]);
@@ -96,63 +104,63 @@ Route::middleware('bitcoin.auth')->group(function () {
 
     // User post management
     Route::delete('/posts/{postId}/delete', [App\Http\Controllers\ForumController::class, 'deleteUserPost'])
-         ->name('posts.delete.user')
-         ->where('postId', '[0-9]+');
+        ->name('posts.delete.user')
+        ->where('postId', '[0-9]+');
     Route::delete('/threads/{threadId}/delete', [App\Http\Controllers\ForumController::class, 'deleteUserThread'])
-         ->name('threads.delete.user')
-         ->where('threadId', '[0-9]+');
+        ->name('threads.delete.user')
+        ->where('threadId', '[0-9]+');
 
     // Board catalog (specific path, must come before {board})
     Route::get('/{board}/catalog', [App\Http\Controllers\ForumController::class, 'showCatalog'])
-         ->name('board.catalog')
-         ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+        ->name('board.catalog')
+        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
 
     // Thread creation (specific path, must come before {board})
     Route::get('/{board}/create', [App\Http\Controllers\ForumController::class, 'createThread'])
-         ->name('board.create')
-         ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+        ->name('board.create')
+        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
 
     // Thread view (specific path, must come before {board})
     Route::get('/{board}/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])
-         ->name('forum.thread')
-         ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
+        ->name('forum.thread')
+        ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
 
     // Thread creation POST (specific path)
     Route::post('/{board}/create', [App\Http\Controllers\ForumController::class, 'storeThread'])
-         ->name('board.create.store')
-         ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+        ->name('board.create.store')
+        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
 
     // Thread creation (less specific, comes after specific paths)
     Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])
-         ->name('board.store.alt')
-         ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+        ->name('board.store.alt')
+        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
 
     // Dynamic board routes - supports all boards: gen, tech, biz, film, x, lit, meta, mu
     Route::group([], function () {
         // Reply to thread (MUST come before {board} routes to avoid conflicts)
         Route::post('/{board}/{threadId}/reply', [App\Http\Controllers\ForumController::class, 'storeReply'])
-             ->name('forum.reply')
-             ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
+            ->name('forum.reply')
+            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
 
         // Board catalog (specific path, must come before {board})
         Route::get('/{board}/catalog', [App\Http\Controllers\ForumController::class, 'showCatalog'])
-             ->name('board.catalog')
-             ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
+            ->name('board.catalog')
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
 
         // Thread view (specific path, must come before {board})
         Route::get('/{board}/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])
-             ->name('forum.thread')
-             ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
+            ->name('forum.thread')
+            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
 
         // Thread creation (less specific, comes after specific paths)
         Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])
-             ->name('board.thread.store')
-             ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
+            ->name('board.thread.store')
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
 
         // Board main page (least specific, comes last)
         Route::get('/{board}', [App\Http\Controllers\ForumController::class, 'showBoard'])
-             ->name('board.show')
-             ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
+            ->name('board.show')
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
     });
 
     // Image Library routes (protected)
@@ -166,10 +174,6 @@ Route::middleware('bitcoin.auth')->group(function () {
     Route::get('/api/image-library/search', [App\Http\Controllers\ImageLibraryController::class, 'search']);
     Route::get('/api/image-library/shifting', [App\Http\Controllers\ImageLibraryController::class, 'getShiftingArrangement']);
 
-    // Mining routes
-    Route::get('/mining', [App\Http\Controllers\MiningController::class, 'dashboard']);
-    Route::get('/mining/stats', [App\Http\Controllers\MiningController::class, 'stats']);
-
     // User profile routes
     Route::get('/user/dashboard', [AuthController::class, 'showDashboard'])->name('user.dashboard');
     Route::get('/user/profile/edit', [AuthController::class, 'showEditProfile'])->name('user.profile.edit');
@@ -177,11 +181,11 @@ Route::middleware('bitcoin.auth')->group(function () {
     Route::get('/user/{userId}', [AuthController::class, 'showUserProfile'])->name('user.profile');
 
     // Static pages
-    Route::get('/rules', function() {
+    Route::get('/rules', function () {
         return view('static.rules');
     });
 
-    Route::get('/faq', function() {
+    Route::get('/faq', function () {
         return view('static.faq');
     });
 
@@ -222,8 +226,8 @@ Route::middleware('bitcoin.auth')->group(function () {
                 'store' => 'keys.store',
                 'edit' => 'keys.edit',
                 'update' => 'keys.update',
-                'destroy' => 'keys.destroy'
-            ]
+                'destroy' => 'keys.destroy',
+            ],
         ]);
     });
 });
@@ -231,3 +235,4 @@ Route::middleware('bitcoin.auth')->group(function () {
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
 });
+Route::get('/test-layout', function() { return view('test-simple'); });

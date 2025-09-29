@@ -13,13 +13,13 @@ class InviteCode extends Model
         'uses_remaining',
         'expires_at',
         'is_genesis',
-        'mining_bonus'
+        'mining_bonus',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
         'is_genesis' => 'boolean',
-        'mining_bonus' => 'decimal:2'
+        'mining_bonus' => 'decimal:2',
     ];
 
     /**
@@ -72,12 +72,12 @@ class InviteCode extends Model
 
         for ($i = 0; $i < $count; $i++) {
             $codes[] = self::create([
-                'code' => 'GENESIS' . strtoupper(bin2hex(random_bytes(4))),
+                'code' => 'GENESIS'.strtoupper(bin2hex(random_bytes(4))),
                 'created_by' => null,
                 'uses_remaining' => 1,
                 'is_genesis' => true,
                 'mining_bonus' => 2.0, // 2x mining bonus for genesis users
-                'expires_at' => now()->addDays(30)
+                'expires_at' => now()->addDays(30),
             ]);
         }
 
@@ -90,6 +90,7 @@ class InviteCode extends Model
     public static function getRemainingSlots()
     {
         $currentUsers = BitcoinAuth::count();
+
         return max(0, 256 - $currentUsers);
     }
 
@@ -110,12 +111,12 @@ class InviteCode extends Model
 
         for ($i = 0; $i < $count; $i++) {
             $codes[] = self::create([
-                'code' => 'EARLY' . strtoupper(bin2hex(random_bytes(5))),
+                'code' => 'EARLY'.strtoupper(bin2hex(random_bytes(5))),
                 'created_by' => null,
                 'uses_remaining' => 1,
                 'is_genesis' => false,
                 'mining_bonus' => 1.5, // 50% mining bonus for early users
-                'expires_at' => now()->addDays(14)
+                'expires_at' => now()->addDays(14),
             ]);
         }
 
@@ -129,11 +130,11 @@ class InviteCode extends Model
     {
         $currentUsers = BitcoinAuth::count();
         $remainingSlots = max(0, 256 - $currentUsers);
-        
+
         return [
             'current_users' => $currentUsers,
             'remaining_slots' => $remainingSlots,
-            'registration_open' => $remainingSlots > 0
+            'registration_open' => $remainingSlots > 0,
         ];
     }
 }

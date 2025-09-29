@@ -10,7 +10,7 @@ class Board extends Model
     protected $fillable = [
         'code', 'name', 'description', 'active', 'total_pow_points', 'pow_submissions_count', 'last_pow_at',
         'total_pow', 'daily_pow', 'weekly_pow', 'activity_score', 'display_order', 'shift_metadata', 'last_pow_update',
-        'is_doodle_board', 'doodle_config'
+        'is_doodle_board', 'doodle_config',
     ];
 
     protected $casts = [
@@ -25,7 +25,7 @@ class Board extends Model
         'shift_metadata' => 'array',
         'last_pow_update' => 'datetime',
         'is_doodle_board' => 'boolean',
-        'doodle_config' => 'array'
+        'doodle_config' => 'array',
     ];
 
     public function threads()
@@ -47,15 +47,15 @@ class Board extends Model
     {
         $titles = [
             'gen' => '/gen/ - General',
-            'tech' => '/tech/ - Technology', 
+            'tech' => '/tech/ - Technology',
             'biz' => '/biz/ - Business',
             'film' => '/film/ - Film & TV',
             'x' => '/x/ - Paranormal',
             'lit' => '/lit/ - Literature',
             'meta' => '/meta/ - Meta',
-            'mu' => '/mu/ - Music'
+            'mu' => '/mu/ - Music',
         ];
-        
+
         return $titles[$this->code] ?? "/{$this->code}/";
     }
 
@@ -67,6 +67,7 @@ class Board extends Model
     public function getLastPostAtAttribute()
     {
         $lastThread = $this->threads()->latest('created_at')->first();
+
         return $lastThread ? $lastThread->created_at : $this->updated_at;
     }
 
@@ -81,6 +82,7 @@ class Board extends Model
         if (Schema::hasColumn('boards', 'active')) {
             return $query->where('active', 1);
         }
+
         return $query; // Return all if no active column
     }
 
@@ -90,6 +92,7 @@ class Board extends Model
         if (Schema::hasColumn('boards', 'active')) {
             return static::where('active', 1)->orderBy('total_pow_points', 'desc')->get();
         }
+
         return static::orderBy('total_pow_points', 'desc')->get();
     }
 
@@ -105,9 +108,9 @@ class Board extends Model
     public static function getByPowActivity($limit = 10)
     {
         return static::orderBy('total_pow_points', 'desc')
-                    ->orderBy('last_pow_at', 'desc')
-                    ->limit($limit)
-                    ->get();
+            ->orderBy('last_pow_at', 'desc')
+            ->limit($limit)
+            ->get();
     }
 
     // Get total PoW for all threads in this board
@@ -159,7 +162,7 @@ class Board extends Model
     public static function getShiftingOrder($limit = null)
     {
         $query = static::selectRaw('*, (activity_score + total_pow / 100 + RANDOM() * 50) as shift_weight')
-                      ->orderBy('shift_weight', 'desc');
+            ->orderBy('shift_weight', 'desc');
 
         if ($limit) {
             $query->limit($limit);
@@ -174,9 +177,9 @@ class Board extends Model
     public static function getMovingBoards()
     {
         return static::selectRaw('*, (activity_score + daily_pow * 5) as power_level')
-                    ->orderBy('power_level', 'desc')
-                    ->get()
-                    ->shuffle(); // Randomize initial positions
+            ->orderBy('power_level', 'desc')
+            ->get()
+            ->shuffle(); // Randomize initial positions
     }
 
     /**
@@ -201,6 +204,7 @@ class Board extends Model
                 return $index + 1;
             }
         }
+
         return 0;
     }
 }

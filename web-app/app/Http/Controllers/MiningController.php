@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProofOfWork;
 use App\Models\Board;
+use App\Models\ProofOfWork;
 use Illuminate\Http\Request;
 
 class MiningController extends Controller
@@ -29,7 +29,7 @@ class MiningController extends Controller
             'total_proofs' => $globalProofs->count(),
             'total_points' => $globalProofs->sum('points'),
             'unique_miners' => $globalProofs->pluck('ip_address')->unique()->count(),
-            'patterns' => $globalProofs->groupBy('pattern')->map->count()->sortByDesc(function($count) {
+            'patterns' => $globalProofs->groupBy('pattern')->map->count()->sortByDesc(function ($count) {
                 return $count;
             }),
         ];
@@ -39,7 +39,7 @@ class MiningController extends Controller
         $boardStats = [];
 
         foreach ($boards as $board) {
-            $boardProofs = ProofOfWork::whereHas('thread', function($query) use ($board) {
+            $boardProofs = ProofOfWork::whereHas('thread', function ($query) use ($board) {
                 $query->where('board_id', $board->id);
             })->where('created_at', '>=', now()->subHours(24))->get();
 
@@ -51,7 +51,7 @@ class MiningController extends Controller
                         'total_proofs' => $boardProofs->count(),
                         'total_points' => $boardProofs->sum('points'),
                         'patterns' => $boardProofs->groupBy('pattern')->map->count(),
-                    ]
+                    ],
                 ];
             }
         }
@@ -96,7 +96,7 @@ class MiningController extends Controller
         $boardStats = [];
 
         foreach ($boards as $board) {
-            $boardProofs = ProofOfWork::whereHas('thread', function($query) use ($board) {
+            $boardProofs = ProofOfWork::whereHas('thread', function ($query) use ($board) {
                 $query->where('board_id', $board->id);
             })->where('created_at', '>=', now()->subHours(24))->get();
 
@@ -108,7 +108,7 @@ class MiningController extends Controller
                         'total_proofs' => $boardProofs->count(),
                         'total_points' => $boardProofs->sum('points'),
                         'patterns' => $boardProofs->groupBy('pattern')->map->count(),
-                    ]
+                    ],
                 ];
             }
         }
@@ -116,7 +116,7 @@ class MiningController extends Controller
         return response()->json([
             'user' => $userStats,
             'global' => $globalStats,
-            'boards' => $boardStats
+            'boards' => $boardStats,
         ]);
     }
 
@@ -130,7 +130,7 @@ class MiningController extends Controller
             'x' => '👽',
             'lit' => '📚',
             'meta' => '⚙️',
-            'mu' => '🎵'
+            'mu' => '🎵',
         ];
 
         return $icons[$boardCode] ?? '📋';

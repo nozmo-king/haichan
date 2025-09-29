@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Services\FriendCodeService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class FriendCodeController extends Controller
 {
@@ -24,7 +24,7 @@ class FriendCodeController extends Controller
     public function generate(Request $request)
     {
         $user = $request->user();
-        
+
         $friendCode = $this->friendCodeService->generateFriendCode($user);
 
         if ($request->expectsJson()) {
@@ -41,14 +41,14 @@ class FriendCodeController extends Controller
     public function validate(Request $request): JsonResponse
     {
         $request->validate([
-            'code' => 'required|string'
+            'code' => 'required|string',
         ]);
 
         $friendCode = $this->friendCodeService->validateFriendCode($request->code);
 
         return response()->json([
             'valid' => $friendCode !== null,
-            'message' => $friendCode ? 'Valid friend code' : 'Invalid or expired friend code'
+            'message' => $friendCode ? 'Valid friend code' : 'Invalid or expired friend code',
         ]);
     }
 

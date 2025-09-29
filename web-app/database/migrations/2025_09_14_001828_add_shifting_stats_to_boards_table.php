@@ -38,7 +38,7 @@ return new class extends Migration
                 'activity_score',
                 'display_order',
                 'shift_metadata',
-                'last_pow_update'
+                'last_pow_update',
             ]);
         });
     }

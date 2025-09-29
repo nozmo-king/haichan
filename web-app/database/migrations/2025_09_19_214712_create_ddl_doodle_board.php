@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
@@ -25,10 +23,10 @@ return new class extends Migration
                     '#0000FF', // Blue
                     '#FFFF00', // Yellow
                     '#FF00FF', // Magenta
-                    '#00FFFF'  // Cyan
+                    '#00FFFF',  // Cyan
                 ],
                 'max_redo_steps' => 3,
-                'canvas_background' => '#FFFFFF'
+                'canvas_background' => '#FFFFFF',
             ]),
             'created_at' => now(),
             'updated_at' => now(),

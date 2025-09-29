@@ -19,11 +19,11 @@ class ProofController extends Controller
             'nonce' => 'required|integer',
             'challenge_data' => 'required|string',
             'hashes_computed' => 'nullable|integer|min:1',
-            'metadata' => 'nullable|array'
+            'metadata' => 'nullable|array',
         ]);
 
         // Verify the proof
-        $fullData = $request->challenge_data . ':' . $request->nonce;
+        $fullData = $request->challenge_data.':'.$request->nonce;
         $calculatedHash = hash('sha256', $fullData);
 
         // Debug logging
@@ -33,7 +33,7 @@ class ProofController extends Controller
             'full_data' => $fullData,
             'submitted_hash' => $request->hash,
             'calculated_hash' => $calculatedHash,
-            'hashes_match' => $calculatedHash === strtolower($request->hash)
+            'hashes_match' => $calculatedHash === strtolower($request->hash),
         ]);
 
         if ($calculatedHash !== strtolower($request->hash)) {
@@ -42,15 +42,15 @@ class ProofController extends Controller
                 'message' => 'Hash verification failed',
                 'debug' => [
                     'expected' => $calculatedHash,
-                    'received' => strtolower($request->hash)
-                ]
+                    'received' => strtolower($request->hash),
+                ],
             ], 400);
         }
 
-        if (!str_starts_with(strtolower($calculatedHash), strtolower($request->pattern))) {
+        if (! str_starts_with(strtolower($calculatedHash), strtolower($request->pattern))) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pattern verification failed'
+                'message' => 'Pattern verification failed',
             ], 400);
         }
 
@@ -84,12 +84,12 @@ class ProofController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Proof accepted and recorded',
-                'difficulty' => ProofSubmission::calculateDifficulty($request->pattern)
+                'difficulty' => ProofSubmission::calculateDifficulty($request->pattern),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to record proof: ' . $e->getMessage()
+                'message' => 'Failed to record proof: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -103,7 +103,7 @@ class ProofController extends Controller
 
         return response()->json([
             'user' => $userStats,
-            'global' => $globalStats
+            'global' => $globalStats,
         ]);
     }
 }

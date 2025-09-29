@@ -101,7 +101,7 @@ sudo chown $USER:www-data $APP_DIR
 cd $APP_DIR
 
 # If deploying from your development environment:
-# rsync -av --exclude='node_modules' --exclude='.git' ~/Downloads/hai3-master/web-app/ ./
+# rsync -av --exclude='node_modules' --exclude='.git' /root/haichan/web-app/ ./
 
 # Install Composer dependencies
 composer install --optimize-autoloader --no-dev

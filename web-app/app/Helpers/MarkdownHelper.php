@@ -2,8 +2,6 @@
 
 namespace App\Helpers;
 
-use League\CommonMark\CommonMarkConverter;
-
 class MarkdownHelper
 {
     public static function parseContent($content)
@@ -40,7 +38,7 @@ class MarkdownHelper
         ];
 
         foreach ($patterns as $pattern) {
-            $html = preg_replace_callback($pattern, function($matches) {
+            $html = preg_replace_callback($pattern, function ($matches) {
                 $videoId = $matches[1];
                 $originalUrl = $matches[0];
 
@@ -48,13 +46,13 @@ class MarkdownHelper
                 return '<div class="youtube-embed" style="margin: 15px 0; max-width: 560px;">
                     <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;">
                         <iframe
-                            src="https://www.youtube.com/embed/' . $videoId . '?rel=0&showinfo=0&modestbranding=1"
+                            src="https://www.youtube.com/embed/'.$videoId.'?rel=0&showinfo=0&modestbranding=1"
                             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"
                             allowfullscreen>
                         </iframe>
                     </div>
                     <div style="font-size: 11px; color: #666; margin-top: 5px;">
-                        <a href="' . $originalUrl . '" target="_blank" style="color: #708B75;">🎥 ' . $originalUrl . '</a>
+                        <a href="'.$originalUrl.'" target="_blank" style="color: #708B75;">🎥 '.$originalUrl.'</a>
                     </div>
                 </div>';
             }, $html);

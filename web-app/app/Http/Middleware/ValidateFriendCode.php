@@ -2,10 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\FriendCodeService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use App\Services\FriendCodeService;
 
 class ValidateFriendCode
 {
@@ -22,13 +22,13 @@ class ValidateFriendCode
     {
         $friendCode = $request->input('friend_code') ?? $request->route('friendCode');
 
-        if (!$friendCode) {
+        if (! $friendCode) {
             return $this->redirectWithError('Friend code is required for registration.');
         }
 
         $validCode = $this->friendCodeService->validateFriendCode($friendCode);
 
-        if (!$validCode) {
+        if (! $validCode) {
             return $this->redirectWithError('Invalid or expired friend code.');
         }
 

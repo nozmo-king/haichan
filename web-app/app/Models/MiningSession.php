@@ -13,7 +13,7 @@ class MiningSession extends Model
     protected $fillable = [
         'user_id', 'ip_address', 'user_agent', 'hashes_computed',
         'valid_proofs', 'points_earned', 'started_at', 'last_activity',
-        'ended_at', 'active'
+        'ended_at', 'active',
     ];
 
     protected $casts = [
@@ -22,8 +22,8 @@ class MiningSession extends Model
         'points_earned' => 'integer',
         'active' => 'boolean',
         'started_at' => 'datetime',
-        'last_activity' => 'datetime', 
-        'ended_at' => 'datetime'
+        'last_activity' => 'datetime',
+        'ended_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -34,12 +34,14 @@ class MiningSession extends Model
     public function getDurationAttribute()
     {
         $end = $this->ended_at ?? $this->last_activity ?? now();
+
         return $this->started_at->diffInSeconds($end);
     }
 
     public function getHashrateAttribute()
     {
         $duration = $this->duration;
+
         return $duration > 0 ? round($this->hashes_computed / $duration, 2) : 0;
     }
 
@@ -49,7 +51,7 @@ class MiningSession extends Model
             'hashes_computed' => $this->hashes_computed + $hashesComputed,
             'valid_proofs' => $this->valid_proofs + $validProofs,
             'points_earned' => $this->points_earned + $pointsEarned,
-            'last_activity' => now()
+            'last_activity' => now(),
         ]);
     }
 

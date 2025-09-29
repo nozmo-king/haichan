@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Comprehensive Haichan Application Audit Script
  *
@@ -6,22 +7,25 @@
  * including authentication, PoW system, image library, forum functionality, and more.
  */
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__.'/vendor/autoload.php';
 
 class HaichanAudit
 {
     private $baseUrl = 'http://localhost:8000';
+
     private $apiUrl = 'http://localhost:8000/api';
+
     private $results = [];
+
     private $currentSection = '';
 
     public function __construct()
     {
-        $this->log("=== HAICHAN COMPREHENSIVE AUDIT ===");
-        $this->log("Starting audit at " . date('Y-m-d H:i:s'));
+        $this->log('=== HAICHAN COMPREHENSIVE AUDIT ===');
+        $this->log('Starting audit at '.date('Y-m-d H:i:s'));
         $this->log("Base URL: {$this->baseUrl}");
         $this->log("API URL: {$this->apiUrl}");
-        $this->log("");
+        $this->log('');
     }
 
     public function runFullAudit()
@@ -39,8 +43,8 @@ class HaichanAudit
 
     private function testDatabaseIntegrity()
     {
-        $this->currentSection = "Database Integrity";
-        $this->log("=== TESTING DATABASE INTEGRITY ===");
+        $this->currentSection = 'Database Integrity';
+        $this->log('=== TESTING DATABASE INTEGRITY ===');
 
         try {
             $pdo = new PDO('sqlite:database/database.sqlite');
@@ -48,7 +52,7 @@ class HaichanAudit
 
             // Test critical tables exist
             $tables = ['users', 'allowed_public_keys', 'proof_submissions', 'image_library',
-                      'threads', 'posts', 'boards', 'mining_sessions'];
+                'threads', 'posts', 'boards', 'mining_sessions'];
 
             foreach ($tables as $table) {
                 $stmt = $pdo->query("SELECT COUNT(*) FROM {$table}");
@@ -57,34 +61,34 @@ class HaichanAudit
             }
 
             // Test PoW scaling values in database
-            $stmt = $pdo->query("SELECT DISTINCT pattern, COUNT(*) as count FROM proof_submissions GROUP BY pattern");
+            $stmt = $pdo->query('SELECT DISTINCT pattern, COUNT(*) as count FROM proof_submissions GROUP BY pattern');
             $patterns = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $this->log("PoW patterns found in database:");
+            $this->log('PoW patterns found in database:');
             foreach ($patterns as $pattern) {
                 $this->log("  - Pattern: {$pattern['pattern']}, Submissions: {$pattern['count']}");
             }
 
             // Test foreign key relationships
-            $stmt = $pdo->query("
+            $stmt = $pdo->query('
                 SELECT COUNT(*) FROM users u
                 LEFT JOIN allowed_public_keys apk ON u.allowed_public_key_id = apk.id
                 WHERE apk.id IS NULL
-            ");
+            ');
             $orphanedUsers = $stmt->fetchColumn();
-            $this->logTest("No orphaned users (all users have valid public keys)", $orphanedUsers == 0);
+            $this->logTest('No orphaned users (all users have valid public keys)', $orphanedUsers == 0);
 
             $this->results[$this->currentSection]['status'] = 'PASSED';
 
         } catch (Exception $e) {
-            $this->logTest("Database connection and integrity", false, $e->getMessage());
+            $this->logTest('Database connection and integrity', false, $e->getMessage());
             $this->results[$this->currentSection]['status'] = 'FAILED';
         }
     }
 
     private function testPoWScalingSystem()
     {
-        $this->currentSection = "PoW Scaling System";
+        $this->currentSection = 'PoW Scaling System';
         $this->log("\n=== TESTING POW SCALING SYSTEM ===");
 
         // Test expected difficulty mappings from ProofSubmission model
@@ -94,10 +98,10 @@ class HaichanAudit
             '21e80' => 5.0,
             '21e800' => 25.0,
             '21e8000' => 125.0,  // Note: This differs from your requirement (100)
-            '000021e8' => 625.0
+            '000021e8' => 625.0,
         ];
 
-        $this->log("Expected PoW scaling (from codebase analysis):");
+        $this->log('Expected PoW scaling (from codebase analysis):');
         foreach ($expectedDifficulties as $pattern => $difficulty) {
             $this->log("  - Pattern: {$pattern} = {$difficulty} points");
         }
@@ -107,10 +111,10 @@ class HaichanAudit
             '21e8' => 1,
             '21e80' => 5,
             '21e800' => 25,
-            '21e8000' => 100
+            '21e8000' => 100,
         ];
 
-        $this->log("Checking against requirements:");
+        $this->log('Checking against requirements:');
         foreach ($requirements as $pattern => $expectedPoints) {
             $actualDifficulty = $expectedDifficulties[$pattern] ?? null;
             if ($pattern === '21e8000') {
@@ -129,7 +133,7 @@ class HaichanAudit
 
     private function testImageLibraryAPI()
     {
-        $this->currentSection = "Image Library";
+        $this->currentSection = 'Image Library';
         $this->log("\n=== TESTING IMAGE LIBRARY API ===");
 
         // Test image library endpoints
@@ -137,7 +141,7 @@ class HaichanAudit
             '/library' => 'GET',
             '/api/image-library/stats' => 'GET',
             '/api/image-library/search' => 'GET',
-            '/api/image-library/shifting' => 'GET'
+            '/api/image-library/shifting' => 'GET',
         ];
 
         foreach ($endpoints as $endpoint => $method) {
@@ -149,10 +153,10 @@ class HaichanAudit
         $statsResponse = $this->makeRequest('GET', '/api/image-library/stats');
         if ($statsResponse['success']) {
             $stats = json_decode($statsResponse['body'], true);
-            $this->log("Image Library Stats:");
-            $this->log("  - Total images: " . ($stats['total_images'] ?? 'N/A'));
-            $this->log("  - Total PoW earned: " . ($stats['total_pow_earned'] ?? 'N/A'));
-            $this->log("  - Total usage count: " . ($stats['total_usage'] ?? 'N/A'));
+            $this->log('Image Library Stats:');
+            $this->log('  - Total images: '.($stats['total_images'] ?? 'N/A'));
+            $this->log('  - Total PoW earned: '.($stats['total_pow_earned'] ?? 'N/A'));
+            $this->log('  - Total usage count: '.($stats['total_usage'] ?? 'N/A'));
         }
 
         $this->results[$this->currentSection]['status'] = 'PASSED';
@@ -160,7 +164,7 @@ class HaichanAudit
 
     private function testAuthenticationSystem()
     {
-        $this->currentSection = "Authentication System";
+        $this->currentSection = 'Authentication System';
         $this->log("\n=== TESTING AUTHENTICATION SYSTEM ===");
 
         // Test auth endpoints
@@ -176,18 +180,18 @@ class HaichanAudit
 
         // Test challenge generation (requires valid public key)
         $challengeData = [
-            'public_key' => '0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798' // Example key
+            'public_key' => '0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798', // Example key
         ];
 
         $challengeResponse = $this->makeRequest('POST', '/api/auth/challenge', $challengeData);
-        $this->logTest("Challenge generation with test key", $challengeResponse['success'], $challengeResponse['error'] ?? '');
+        $this->logTest('Challenge generation with test key', $challengeResponse['success'], $challengeResponse['error'] ?? '');
 
         if ($challengeResponse['success']) {
             $responseData = json_decode($challengeResponse['body'], true);
             $hasChallenge = isset($responseData['challenge']);
             $hasUserId = isset($responseData['user_id']);
-            $this->logTest("Challenge response contains challenge", $hasChallenge);
-            $this->logTest("Challenge response contains user_id", $hasUserId);
+            $this->logTest('Challenge response contains challenge', $hasChallenge);
+            $this->logTest('Challenge response contains user_id', $hasUserId);
         }
 
         $this->results[$this->currentSection]['status'] = 'PARTIAL';
@@ -196,7 +200,7 @@ class HaichanAudit
 
     private function testForumSystem()
     {
-        $this->currentSection = "Forum System";
+        $this->currentSection = 'Forum System';
         $this->log("\n=== TESTING FORUM SYSTEM ===");
 
         // Test forum endpoints
@@ -230,7 +234,7 @@ class HaichanAudit
 
     private function testMiningSystem()
     {
-        $this->currentSection = "Mining System";
+        $this->currentSection = 'Mining System';
         $this->log("\n=== TESTING MINING SYSTEM ===");
 
         // Test mining endpoints
@@ -250,13 +254,13 @@ class HaichanAudit
 
         // Test proof stats endpoint
         $statsResult = $this->makeRequest('GET', '/api/proof/stats');
-        $this->logTest("Proof stats endpoint", $statsResult['success'], $statsResult['error'] ?? '');
+        $this->logTest('Proof stats endpoint', $statsResult['success'], $statsResult['error'] ?? '');
 
         if ($statsResult['success']) {
             $stats = json_decode($statsResult['body'], true);
-            $this->log("Mining Stats:");
-            $this->log("  - User stats: " . (isset($stats['user']) ? 'Available' : 'N/A'));
-            $this->log("  - Global stats: " . (isset($stats['global']) ? 'Available' : 'N/A'));
+            $this->log('Mining Stats:');
+            $this->log('  - User stats: '.(isset($stats['user']) ? 'Available' : 'N/A'));
+            $this->log('  - Global stats: '.(isset($stats['global']) ? 'Available' : 'N/A'));
         }
 
         // Test proof submission (with fake data to test validation)
@@ -266,25 +270,25 @@ class HaichanAudit
             'pattern' => '21e8',
             'hash' => str_repeat('0', 64),
             'nonce' => 12345,
-            'challenge_data' => 'test:challenge:data'
+            'challenge_data' => 'test:challenge:data',
         ];
 
         $proofResult = $this->makeRequest('POST', '/api/proof', $fakeProofData);
-        $this->logTest("Proof submission validation", !$proofResult['success'],
-            "Expected failure due to invalid proof - " . ($proofResult['error'] ?? ''));
+        $this->logTest('Proof submission validation', ! $proofResult['success'],
+            'Expected failure due to invalid proof - '.($proofResult['error'] ?? ''));
 
         $this->results[$this->currentSection]['status'] = 'PASSED';
     }
 
     private function testContentFormatting()
     {
-        $this->currentSection = "Content Formatting";
+        $this->currentSection = 'Content Formatting';
         $this->log("\n=== TESTING CONTENT FORMATTING ===");
 
         // Test if MarkdownHelper exists and check its functionality
-        $helperPath = __DIR__ . '/app/Helpers/MarkdownHelper.php';
+        $helperPath = __DIR__.'/app/Helpers/MarkdownHelper.php';
         $helperExists = file_exists($helperPath);
-        $this->logTest("MarkdownHelper exists", $helperExists);
+        $this->logTest('MarkdownHelper exists', $helperExists);
 
         if ($helperExists) {
             $helperContent = file_get_contents($helperPath);
@@ -292,9 +296,9 @@ class HaichanAudit
             $hasYoutube = strpos($helperContent, 'youtube') !== false || strpos($helperContent, 'embed') !== false;
             $hasQuoteLinks = strpos($helperContent, '>>') !== false;
 
-            $this->logTest("Greentext support detected", $hasGreentext);
-            $this->logTest("YouTube embedding support detected", $hasYoutube);
-            $this->logTest("Quote links support detected", $hasQuoteLinks);
+            $this->logTest('Greentext support detected', $hasGreentext);
+            $this->logTest('YouTube embedding support detected', $hasYoutube);
+            $this->logTest('Quote links support detected', $hasQuoteLinks);
         }
 
         // Test a forum page to see if content formatting is visible
@@ -304,8 +308,8 @@ class HaichanAudit
             $hasGreentextCSS = strpos($content, 'greentext') !== false;
             $hasMarkdownJS = strpos($content, 'markdown') !== false || strpos($content, 'formatPost') !== false;
 
-            $this->logTest("Greentext CSS present in forum pages", $hasGreentextCSS);
-            $this->logTest("Content formatting JS present", $hasMarkdownJS);
+            $this->logTest('Greentext CSS present in forum pages', $hasGreentextCSS);
+            $this->logTest('Content formatting JS present', $hasMarkdownJS);
         }
 
         $this->results[$this->currentSection]['status'] = 'PARTIAL';
@@ -313,12 +317,12 @@ class HaichanAudit
 
     private function testMiniDashboard()
     {
-        $this->currentSection = "Mini Dashboard";
+        $this->currentSection = 'Mini Dashboard';
         $this->log("\n=== TESTING MINI DASHBOARD ===");
 
         // Test if dashboard shows mining targets correctly
         $dashboardResult = $this->makeRequest('GET', '/mining');
-        $this->logTest("Mining dashboard loads", $dashboardResult['success'], $dashboardResult['error'] ?? '');
+        $this->logTest('Mining dashboard loads', $dashboardResult['success'], $dashboardResult['error'] ?? '');
 
         if ($dashboardResult['success']) {
             $content = $dashboardResult['body'];
@@ -326,9 +330,9 @@ class HaichanAudit
             $hasGlobalMining = strpos($content, 'global') !== false;
             $hasHotkeys = strpos($content, 'SPACE') !== false || strpos($content, 'ENTER') !== false;
 
-            $this->logTest("Mining targets displayed", $hasMiningTargets);
-            $this->logTest("Global mining available", $hasGlobalMining);
-            $this->logTest("Hotkey instructions present", $hasHotkeys);
+            $this->logTest('Mining targets displayed', $hasMiningTargets);
+            $this->logTest('Global mining available', $hasGlobalMining);
+            $this->logTest('Hotkey instructions present', $hasHotkeys);
         }
 
         // Test context-aware mining targets on different pages
@@ -347,7 +351,7 @@ class HaichanAudit
 
     private function makeRequest($method, $endpoint, $data = [])
     {
-        $url = $this->baseUrl . $endpoint;
+        $url = $this->baseUrl.$endpoint;
         $ch = curl_init();
 
         curl_setopt_array($ch, [
@@ -359,13 +363,13 @@ class HaichanAudit
             CURLOPT_HTTPHEADER => [
                 'Accept: application/json',
                 'Content-Type: application/json',
-                'User-Agent: HaichanAudit/1.0'
-            ]
+                'User-Agent: HaichanAudit/1.0',
+            ],
         ]);
 
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
-            if (!empty($data)) {
+            if (! empty($data)) {
                 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
             }
         }
@@ -385,7 +389,7 @@ class HaichanAudit
             'success' => $success,
             'http_code' => $httpCode,
             'body' => $response,
-            'error' => $success ? null : "HTTP {$httpCode}"
+            'error' => $success ? null : "HTTP {$httpCode}",
         ];
     }
 
@@ -397,27 +401,27 @@ class HaichanAudit
             $this->log("    Error: {$error}");
         }
 
-        if (!isset($this->results[$this->currentSection]['tests'])) {
+        if (! isset($this->results[$this->currentSection]['tests'])) {
             $this->results[$this->currentSection]['tests'] = [];
         }
 
         $this->results[$this->currentSection]['tests'][] = [
             'description' => $description,
             'passed' => $passed,
-            'error' => $error
+            'error' => $error,
         ];
     }
 
     private function log($message)
     {
-        echo $message . "\n";
+        echo $message."\n";
     }
 
     private function generateFinalReport()
     {
         $this->log("\n=== FINAL AUDIT REPORT ===");
-        $this->log("Generated at: " . date('Y-m-d H:i:s'));
-        $this->log("");
+        $this->log('Generated at: '.date('Y-m-d H:i:s'));
+        $this->log('');
 
         $totalSections = count($this->results);
         $passedSections = 0;
@@ -438,7 +442,7 @@ class HaichanAudit
             }
 
             if (isset($result['tests'])) {
-                $passed = count(array_filter($result['tests'], fn($t) => $t['passed']));
+                $passed = count(array_filter($result['tests'], fn ($t) => $t['passed']));
                 $total = count($result['tests']);
                 $this->log("  Tests: {$passed}/{$total} passed");
             }
@@ -458,10 +462,10 @@ class HaichanAudit
                     break;
             }
 
-            $this->log("");
+            $this->log('');
         }
 
-        $this->log("=== SUMMARY ===");
+        $this->log('=== SUMMARY ===');
         $this->log("Total sections: {$totalSections}");
         $this->log("Passed: {$passedSections}");
         $this->log("Failed: {$failedSections}");
@@ -469,27 +473,27 @@ class HaichanAudit
         $this->log("Needs Review: {$reviewSections}");
 
         $overallHealth = ($passedSections + $partialSections) / $totalSections * 100;
-        $this->log("Overall Health: " . round($overallHealth, 1) . "%");
+        $this->log('Overall Health: '.round($overallHealth, 1).'%');
 
         $this->log("\n=== RECOMMENDATIONS ===");
 
         if ($reviewSections > 0) {
-            $this->log("1. Fix PoW scaling: Pattern 21e8000 should be 100 points, not 125");
+            $this->log('1. Fix PoW scaling: Pattern 21e8000 should be 100 points, not 125');
         }
 
         if ($partialSections > 0) {
-            $this->log("2. Complete authentication testing with valid secp256k1 keypairs");
-            $this->log("3. Verify content formatting by creating test posts");
+            $this->log('2. Complete authentication testing with valid secp256k1 keypairs');
+            $this->log('3. Verify content formatting by creating test posts');
         }
 
-        $this->log("4. Test hyperinteractive mining (SPACE/ENTER hotkeys) manually");
-        $this->log("5. Verify cross-browser compatibility manually");
-        $this->log("6. Test image upload functionality with actual image files");
+        $this->log('4. Test hyperinteractive mining (SPACE/ENTER hotkeys) manually');
+        $this->log('5. Verify cross-browser compatibility manually');
+        $this->log('6. Test image upload functionality with actual image files');
 
         $this->log("\n=== AUDIT COMPLETE ===");
     }
 }
 
 // Run the audit
-$audit = new HaichanAudit();
+$audit = new HaichanAudit;
 $audit->runFullAudit();

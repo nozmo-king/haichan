@@ -21,7 +21,7 @@ return new class extends Migration
             'image_library_total_pow_earned_usage_count_index',
             'image_library_hash_unique',
             'image_library_hash_index',
-            'image_library_created_at_index'
+            'image_library_created_at_index',
         ];
 
         foreach ($indexesToDrop as $index) {
@@ -38,7 +38,7 @@ return new class extends Migration
         $hasNewSchema = in_array('hash', $columns);
 
         // Add missing new columns if they don't exist
-        if (!$hasNewSchema) {
+        if (! $hasNewSchema) {
             Schema::table('image_library', function (Blueprint $table) {
                 $table->string('filename')->nullable()->after('id');
                 $table->string('original_name')->nullable()->after('filename');
@@ -68,7 +68,7 @@ return new class extends Migration
 
         // Drop old columns if they exist
         $oldColumns = ['sha256_hash', 'original_filename', 'storage_path', 'thumbnail_path',
-                      'first_uploaded_at', 'last_used_at', 'uploaded_by_ip', 'metadata'];
+            'first_uploaded_at', 'last_used_at', 'uploaded_by_ip', 'metadata'];
 
         foreach ($oldColumns as $column) {
             if (Schema::hasColumn('image_library', $column)) {
@@ -80,50 +80,50 @@ return new class extends Migration
 
         // Add missing columns that might not be present in some states
         Schema::table('image_library', function (Blueprint $table) {
-            if (!Schema::hasColumn('image_library', 'total_pow_earned')) {
+            if (! Schema::hasColumn('image_library', 'total_pow_earned')) {
                 $table->unsignedBigInteger('total_pow_earned')->default(0)->after('height');
             }
-            if (!Schema::hasColumn('image_library', 'unique_posts')) {
+            if (! Schema::hasColumn('image_library', 'unique_posts')) {
                 $table->unsignedBigInteger('unique_posts')->default(0)->after('total_pow_earned');
             }
-            if (!Schema::hasColumn('image_library', 'auto_dither')) {
+            if (! Schema::hasColumn('image_library', 'auto_dither')) {
                 $table->boolean('auto_dither')->default(false)->after('unique_posts');
             }
-            if (!Schema::hasColumn('image_library', 'dither_settings')) {
+            if (! Schema::hasColumn('image_library', 'dither_settings')) {
                 $table->json('dither_settings')->nullable()->after('auto_dither');
             }
-            if (!Schema::hasColumn('image_library', 'first_thread_id')) {
+            if (! Schema::hasColumn('image_library', 'first_thread_id')) {
                 $table->unsignedBigInteger('first_thread_id')->nullable()->after('dither_settings');
             }
-            if (!Schema::hasColumn('image_library', 'first_post_id')) {
+            if (! Schema::hasColumn('image_library', 'first_post_id')) {
                 $table->unsignedBigInteger('first_post_id')->nullable()->after('first_thread_id');
             }
-            if (!Schema::hasColumn('image_library', 'uploader_ip')) {
+            if (! Schema::hasColumn('image_library', 'uploader_ip')) {
                 $table->string('uploader_ip', 45)->nullable()->after('first_post_id');
             }
         });
 
         // Recreate indexes with error handling
         try {
-            \DB::statement("CREATE UNIQUE INDEX IF NOT EXISTS image_library_hash_unique ON image_library (hash)");
+            \DB::statement('CREATE UNIQUE INDEX IF NOT EXISTS image_library_hash_unique ON image_library (hash)');
         } catch (\Exception $e) {
             // Index might already exist
         }
 
         try {
-            \DB::statement("CREATE INDEX IF NOT EXISTS image_library_total_pow_earned_usage_count_index ON image_library (total_pow_earned, usage_count)");
+            \DB::statement('CREATE INDEX IF NOT EXISTS image_library_total_pow_earned_usage_count_index ON image_library (total_pow_earned, usage_count)');
         } catch (\Exception $e) {
             // Index might already exist
         }
 
         try {
-            \DB::statement("CREATE INDEX IF NOT EXISTS image_library_hash_index ON image_library (hash)");
+            \DB::statement('CREATE INDEX IF NOT EXISTS image_library_hash_index ON image_library (hash)');
         } catch (\Exception $e) {
             // Index might already exist
         }
 
         try {
-            \DB::statement("CREATE INDEX IF NOT EXISTS image_library_created_at_index ON image_library (created_at)");
+            \DB::statement('CREATE INDEX IF NOT EXISTS image_library_created_at_index ON image_library (created_at)');
         } catch (\Exception $e) {
             // Index might already exist
         }

@@ -12,7 +12,7 @@ class FriendCodeService
     public function generateFriendCode(User $user, int $expiryDays = 30): FriendCode
     {
         $existingCode = $user->friendCodes()->where('is_used', false)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
             })
@@ -36,7 +36,7 @@ class FriendCodeService
     {
         $friendCode = FriendCode::where('code', $code)->first();
 
-        if (!$friendCode || !$friendCode->isValid()) {
+        if (! $friendCode || ! $friendCode->isValid()) {
             return null;
         }
 
@@ -47,7 +47,7 @@ class FriendCodeService
     {
         $friendCode = $this->validateFriendCode($code);
 
-        if (!$friendCode) {
+        if (! $friendCode) {
             return false;
         }
 
@@ -71,7 +71,7 @@ class FriendCodeService
         $totalCodes = $user->friendCodes()->count();
         $usedCodes = $user->friendCodes()->where('is_used', true)->count();
         $activeCodes = $user->friendCodes()->where('is_used', false)
-            ->where(function($query) {
+            ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
             })

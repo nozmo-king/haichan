@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('uploaded_by_ip')->nullable();
             $table->json('metadata')->nullable(); // Store EXIF or other metadata
             $table->timestamps();
-            
+
             $table->index('sha256_hash');
             $table->index('mime_type');
             $table->index('usage_count');

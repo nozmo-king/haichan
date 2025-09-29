@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Board;
-use App\Models\Thread;
 use App\Models\Post;
+use App\Models\Thread;
+use Illuminate\Http\Request;
 
 class ForumApiController extends Controller
 {
@@ -21,9 +21,9 @@ class ForumApiController extends Controller
                     'name' => $board->name,
                     'code' => $board->code,
                     'description' => $board->description,
-                    'threads_count' => $board->threads_count
+                    'threads_count' => $board->threads_count,
                 ];
-            })
+            }),
         ]);
     }
 
@@ -59,38 +59,38 @@ class ForumApiController extends Controller
                     'activity_score' => $activityScore,
                     'recent_activity' => $recentActivity,
                     'daily_activity' => $todayActivity,
-                    'updated_at' => now()
+                    'updated_at' => now(),
                 ];
-            })
+            }),
         ]);
     }
 
     public function getBoard($code)
     {
         $board = Board::where('code', $code)->firstOrFail();
-        
+
         return response()->json([
             'board' => [
                 'id' => $board->id,
                 'name' => $board->name,
                 'code' => $board->code,
-                'description' => $board->description
-            ]
+                'description' => $board->description,
+            ],
         ]);
     }
 
     public function getThreads($code, Request $request)
     {
         $board = Board::where('code', $code)->firstOrFail();
-        
+
         $perPage = $request->get('per_page', 20);
         $page = $request->get('page', 1);
-        
+
         $threads = Thread::where('board_id', $board->id)
             ->withCount('posts')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage);
-        
+
         return response()->json([
             'threads' => $threads->map(function ($thread) {
                 return [
@@ -101,15 +101,15 @@ class ForumApiController extends Controller
                     'posts_count' => $thread->posts_count,
                     'created_at' => $thread->created_at,
                     'image_path' => $thread->image_path,
-                    'image_filename' => $thread->image_filename
+                    'image_filename' => $thread->image_filename,
                 ];
             }),
             'pagination' => [
                 'current_page' => $threads->currentPage(),
                 'last_page' => $threads->lastPage(),
                 'per_page' => $threads->perPage(),
-                'total' => $threads->total()
-            ]
+                'total' => $threads->total(),
+            ],
         ]);
     }
 
@@ -118,17 +118,17 @@ class ForumApiController extends Controller
         \Log::info('=== API GET THREAD START ===', [
             'board_code' => $code,
             'thread_id' => $threadId,
-            'user_id' => auth()->id()
+            'user_id' => auth()->id(),
         ]);
 
         try {
             $board = Board::where('code', $code)->firstOrFail();
             \Log::info('Board found for thread retrieval', ['board_id' => $board->id, 'board_name' => $board->name]);
 
-            $thread = Thread::with(['posts' => function($query) {
+            $thread = Thread::with(['posts' => function ($query) {
                 $query->whereNull('parent_id')
-                      ->orderBy('created_at', 'asc')
-                      ->with(['allReplies']);
+                    ->orderBy('created_at', 'asc')
+                    ->with(['allReplies']);
             }])->findOrFail($threadId);
 
             $totalPosts = $thread->posts()->count();
@@ -140,7 +140,7 @@ class ForumApiController extends Controller
                 'total_posts_in_db' => $totalPosts,
                 'top_level_posts' => $topLevelPosts,
                 'posts_with_eager_loading' => $thread->posts->count(),
-                'board_code' => $code
+                'board_code' => $code,
             ]);
 
             $formattedPosts = $this->formatPosts($thread->posts);
@@ -155,9 +155,9 @@ class ForumApiController extends Controller
                     'posts_count' => $totalPosts,
                     'created_at' => $thread->created_at,
                     'image_path' => $thread->image_path,
-                    'image_filename' => $thread->image_filename
+                    'image_filename' => $thread->image_filename,
                 ],
-                'posts' => $formattedPosts
+                'posts' => $formattedPosts,
             ]);
 
         } catch (\Exception $e) {
@@ -165,7 +165,7 @@ class ForumApiController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'board_code' => $code,
-                'thread_id' => $threadId
+                'thread_id' => $threadId,
             ]);
             throw $e;
         }
@@ -180,20 +180,20 @@ class ForumApiController extends Controller
             'request_data' => [
                 'title' => $request->input('title'),
                 'content_length' => strlen($request->input('content', '')),
-                'content_preview' => substr($request->input('content', ''), 0, 50) . '...',
+                'content_preview' => substr($request->input('content', ''), 0, 50).'...',
                 'has_image' => $request->hasFile('image'),
                 'user_agent' => $request->header('User-Agent'),
             ],
             'auth_user' => auth()->user() ? [
                 'id' => auth()->user()->id,
-                'public_key_preview' => substr(auth()->user()->allowedPublicKey->public_key ?? 'none', 0, 16) . '...'
-            ] : 'not authenticated'
+                'public_key_preview' => substr(auth()->user()->allowedPublicKey->public_key ?? 'none', 0, 16).'...',
+            ] : 'not authenticated',
         ]);
 
         $request->validate([
             'title' => 'required|max:255',
             'content' => 'required|max:2000',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:10240'
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,gif,webp|max:10240',
         ]);
 
         try {
@@ -212,12 +212,12 @@ class ForumApiController extends Controller
                 'title' => $request->title,
                 'content' => $request->content,
                 'user_id' => auth()->id(),
-                'author_name' => substr(auth()->user()->allowedPublicKey->public_key, 0, 12) . '...',
+                'author_name' => substr(auth()->user()->allowedPublicKey->public_key, 0, 12).'...',
                 'image_path' => $imageData['path'] ?? null,
                 'image_filename' => $imageData['filename'] ?? null,
                 'image_original_name' => $imageData['original_name'] ?? null,
                 'image_size' => $imageData['size'] ?? null,
-                'image_count' => $imageData ? 1 : 0
+                'image_count' => $imageData ? 1 : 0,
             ]);
 
             \Log::info('=== API THREAD CREATED SUCCESSFULLY ===', [
@@ -226,7 +226,7 @@ class ForumApiController extends Controller
                 'title' => $thread->title,
                 'author_name' => $thread->author_name,
                 'content_length' => strlen($thread->content),
-                'created_at' => $thread->created_at
+                'created_at' => $thread->created_at,
             ]);
 
             return response()->json([
@@ -238,8 +238,8 @@ class ForumApiController extends Controller
                     'posts_count' => 0,
                     'created_at' => $thread->created_at,
                     'image_path' => $thread->image_path,
-                    'image_filename' => $thread->image_filename
-                ]
+                    'image_filename' => $thread->image_filename,
+                ],
             ], 201);
 
         } catch (\Exception $e) {
@@ -248,7 +248,7 @@ class ForumApiController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'board_code' => $code,
                 'user_id' => auth()->id(),
-                'title' => $request->input('title')
+                'title' => $request->input('title'),
             ]);
             throw $e;
         }
@@ -264,20 +264,20 @@ class ForumApiController extends Controller
             'request_data' => [
                 'parent_id' => $request->input('parent_id'),
                 'content_length' => strlen($request->input('content', '')),
-                'content_preview' => substr($request->input('content', ''), 0, 50) . '...',
+                'content_preview' => substr($request->input('content', ''), 0, 50).'...',
                 'has_image' => $request->hasFile('image'),
                 'user_agent' => $request->header('User-Agent'),
                 'content_type' => $request->header('Content-Type'),
             ],
             'auth_user' => auth()->user() ? [
                 'id' => auth()->user()->id,
-                'public_key_preview' => substr(auth()->user()->allowedPublicKey->public_key ?? 'none', 0, 16) . '...'
-            ] : 'not authenticated'
+                'public_key_preview' => substr(auth()->user()->allowedPublicKey->public_key ?? 'none', 0, 16).'...',
+            ] : 'not authenticated',
         ]);
 
         $request->validate([
             'content' => 'required|max:2000',
-            'parent_id' => 'nullable|exists:posts,id'
+            'parent_id' => 'nullable|exists:posts,id',
         ]);
 
         try {
@@ -291,8 +291,8 @@ class ForumApiController extends Controller
                 'thread_id' => $thread->id,
                 'content' => $request->content,
                 'user_id' => auth()->id(),
-                'author_name' => substr(auth()->user()->allowedPublicKey->public_key, 0, 12) . '...',
-                'parent_id' => $request->parent_id
+                'author_name' => substr(auth()->user()->allowedPublicKey->public_key, 0, 12).'...',
+                'parent_id' => $request->parent_id,
             ]);
 
             \Log::info('=== API REPLY CREATED SUCCESSFULLY ===', [
@@ -302,7 +302,7 @@ class ForumApiController extends Controller
                 'author_name' => $post->author_name,
                 'content_length' => strlen($post->content),
                 'parent_id' => $post->parent_id,
-                'created_at' => $post->created_at
+                'created_at' => $post->created_at,
             ]);
 
             return response()->json([
@@ -311,8 +311,8 @@ class ForumApiController extends Controller
                     'content' => $post->content,
                     'author_name' => $post->author_name,
                     'parent_id' => $post->parent_id,
-                    'created_at' => $post->created_at
-                ]
+                    'created_at' => $post->created_at,
+                ],
             ], 201);
 
         } catch (\Exception $e) {
@@ -321,7 +321,7 @@ class ForumApiController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'board_code' => $code,
                 'thread_id' => $threadId,
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
             throw $e;
         }
@@ -337,14 +337,14 @@ class ForumApiController extends Controller
                 'created_at' => $post->created_at,
                 'image_path' => $post->image_path,
                 'image_filename' => $post->image_filename,
-                'replies' => $this->formatPosts($post->allReplies ?? collect())
+                'replies' => $this->formatPosts($post->allReplies ?? collect()),
             ];
         });
     }
 
     private function handleImageUpload($file)
     {
-        $filename = \Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $filename = \Str::uuid().'.'.$file->getClientOriginalExtension();
         $originalName = $file->getClientOriginalName();
         $size = $file->getSize();
 
@@ -358,7 +358,7 @@ class ForumApiController extends Controller
             'filename' => $filename,
             'original_name' => $originalName,
             'size' => $size,
-            'path' => "images/{$filename}"
+            'path' => "images/{$filename}",
         ];
     }
 }

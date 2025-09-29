@@ -1,0 +1,406 @@
+/* ========================================
+   MINING COMPONENTS
+   ======================================== */
+
+/* Mining Canvas Background */
+.mining-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.1;
+}
+
+/* Mining Toolbar */
+.mining-toolbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-alt);
+    border-top: 1px solid var(--border-secondary);
+    padding: 8px 16px;
+    z-index: 100;
+    font-size: 11px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+}
+
+.mining-toolbar__content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.mining-info {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.mining-info__label {
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.mining-info__value {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.mining-stats {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.mining-indicator {
+    font-size: 16px;
+    animation: gentle-pulse 2s infinite ease-in-out;
+}
+
+.hash-rate {
+    font-family: var(--font-main);
+    color: var(--accent-mining);
+    font-weight: 600;
+}
+
+.mining-toggle {
+    background: var(--accent-green);
+    color: white;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.mining-toggle:hover {
+    background: var(--accent-red);
+}
+
+/* Mining Dashboard */
+.mining-dashboard {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 280px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border-secondary);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    z-index: 200;
+    font-size: 11px;
+}
+
+.mining-dashboard__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-secondary);
+    background: var(--bg-accent);
+    border-radius: 8px 8px 0 0;
+}
+
+.mining-dashboard__header h3 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.dashboard-toggle {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    font-weight: bold;
+}
+
+.mining-dashboard__content {
+    padding: 16px;
+}
+
+.session-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.stat {
+    text-align: center;
+    padding: 8px;
+    background: var(--bg-main);
+    border-radius: 4px;
+    border: 1px solid var(--border-secondary);
+}
+
+.stat__label {
+    display: block;
+    font-size: 9px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.stat__value {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.rare-notifications {
+    border-top: 1px solid var(--border-secondary);
+    padding-top: 16px;
+}
+
+.rare-notifications h4 {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.rare-hash-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+/* Theme Switcher */
+.theme-switcher {
+    position: fixed;
+    bottom: 80px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 300;
+}
+
+.theme-toggle,
+.lang-toggle {
+    background: var(--bg-alt);
+    border: 1px solid var(--border-secondary);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+    color: var(--text-primary);
+}
+
+.theme-toggle:hover,
+.lang-toggle:hover {
+    background: var(--accent-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+
+@keyframes gentle-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+@keyframes mining-pulse {
+    0% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.02); filter: brightness(1.2); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes rareHashGlow {
+    0% { box-shadow: 0 0 0 rgba(255,215,0,0); transform: scale(1); }
+    50% { box-shadow: 0 0 20px rgba(255,215,0,0.6); transform: scale(1.02); }
+    100% { box-shadow: 0 0 0 rgba(255,215,0,0); transform: scale(1); }
+}
+
+@keyframes rareHashPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* ========================================
+   HASH CLICKING & FORMS
+   ======================================== */
+
+/* Clickable hashes */
+.hash-copy, .post-hash, .thread-hash {
+    cursor: pointer;
+    color: var(--accent-mining);
+    font-weight: 600;
+    font-family: var(--font-main);
+    transition: all 0.2s ease;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+}
+
+.hash-copy:hover, .post-hash:hover, .thread-hash:hover {
+    color: var(--accent-green);
+    background: rgba(154, 184, 122, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    transform: translateY(-1px);
+}
+
+/* Mineable elements */
+.mineable {
+    transition: all 0.3s ease;
+    border-radius: 4px;
+}
+
+.mineable:hover {
+    cursor: crosshair;
+}
+
+.mining-active {
+    animation: mining-pulse 0.5s ease-in-out infinite alternate;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.8) !important;
+    border: 2px solid #FFD700 !important;
+}
+
+/* Form Mining */
+.pow-mining-container {
+    background: var(--bg-accent);
+    border: 2px solid var(--border-secondary);
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.mining-status {
+    background: var(--bg-main);
+    border: 1px solid var(--border-secondary);
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.mining-progress {
+    width: 100%;
+    height: 20px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 15px 0;
+}
+
+.mining-log {
+    background: var(--bg-main);
+    border: 1px solid var(--border-secondary);
+    padding: 10px;
+    height: 120px;
+    overflow-y: auto;
+    font-family: var(--font-main);
+    font-size: 11px;
+    border-radius: 4px;
+}
+
+.start-form-mining {
+    background: var(--accent-green);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.start-form-mining:hover {
+    background: var(--accent-red);
+    transform: translateY(-1px);
+}
+
+.start-form-mining:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Proof animations */
+.proof-animation {
+    animation: proof-float 2s ease-out forwards;
+}
+
+@keyframes proof-float {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% - 50px)) scale(1.1);
+    }
+}
+
+.rare-hash-notification {
+    margin: 3px 0;
+    padding: 6px;
+    background: rgba(255, 215, 0, 0.1);
+    border-left: 3px solid #FFD700;
+    border-radius: 3px;
+    font-size: 10px;
+    animation: rareHashGlow 2s ease-in-out;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+@media (max-width: 768px) {
+    .mining-dashboard {
+        width: 250px;
+        top: 10px;
+        right: 10px;
+    }
+    
+    .mining-toolbar {
+        padding: 6px 12px;
+        font-size: 10px;
+    }
+    
+    .mining-toolbar__content {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .session-stats {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .theme-switcher {
+        bottom: 60px;
+        left: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mining-dashboard {
+        width: calc(100vw - 20px);
+        right: 10px;
+    }
+    
+    .mining-toolbar__content {
+        justify-content: center;
+        text-align: center;
+    }
+}

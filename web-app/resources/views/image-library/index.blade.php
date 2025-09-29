@@ -26,10 +26,6 @@
                 <button id="refresh-btn" style="padding: 6px 12px; background: var(--accent-color); color: var(--content-bg); border: none; border-radius: 3px; font-size: 10px; cursor: pointer;">
                     🔄 Refresh
                 </button>
-
-                <button id="auto-dither-toggle" style="padding: 6px 12px; background: var(--success-color); color: var(--content-bg); border: none; border-radius: 3px; font-size: 10px; cursor: pointer;" onclick="toggleSiteDither()">
-                    🎨 Auto-Dither: <span id="dither-status">OFF</span>
-                </button>
             </div>
 
             <!-- Stats -->
@@ -42,8 +38,9 @@
 
     <!-- Image Grid -->
     <div style="padding: 30px; background: var(--content-bg);">
-        <div id="image-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;">
-            @foreach($images as $image)
+        @if(count($images) > 0)
+            <div id="image-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;">
+                @foreach($images as $image)
             <div class="image-item" data-id="{{ $image->id }}" data-pow="{{ $image->total_pow_earned }}" data-usage="{{ $image->usage_count }}" data-mine-type="images" data-mine-target="{{ $image->id }}" data-mine-title="Image {{ $image->id }}" style="
                 background: #FFFFFF;
                 border: 2px solid #CCCCCC;
@@ -76,10 +73,13 @@
 
                 <!-- Image -->
                 <div style="width: 100%; height: 120px; background: #F8F8F8; border: 1px solid #DDD; border-radius: 4px; margin-bottom: 10px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-                    @if($image->file_path)
-                        <img src="{{ asset('storage/' . $image->file_path) }}" alt="{{ $image->original_name }}" style="max-width: 100%; max-height: 100%; object-fit: contain;" onclick="openImageModal({{ $image->id }})">
+                    @if($image->file_path && file_exists(public_path($image->file_path)))
+                        <img src="{{ asset($image->file_path) }}" alt="{{ $image->original_name }}" 
+                             data-hash="{{ $image->hash }}" data-image-id="{{ $image->id }}"
+                             style="max-width: 100%; max-height: 100%; object-fit: contain;" 
+                             onclick="openImageModal({{ $image->id }})">
                     @else
-                        <div style="color: #999; font-size: 12px;">No preview</div>
+                        <div style="color: #999; font-size: 12px;">Image not found</div>
                     @endif
                 </div>
 
@@ -91,7 +91,22 @@
 
             </div>
             @endforeach
-        </div>
+            </div>
+        @else
+            <!-- Empty State -->
+            <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
+                <div style="font-size: 48px; margin-bottom: 20px;">📷</div>
+                <h3 style="color: var(--text-primary); margin: 0 0 16px 0; font-weight: 300;">No Images in Library</h3>
+                <p style="margin: 0 0 24px 0; font-size: 14px;">
+                    Upload your first image to start building the proof-of-work image library!
+                </p>
+                <div style="background: var(--secondary-bg); padding: 20px; border-radius: 8px; max-width: 400px; margin: 0 auto;">
+                    <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">
+                        💡 <strong>Tip:</strong> Images with interesting hash patterns earn more PoW points when mined!
+                    </p>
+                </div>
+            </div>
+        @endif
 
         <!-- Upload Section -->
         <div style="margin-top: 40px; padding: 20px; background: #F0F0F0; border: 2px solid #708B75; border-radius: 8px;">
@@ -199,19 +214,25 @@ class ImageLibrary {
             const result = await response.json();
 
             if (result.success) {
-                statusDiv.textContent = `✅ Upload successful! Earned ${result.pow_points} PoW points`;
+                statusDiv.innerHTML = `
+                    ✅ Upload successful! 
+                    <br><small>🎯 Earned ${result.pow_points} PoW points</small>
+                    <br><small>📏 ${result.dimensions} • 💾 ${Math.round(result.file_size/1024)}KB</small>
+                `;
                 statusDiv.style.color = '#708B75';
+                fileInput.value = ''; // Clear file input
 
                 // Refresh page after short delay
                 setTimeout(() => {
                     window.location.reload();
-                }, 2000);
+                }, 2500);
             } else {
-                statusDiv.textContent = '❌ Upload failed: ' + (result.message || 'Unknown error');
+                statusDiv.innerHTML = `❌ Upload failed: ${result.message || 'Unknown error'}`;
                 statusDiv.style.color = '#CD5C5C';
             }
         } catch (error) {
-            statusDiv.textContent = '❌ Upload failed: ' + error.message;
+            console.error('Upload error:', error);
+            statusDiv.innerHTML = `❌ Upload failed: Network error`;
             statusDiv.style.color = '#CD5C5C';
         }
     }
@@ -352,14 +373,15 @@ function openImageModal(imageId) {
 
     content.innerHTML = `
         <div style="text-align: center;">
-            <img src="${window.location.origin}/library/image/${image.id}" style="max-width: 100%; max-height: 60vh; border-radius: 4px;">
+            <img src="/api/image-library/${image.id}/full" style="max-width: 100%; max-height: 60vh; border-radius: 4px;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 200 100%22><text y=%2250%%22 x=%2250%%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>Image Not Found</text></svg>'">
             <div style="margin-top: 15px; color: #333;">
                 <h3 style="margin: 0 0 10px 0;">${image.original_name}</h3>
                 <p style="margin: 5px 0; font-size: 12px;">PoW Points: <strong>${image.total_pow_earned}⚡</strong></p>
                 <p style="margin: 5px 0; font-size: 12px;">Usage Count: <strong>${image.usage_count}</strong></p>
                 <p style="margin: 5px 0; font-size: 12px;">Hash: <strong>${image.hash.substring(0, 16)}...</strong></p>
-                <div style="margin-top: 15px;">
+                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
                     <button onclick="mineImage(${image.id})" style="padding: 8px 16px; background: #708B75; color: white; border: none; border-radius: 3px; cursor: pointer;">⛏️ Mine This Image</button>
+                    <button onclick="downloadImage(${image.id})" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer;">📥 Download</button>
                 </div>
             </div>
         </div>
@@ -370,6 +392,10 @@ function openImageModal(imageId) {
 
 function closeImageModal() {
     document.getElementById('image-modal').style.display = 'none';
+}
+
+function downloadImage(imageId) {
+    window.open(`/api/image-library/${imageId}/download`, '_blank');
 }
 
 // Add some basic animations
@@ -420,28 +446,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // Sync image library dither toggle with site-wide setting
-    function updateImageLibraryDither() {
-        const siteDitherEnabled = localStorage.getItem('haichan_site_dither') === 'true';
-        const ditherStatus = document.getElementById('dither-status');
-        const ditherToggle = document.getElementById('auto-dither-toggle');
-        
-        if (ditherStatus) {
-            ditherStatus.textContent = siteDitherEnabled ? 'ON' : 'OFF';
-        }
-        if (ditherToggle) {
-            ditherToggle.style.background = siteDitherEnabled ? '#4CAF50' : '#9AB87A';
-        }
-    }
-    
-    updateImageLibraryDither();
-    
-    // Update when storage changes (from other tabs/pages)
-    window.addEventListener('storage', function(e) {
-        if (e.key === 'haichan_site_dither') {
-            updateImageLibraryDither();
-        }
-    });
 
     // Add click-to-mine functionality
     document.querySelectorAll('.image-item').forEach(item => {

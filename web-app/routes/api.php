@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\ForumApiController;
 use App\Http\Controllers\Api\AuthApiController;
+use App\Http\Controllers\Api\ForumApiController;
 use App\Http\Controllers\Api\ProofController;
+use App\Http\Controllers\QuickNavigationController;
+use Illuminate\Support\Facades\Route;
 
 // API Authentication routes
 Route::post('/auth/challenge', [AuthApiController::class, 'getChallenge'])->middleware('throttle:25,1');
@@ -18,7 +18,7 @@ Route::get('/health', function () {
 // Development/testing endpoint to add public keys (remove in production)
 Route::post('/dev/add-public-key', function (Illuminate\Http\Request $request) {
     $request->validate([
-        'public_key' => 'required|string|size:66'
+        'public_key' => 'required|string|size:66',
     ]);
 
     $existingKey = App\Models\AllowedPublicKey::where('public_key', $request->public_key)->first();
@@ -30,7 +30,7 @@ Route::post('/dev/add-public-key', function (Illuminate\Http\Request $request) {
     $allowedKey = App\Models\AllowedPublicKey::create([
         'public_key' => $request->public_key,
         'created_by' => 1, // Admin user
-        'is_active' => true
+        'is_active' => true,
     ]);
 
     return response()->json(['message' => 'Public key added successfully', 'id' => $allowedKey->id]);
@@ -48,6 +48,7 @@ Route::post('/debug/compare', [AuthApiController::class, 'compareImplementations
 Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
 Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
 Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
+Route::get('/mining-stats', [App\Http\Controllers\ProofOfWorkController::class, 'getStats']);
 Route::get('/random-hash', [App\Http\Controllers\RandomHashController::class, 'getRandomHash']);
 
 // Public subscription routes (requires public key but not auth token)
@@ -81,3 +82,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/image-library/search', [App\Http\Controllers\ImageLibraryController::class, 'search']);
     Route::get('/image-library/shifting', [App\Http\Controllers\ImageLibraryController::class, 'getShiftingArrangement']);
 });
+
+// HAICHAN COMPLETE API (public endpoints)
+Route::post('/complete/proof', [App\Http\Controllers\HaichanCompleteController::class, 'submitCompleteProof']);
+Route::get('/complete/progression', [App\Http\Controllers\HaichanCompleteController::class, 'getCompleteProgression']);
+Route::get('/complete/leaderboard', [App\Http\Controllers\HaichanCompleteController::class, 'getCompleteLeaderboard']);
+Route::post('/complete/session/start', [App\Http\Controllers\HaichanCompleteController::class, 'startCompleteSession']);
+Route::get('/complete/stats', [App\Http\Controllers\HaichanCompleteController::class, 'getCompleteStats']);
+Route::get('/complete/neural-enhancements', [App\Http\Controllers\HaichanCompleteController::class, 'getNeuralEnhancements']);
+
+// HAICHAN 2.0 QUANTUM API (public endpoints)
+Route::post('/quantum/initialize', [App\Http\Controllers\Haichan2Controller::class, 'initializeQuantumSystem']);
+Route::post('/quantum/activate', [App\Http\Controllers\Haichan2Controller::class, 'activateQuantumMechanic']);
+Route::post('/quantum/proof', [App\Http\Controllers\Haichan2Controller::class, 'submitQuantumProof']);
+Route::get('/quantum/status', [App\Http\Controllers\Haichan2Controller::class, 'getQuantumStatus']);
+Route::get('/quantum/dimensional', [App\Http\Controllers\Haichan2Controller::class, 'accessDimensionalMining']);
+Route::get('/quantum/leaderboard', [App\Http\Controllers\Haichan2Controller::class, 'getQuantumLeaderboard']);
+Route::post('/quantum/neural-synthesis', [App\Http\Controllers\Haichan2Controller::class, 'performNeuralSynthesis']);
+Route::get('/quantum/analytics', [App\Http\Controllers\Haichan2Controller::class, 'getQuantumAnalytics']);
+
+// Quick Navigation API (public endpoints)
+Route::post('/search/quick', [QuickNavigationController::class, 'quickSearch']);
+Route::get('/threads/{threadId}/url', [QuickNavigationController::class, 'getThreadUrl']);
+Route::get('/threads/recent', [QuickNavigationController::class, 'getRecentThreads']);
+Route::get('/threads/active', [QuickNavigationController::class, 'getActiveThreads']);
+Route::get('/threads/random', [QuickNavigationController::class, 'getRandomThread']);
+Route::get('/threads/{threadId}/previous', [QuickNavigationController::class, 'getPreviousThread']);
+Route::get('/threads/{threadId}/next', [QuickNavigationController::class, 'getNextThread']);

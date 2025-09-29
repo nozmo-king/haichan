@@ -54,7 +54,7 @@
                     <div style="text-align: center; padding: 20px; background: #FFFACD; border: 1px solid #9AB87A; border-radius: 5px;">
                         <div style="font-size: 24px; color: #CD5C5C; margin-bottom: 10px;">🎨</div>
                         <h4 style="color: #444B6E; margin: 8px 0; font-size: 13px; font-weight: 600;">Media Mining</h4>
-                        <p style="color: #708B75; font-size: 11px; line-height: 1.4; margin: 0;">Algorithmic image processing with dynamic dithering creates unique visual experiences through computational art.</p>
+                        <p style="color: #708B75; font-size: 11px; line-height: 1.4; margin: 0;">Algorithmic image processing creates unique visual experiences through computational art.</p>
                     </div>
                 </div>
             </div>

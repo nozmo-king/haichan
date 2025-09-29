@@ -2,13 +2,13 @@
 
 namespace App\Helpers;
 
-use Intervention\Image\Facades\Image;
+use Intervention\Image\Laravel\Facades\Image;
 
 class ImageHelper
 {
     public static function applyDither($imagePath, $outputPath = null)
     {
-        if (!$outputPath) {
+        if (! $outputPath) {
             $outputPath = $imagePath;
         }
 
@@ -50,15 +50,15 @@ class ImageHelper
 
                     // Distribute error to neighboring pixels (Floyd-Steinberg)
                     if ($x < $width - 1) {
-                        self::addError($source, $x + 1, $y, $error * 7/16, $width, $height);
+                        self::addError($source, $x + 1, $y, $error * 7 / 16, $width, $height);
                     }
                     if ($y < $height - 1) {
                         if ($x > 0) {
-                            self::addError($source, $x - 1, $y + 1, $error * 3/16, $width, $height);
+                            self::addError($source, $x - 1, $y + 1, $error * 3 / 16, $width, $height);
                         }
-                        self::addError($source, $x, $y + 1, $error * 5/16, $width, $height);
+                        self::addError($source, $x, $y + 1, $error * 5 / 16, $width, $height);
                         if ($x < $width - 1) {
-                            self::addError($source, $x + 1, $y + 1, $error * 1/16, $width, $height);
+                            self::addError($source, $x + 1, $y + 1, $error * 1 / 16, $width, $height);
                         }
                     }
                 }

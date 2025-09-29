@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -8,9 +9,9 @@ return new class extends Migration
     public function up()
     {
         // friend_codes already exists, skip it
-        
+
         // Create user_sessions if it doesn't exist
-        if (!Schema::hasTable('user_sessions')) {
+        if (! Schema::hasTable('user_sessions')) {
             Schema::create('user_sessions', function (Blueprint $table) {
                 $table->string('user_token', 16)->primary();
                 $table->string('friend_code_used', 64);
@@ -22,7 +23,7 @@ return new class extends Migration
         }
 
         // Create pow_submissions
-        if (!Schema::hasTable('pow_submissions')) {
+        if (! Schema::hasTable('pow_submissions')) {
             Schema::create('pow_submissions', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('thread_id');
@@ -32,7 +33,7 @@ return new class extends Migration
                 $table->string('difficulty_prefix', 8);
                 $table->integer('mining_duration_ms');
                 $table->timestamps();
-                
+
                 $table->index(['thread_id', 'created_at']);
                 $table->index(['user_token', 'created_at']);
             });
@@ -41,10 +42,10 @@ return new class extends Migration
         // Add PoW columns to threads if they don't exist
         if (Schema::hasTable('threads')) {
             Schema::table('threads', function (Blueprint $table) {
-                if (!Schema::hasColumn('threads', 'total_pow_score')) {
+                if (! Schema::hasColumn('threads', 'total_pow_score')) {
                     $table->unsignedBigInteger('total_pow_score')->default(0);
                 }
-                if (!Schema::hasColumn('threads', 'last_bump')) {
+                if (! Schema::hasColumn('threads', 'last_bump')) {
                     $table->timestamp('last_bump')->nullable();
                 }
             });
@@ -55,7 +56,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('pow_submissions');
         Schema::dropIfExists('user_sessions');
-        
+
         if (Schema::hasTable('threads')) {
             Schema::table('threads', function (Blueprint $table) {
                 if (Schema::hasColumn('threads', 'total_pow_score')) {

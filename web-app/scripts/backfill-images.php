@@ -1,13 +1,14 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php';
 
-$app = require_once __DIR__ . '/../bootstrap/app.php';
+require __DIR__.'/../vendor/autoload.php';
+
+$app = require_once __DIR__.'/../bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-use App\Models\Thread;
-use App\Models\Post;
 use App\Models\ImageLibrary;
+use App\Models\Post;
+use App\Models\Thread;
 
 echo "🔍 Starting image library backfill...\n";
 
@@ -24,9 +25,9 @@ foreach ($threads as $thread) {
     // Check if this image is already in the library by file path
     $existingImage = ImageLibrary::where('file_path', $imagePath)->first();
 
-    if (!$existingImage) {
+    if (! $existingImage) {
         // Check if the file actually exists
-        $fullPath = storage_path('app/public/' . $imagePath);
+        $fullPath = storage_path('app/public/'.$imagePath);
 
         if (file_exists($fullPath)) {
             // Calculate hash of the file
@@ -35,7 +36,7 @@ foreach ($threads as $thread) {
             // Check if we already have this hash
             $hashExists = ImageLibrary::where('hash', $hash)->first();
 
-            if (!$hashExists) {
+            if (! $hashExists) {
                 // Get file info
                 $fileSize = filesize($fullPath);
                 $imageInfo = getimagesize($fullPath);
@@ -60,10 +61,10 @@ foreach ($threads as $thread) {
                     'first_post_id' => null,
                     'uploader_ip' => '127.0.0.1', // Unknown IP for backfilled images
                     'created_at' => $thread->created_at,
-                    'updated_at' => now()
+                    'updated_at' => now(),
                 ]);
 
-                echo "✅ Added: {$thread->image_filename} (Thread #{$thread->id}) - Hash: " . substr($hash, 0, 8) . "...\n";
+                echo "✅ Added: {$thread->image_filename} (Thread #{$thread->id}) - Hash: ".substr($hash, 0, 8)."...\n";
                 $backfilled++;
             } else {
                 echo "🔗 Hash exists: {$thread->image_filename} (Thread #{$thread->id})\n";
@@ -86,14 +87,14 @@ foreach ($posts as $post) {
 
     $existingImage = ImageLibrary::where('file_path', $imagePath)->first();
 
-    if (!$existingImage) {
-        $fullPath = storage_path('app/public/' . $imagePath);
+    if (! $existingImage) {
+        $fullPath = storage_path('app/public/'.$imagePath);
 
         if (file_exists($fullPath)) {
             $hash = hash_file('sha256', $fullPath);
             $hashExists = ImageLibrary::where('hash', $hash)->first();
 
-            if (!$hashExists) {
+            if (! $hashExists) {
                 $fileSize = filesize($fullPath);
                 $imageInfo = getimagesize($fullPath);
                 $width = $imageInfo[0] ?? 0;
@@ -116,10 +117,10 @@ foreach ($posts as $post) {
                     'first_post_id' => $post->id,
                     'uploader_ip' => '127.0.0.1',
                     'created_at' => $post->created_at,
-                    'updated_at' => now()
+                    'updated_at' => now(),
                 ]);
 
-                echo "✅ Added from post: {$post->image_filename} (Post #{$post->id}) - Hash: " . substr($hash, 0, 8) . "...\n";
+                echo "✅ Added from post: {$post->image_filename} (Post #{$post->id}) - Hash: ".substr($hash, 0, 8)."...\n";
                 $backfilled++;
             }
         }
@@ -127,5 +128,4 @@ foreach ($posts as $post) {
 }
 
 echo "\n🎯 Backfill complete! Added {$backfilled} images to the library.\n";
-echo "📊 Total images in library: " . ImageLibrary::count() . "\n";
-?>
+echo '📊 Total images in library: '.ImageLibrary::count()."\n";
