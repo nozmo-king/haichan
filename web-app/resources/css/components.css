@@ -178,18 +178,14 @@
     overflow-y: auto;
 }
 
-/* Theme Switcher */
-.theme-switcher {
+/* Language Switcher Only */
+.language-toggle {
     position: fixed;
     bottom: 80px;
     left: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
     z-index: 300;
 }
 
-.theme-toggle,
 .lang-toggle {
     background: var(--bg-alt);
     border: 1px solid var(--border-secondary);
@@ -202,7 +198,6 @@
     color: var(--text-primary);
 }
 
-.theme-toggle:hover,
 .lang-toggle:hover {
     background: var(--accent-color);
     color: white;
@@ -387,7 +382,7 @@
         gap: 8px;
     }
     
-    .theme-switcher {
+    .language-toggle {
         bottom: 60px;
         left: 10px;
     }
