@@ -157,6 +157,10 @@ class ForumController extends Controller
             'has_content' => $request->has('content'),
             'has_image' => $request->hasFile('image'),
             'has_pow_hash' => $request->has('pow_hash'),
+            'pow_hash_value' => $request->pow_hash,
+            'pow_nonce_value' => $request->pow_nonce,
+            'pow_challenge_id' => $request->pow_challenge_id,
+            'title_value' => $request->title,
             'session_data' => [
                 'bitcoin_auth_id' => session('bitcoin_auth_id'),
                 'authenticated' => auth()->check()
@@ -200,16 +204,16 @@ class ForumController extends Controller
             $finalUserId = null;
         }
 
-        $title = e($validated['title']);
+        $title = $validated['title']; // Use raw title for PoW verification, escape later for storage
         $content = e($validated['content']);
 
-        // Generate proper challenge data and verify PoW
+        // Generate proper challenge data and verify PoW (must match frontend exactly)
         $challengeData = "thread:{$boardModel->code}:{$title}:{$validated['pow_challenge_id']}";
         $verification = Thread::verifyProofOfWork(
             $challengeData,
             $validated['pow_nonce'],
             $validated['pow_hash'],
-            '21e' // Current difficulty for threads
+            '21e8' // Required difficulty for threads
         );
 
         if (! $verification['valid']) {
@@ -218,11 +222,14 @@ class ForumController extends Controller
                 'board' => $board,
                 'title' => $title,
                 'challenge_data' => $challengeData,
-                'nonce' => $request->pow_nonce,
-                'submitted_hash' => $request->pow_hash,
-                'expected_pattern' => '21e',
-                'hash_starts_with' => substr($request->pow_hash, 0, 10),
-                'calculated_hash' => hash('sha256', $challengeData.':'.$request->pow_nonce),
+                'nonce' => $validated['pow_nonce'],
+                'submitted_hash' => $validated['pow_hash'],
+                'expected_pattern' => '21e8',
+                'hash_starts_with' => substr($validated['pow_hash'], 0, 10),
+                'calculated_hash' => hash('sha256', $challengeData.':'.$validated['pow_nonce']),
+                'challenge_id' => $validated['pow_challenge_id'],
+                'raw_title' => $request->title,
+                'escaped_title' => $title,
             ]);
 
             return back()->withErrors(['pow' => 'Proof of work verification failed: '.$verification['error']])->withInput();
@@ -230,7 +237,7 @@ class ForumController extends Controller
 
         $threadData = [
             'board_id' => $boardModel->id,
-            'title' => $title,
+            'title' => e($title), // Escape title for database storage
             'content' => $request->content,
             'user_id' => $finalUserId,
             'author_name' => $authorName,
@@ -275,6 +282,13 @@ class ForumController extends Controller
             $threadData['image_filename'] = $existingImage->filename;
             $threadData['image_hash'] = $existingImage->hash;
         }
+
+        Log::info('PoW verification passed, creating thread', [
+            'challenge_data' => $challengeData,
+            'submitted_hash' => $validated['pow_hash'],
+            'calculated_hash' => hash('sha256', $challengeData.':'.$validated['pow_nonce']),
+            'pattern_check' => str_starts_with(strtolower($validated['pow_hash']), '21e8')
+        ]);
 
         try {
             $thread = Thread::create($threadData);

@@ -729,8 +729,27 @@ class HaichanUnified {
     async mineFormProof(form) {
         const challengeId = this.generateChallengeId();
         const formData = new FormData(form);
-        const content = formData.get('content') || formData.get('reply_content') || formData.get('title') || '';
-        const data = `form:${content.substring(0, 50)}:${challengeId}`;
+        
+        // Determine the mining type based on form action or presence of title field
+        const isThreadCreation = form.querySelector('input[name="title"]') !== null;
+        const isReply = form.action.includes('/send') || form.querySelector('textarea[name="content"]') !== null;
+        
+        let data;
+        if (isThreadCreation) {
+            // Thread creation: thread:{boardCode}:{title}:{challengeId}
+            const title = formData.get('title') || 'Thread';
+            const boardCode = window.location.pathname.split('/').pop() || 'gen'; // Get board from URL
+            data = `thread:${boardCode}:${title}:${challengeId}`;
+        } else if (isReply) {
+            // Reply: reply:{boardCode}:{threadId}:{challengeId}
+            const boardCode = window.location.pathname.split('/')[1] || 'gen';
+            const threadId = window.location.pathname.split('/')[2] || '1';
+            data = `reply:${boardCode}:${threadId}:${challengeId}`;
+        } else {
+            // Fallback to old format
+            const content = formData.get('content') || formData.get('reply_content') || formData.get('title') || '';
+            data = `form:${content.substring(0, 50)}:${challengeId}`;
+        }
         
         let nonce = 0;
         const maxAttempts = 50000;

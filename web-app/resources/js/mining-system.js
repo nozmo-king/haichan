@@ -576,8 +576,13 @@ class HaichanMiner {
                 let nonce = Math.floor(Math.random() * 1000000);
                 const maxAttempts = 100000;
                 
+                // Get the board code and title for proper challenge data format
+                const boardCode = window.location.pathname.split('/')[1] || 'gen';
+                const titleInput = document.getElementById('title');
+                const title = titleInput ? titleInput.value : 'Thread';
+                
                 for (let attempts = 0; attempts < maxAttempts && this.isRunning; attempts++) {
-                    const data = `${challengeId}:${nonce}`;
+                    const data = `thread:${boardCode}:${title}:${challengeId}:${nonce}`;
                     const hash = await this.sha256(data);
                     
                     this.hashCount++;

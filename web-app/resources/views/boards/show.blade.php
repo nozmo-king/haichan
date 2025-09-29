@@ -252,7 +252,7 @@ class HaichanThreadCreator {
         this.showMiningProgress();
         
         const challengeData = `thread:{{ $board->code }}:${title}:${this.currentChallenge}`;
-        const targetPattern = '21e';
+        const targetPattern = '21e8';
         
         console.log(`🎯 Mining thread: ${challengeData}`);
         

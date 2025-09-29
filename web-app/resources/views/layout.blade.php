@@ -20,6 +20,7 @@
     <script src="/js/haichan-unified.js"></script>
     <script src="/js/enhanced-dashboard.js"></script>
     <script src="/js/content-processor.js"></script>
+    <script src="/js/mouseover-mining-v2.js"></script>
     <script>
         // Unified Mining System Integration
         console.log('🚀 HAICHAN UNIFIED MINING - Loading...');

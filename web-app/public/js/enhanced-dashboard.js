@@ -11,7 +11,7 @@ class EnhancedMiningDashboard {
         this.dragOffset = { x: 0, y: 0 };
         
         this.powerLevel = 5; // Default power level (0-10)
-        this.currentPrefix = '21e'; // Default difficulty prefix (current active)
+        this.currentPrefix = '21e8'; // Default difficulty prefix (current active)
         this.isActive = false;
         
         this.stats = {
@@ -84,13 +84,13 @@ class EnhancedMiningDashboard {
                         <select class="prefix-selector enhanced" id="prefix-selector">
                             <option value="2">💚 2 (Easy - 1:16)</option>
                             <option value="21">💛 21 (Medium - 1:256)</option>
-                            <option value="21e" selected>🟠 21e (Hard - 1:4K) ⭐ CURRENT</option>
-                            <option value="21e8">🔴 21e8 (Very Hard - 1:65K)</option>
+                            <option value="21e">21e (Hard - 1:4K)</option>
+                            <option value="21e8" selected>21e8 (Very Hard - 1:65K) [CURRENT]</option>
                             <option value="21e88">🟣 21e88 (Extreme - 1:1M)</option>
                             <option value="21e888">⚫ 21e888 (Insane - 1:16M)</option>
                         </select>
                         <div class="difficulty-info" id="difficulty-info">
-                            Current: 🟠 Hard difficulty (1 in 4,096 chance)
+                            Current: Very Hard difficulty (1 in 65,536 chance)
                         </div>
                     </div>
                     
