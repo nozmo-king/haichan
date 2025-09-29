@@ -168,24 +168,53 @@ class ForumController extends Controller
         ]);
 
         // Comprehensive input validation - image OR image_hash required
-        $validated = $request->validate([
-            'title' => 'required|string|max:200|min:3',
-            'content' => 'required|string|max:5000|min:10',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
-            'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
-            'pow_nonce' => 'required|integer|min:0',
-            'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
-            'pow_challenge_id' => 'required|string|size:32|regex:/^[a-f0-9]{32}$/',
-            'post_anonymous' => 'boolean',
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:200|min:3',
+                'content' => 'required|string|max:5000|min:5',
+                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'pow_nonce' => 'required|integer|min:0',
+                'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'pow_challenge_id' => 'required|string|size:32|regex:/^[a-f0-9]{32}$/',
+                'post_anonymous' => 'boolean',
+            ]);
+            
+            Log::info('Validation passed', [
+                'validated_keys' => array_keys($validated),
+                'pow_nonce_type' => gettype($validated['pow_nonce']),
+                'pow_nonce_value' => $validated['pow_nonce']
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed', [
+                'errors' => $e->errors(),
+                'input_data' => $request->only(['title', 'content', 'pow_nonce', 'pow_hash', 'pow_challenge_id'])
+            ]);
+            throw $e;
+        }
+
+        // Log image validation details
+        Log::info('Image validation check', [
+            'has_image_file' => $request->hasFile('image'),
+            'has_image_hash' => $request->filled('image_hash'),
+            'image_hash_value' => $request->input('image_hash'),
+            'image_file_info' => $request->hasFile('image') ? [
+                'name' => $request->file('image')->getClientOriginalName(),
+                'size' => $request->file('image')->getSize(),
+                'mime' => $request->file('image')->getMimeType()
+            ] : null
         ]);
 
         // Validate that either image file OR image hash is provided
         if (!$request->hasFile('image') && !$request->filled('image_hash')) {
+            Log::error('Image validation failed: no image or hash provided');
             return back()->withErrors(['image' => 'Either upload an image or provide an image hash from the library.'])->withInput();
         }
 
         // Validate that both are not provided simultaneously
         if ($request->hasFile('image') && $request->filled('image_hash')) {
+            Log::error('Image validation failed: both image and hash provided');
             return back()->withErrors(['image' => 'Please provide either an image upload OR an image hash, not both.'])->withInput();
         }
 
@@ -209,6 +238,15 @@ class ForumController extends Controller
 
         // Generate proper challenge data and verify PoW (must match frontend exactly)
         $challengeData = "thread:{$boardModel->code}:{$title}:{$validated['pow_challenge_id']}";
+        
+        Log::info('About to verify PoW', [
+            'challenge_data' => $challengeData,
+            'nonce' => $validated['pow_nonce'],
+            'nonce_type' => gettype($validated['pow_nonce']),
+            'submitted_hash' => $validated['pow_hash'],
+            'pattern' => '21e8'
+        ]);
+        
         $verification = Thread::verifyProofOfWork(
             $challengeData,
             $validated['pow_nonce'],
@@ -217,16 +255,22 @@ class ForumController extends Controller
         );
 
         if (! $verification['valid']) {
+            $calculatedHash = hash('sha256', $challengeData.':'.$validated['pow_nonce']);
+            
             Log::error('Thread PoW verification failed', [
                 'error' => $verification['error'],
                 'board' => $board,
                 'title' => $title,
                 'challenge_data' => $challengeData,
+                'data_to_hash' => $challengeData.':'.$validated['pow_nonce'],
                 'nonce' => $validated['pow_nonce'],
+                'nonce_type' => gettype($validated['pow_nonce']),
                 'submitted_hash' => $validated['pow_hash'],
+                'calculated_hash' => $calculatedHash,
+                'hashes_match' => ($calculatedHash === strtolower($validated['pow_hash'])),
                 'expected_pattern' => '21e8',
-                'hash_starts_with' => substr($validated['pow_hash'], 0, 10),
-                'calculated_hash' => hash('sha256', $challengeData.':'.$validated['pow_nonce']),
+                'hash_starts_with_21e8' => str_starts_with(strtolower($validated['pow_hash']), '21e8'),
+                'calc_hash_starts_with_21e8' => str_starts_with(strtolower($calculatedHash), '21e8'),
                 'challenge_id' => $validated['pow_challenge_id'],
                 'raw_title' => $request->title,
                 'escaped_title' => $title,
@@ -326,6 +370,15 @@ class ForumController extends Controller
                     ]);
                 }
             }
+
+            // Clear board cache so new thread appears immediately
+            $cacheKey = "board_threads_{$boardModel->id}";
+            \Cache::forget($cacheKey);
+            
+            Log::info('Thread created successfully, cache cleared', [
+                'thread_id' => $thread->id,
+                'cache_key_cleared' => $cacheKey
+            ]);
 
             return redirect("/$board/{$thread->id}");
 

@@ -1,6 +1,6 @@
 @extends('layout')
 
-@section('title', '{{ $board->title }}')
+@section('title', $board->title)
 
 @section('content')
 <div style="text-align: center; margin: 10px 0;">
@@ -38,7 +38,7 @@
                 <label class="field-label required" for="thread-content">💬 Comment</label>
                 <textarea name="content" id="thread-content" class="field-textarea" 
                           required rows="5" placeholder="What's on your mind..."></textarea>
-                <div class="field-hint">Required • 10-5000 characters</div>
+                <div class="field-hint">Required • 5-5000 characters</div>
             </div>
             
             <!-- Image Upload -->
@@ -216,7 +216,7 @@ class HaichanThreadCreator {
         const hasHash = this.hashInput.value.trim();
         
         const isValid = title.length >= 3 && 
-                       content.length >= 10 && 
+                       content.length >= 5 && 
                        (hasImage || hasHash);
         
         return { isValid, title, content, hasImage, hasHash };

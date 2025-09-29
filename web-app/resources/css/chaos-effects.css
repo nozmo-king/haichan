@@ -1,0 +1,583 @@
+/**
+ * CHAOS EFFECTS - Advanced Visual Effects
+ * Particle systems, distortions, and wild animations
+ */
+
+/* Particle System */
+.particle-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: -2;
+    overflow: hidden;
+}
+
+.particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: var(--grunge-neon);
+    border-radius: 50%;
+    animation: particleFloat linear infinite;
+}
+
+.particle:nth-child(2n) {
+    background: var(--grunge-accent);
+    width: 3px;
+    height: 3px;
+}
+
+.particle:nth-child(3n) {
+    background: var(--grunge-secondary);
+    width: 1px;
+    height: 1px;
+}
+
+.particle:nth-child(5n) {
+    background: var(--grunge-purple);
+    width: 4px;
+    height: 4px;
+    animation-duration: 15s;
+}
+
+@keyframes particleFloat {
+    0% {
+        transform: translateY(100vh) translateX(0px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-10vh) translateX(100px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Glitch Distortion Effects */
+.glitch-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.glitch-container::before,
+.glitch-container::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    clip-path: inset(0);
+}
+
+.glitch-container::before {
+    color: var(--grunge-accent);
+    animation: glitchBefore 3s infinite linear alternate-reverse;
+}
+
+.glitch-container::after {
+    color: var(--grunge-neon);
+    animation: glitchAfter 2s infinite linear alternate-reverse;
+}
+
+@keyframes glitchBefore {
+    0% {
+        clip-path: inset(40% 0 61% 0);
+        transform: translate(-2px, -3px);
+    }
+    5% {
+        clip-path: inset(92% 0 1% 0);
+        transform: translate(2px, 1px);
+    }
+    10% {
+        clip-path: inset(43% 0 1% 0);
+        transform: translate(-1px, 2px);
+    }
+    15% {
+        clip-path: inset(25% 0 58% 0);
+        transform: translate(1px, -1px);
+    }
+    20% {
+        clip-path: inset(54% 0 7% 0);
+        transform: translate(-2px, 1px);
+    }
+    25% {
+        clip-path: inset(58% 0 43% 0);
+        transform: translate(2px, -2px);
+    }
+    30% {
+        clip-path: inset(54% 0 18% 0);
+        transform: translate(-1px, 3px);
+    }
+    35% {
+        clip-path: inset(21% 0 74% 0);
+        transform: translate(1px, -1px);
+    }
+    40% {
+        clip-path: inset(65% 0 39% 0);
+        transform: translate(-2px, 2px);
+    }
+    45% {
+        clip-path: inset(6% 0 16% 0);
+        transform: translate(1px, -3px);
+    }
+    50% {
+        clip-path: inset(97% 0 15% 0);
+        transform: translate(-1px, 1px);
+    }
+    55% {
+        clip-path: inset(68% 0 36% 0);
+        transform: translate(2px, -2px);
+    }
+    60% {
+        clip-path: inset(81% 0 8% 0);
+        transform: translate(-2px, 3px);
+    }
+    65% {
+        clip-path: inset(23% 0 15% 0);
+        transform: translate(1px, -1px);
+    }
+    70% {
+        clip-path: inset(91% 0 32% 0);
+        transform: translate(-1px, 2px);
+    }
+    75% {
+        clip-path: inset(44% 0 32% 0);
+        transform: translate(2px, -1px);
+    }
+    80% {
+        clip-path: inset(34% 0 65% 0);
+        transform: translate(-2px, 1px);
+    }
+    85% {
+        clip-path: inset(51% 0 16% 0);
+        transform: translate(1px, -3px);
+    }
+    90% {
+        clip-path: inset(6% 0 91% 0);
+        transform: translate(-1px, 2px);
+    }
+    95% {
+        clip-path: inset(83% 0 4% 0);
+        transform: translate(2px, -2px);
+    }
+    100% {
+        clip-path: inset(95% 0 49% 0);
+        transform: translate(-2px, 1px);
+    }
+}
+
+@keyframes glitchAfter {
+    0% {
+        clip-path: inset(61% 0 21% 0);
+        transform: translate(2px, 1px);
+    }
+    5% {
+        clip-path: inset(33% 0 6% 0);
+        transform: translate(-1px, -2px);
+    }
+    10% {
+        clip-path: inset(76% 0 34% 0);
+        transform: translate(1px, 3px);
+    }
+    15% {
+        clip-path: inset(95% 0 78% 0);
+        transform: translate(-2px, -1px);
+    }
+    20% {
+        clip-path: inset(54% 0 12% 0);
+        transform: translate(2px, 2px);
+    }
+    25% {
+        clip-path: inset(8% 0 15% 0);
+        transform: translate(-1px, -3px);
+    }
+    30% {
+        clip-path: inset(37% 0 64% 0);
+        transform: translate(1px, 1px);
+    }
+    35% {
+        clip-path: inset(82% 0 35% 0);
+        transform: translate(-2px, 2px);
+    }
+    40% {
+        clip-path: inset(18% 0 47% 0);
+        transform: translate(2px, -1px);
+    }
+    45% {
+        clip-path: inset(93% 0 56% 0);
+        transform: translate(-1px, -2px);
+    }
+    50% {
+        clip-path: inset(45% 0 23% 0);
+        transform: translate(1px, 3px);
+    }
+    55% {
+        clip-path: inset(67% 0 78% 0);
+        transform: translate(-2px, -1px);
+    }
+    60% {
+        clip-path: inset(14% 0 51% 0);
+        transform: translate(2px, 2px);
+    }
+    65% {
+        clip-path: inset(89% 0 24% 0);
+        transform: translate(-1px, -3px);
+    }
+    70% {
+        clip-path: inset(32% 0 85% 0);
+        transform: translate(1px, 1px);
+    }
+    75% {
+        clip-path: inset(71% 0 19% 0);
+        transform: translate(-2px, 2px);
+    }
+    80% {
+        clip-path: inset(56% 0 42% 0);
+        transform: translate(2px, -1px);
+    }
+    85% {
+        clip-path: inset(27% 0 84% 0);
+        transform: translate(-1px, -2px);
+    }
+    90% {
+        clip-path: inset(94% 0 17% 0);
+        transform: translate(1px, 3px);
+    }
+    95% {
+        clip-path: inset(39% 0 73% 0);
+        transform: translate(-2px, -1px);
+    }
+    100% {
+        clip-path: inset(66% 0 25% 0);
+        transform: translate(2px, 2px);
+    }
+}
+
+/* TV Static Effect */
+.tv-static {
+    position: relative;
+    overflow: hidden;
+}
+
+.tv-static::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 255, 255, 0.03) 2px,
+            rgba(255, 255, 255, 0.03) 4px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.03) 2px,
+            rgba(0, 0, 0, 0.03) 4px
+        );
+    pointer-events: none;
+    animation: tvStatic 0.1s infinite;
+}
+
+@keyframes tvStatic {
+    0% { opacity: 0.02; transform: translate(0px, 0px); }
+    10% { opacity: 0.08; transform: translate(-1px, 1px); }
+    20% { opacity: 0.04; transform: translate(1px, 0px); }
+    30% { opacity: 0.06; transform: translate(-1px, -1px); }
+    40% { opacity: 0.02; transform: translate(0px, 1px); }
+    50% { opacity: 0.09; transform: translate(1px, -1px); }
+    60% { opacity: 0.03; transform: translate(-1px, 0px); }
+    70% { opacity: 0.07; transform: translate(0px, -1px); }
+    80% { opacity: 0.05; transform: translate(1px, 1px); }
+    90% { opacity: 0.04; transform: translate(-1px, -1px); }
+    100% { opacity: 0.02; transform: translate(0px, 0px); }
+}
+
+/* Neon Pulse Effects */
+.neon-pulse {
+    position: relative;
+    animation: neonPulseEffect 2s infinite alternate;
+}
+
+@keyframes neonPulseEffect {
+    0% {
+        text-shadow: 
+            0 0 5px currentColor,
+            0 0 10px currentColor,
+            0 0 15px currentColor,
+            0 0 20px var(--grunge-accent);
+        filter: brightness(1);
+    }
+    100% {
+        text-shadow: 
+            0 0 10px currentColor,
+            0 0 20px currentColor,
+            0 0 30px currentColor,
+            0 0 40px var(--grunge-neon);
+        filter: brightness(1.2);
+    }
+}
+
+/* Hologram Effect */
+.hologram {
+    position: relative;
+    color: var(--grunge-neon);
+    animation: hologramFlicker 4s infinite;
+}
+
+.hologram::before {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: rgba(0, 255, 170, 0.5);
+    transform: translate(-1px, 1px);
+    animation: hologramDrift 3s infinite ease-in-out;
+}
+
+.hologram::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: rgba(255, 68, 68, 0.3);
+    transform: translate(1px, -1px);
+    animation: hologramDrift 3s infinite ease-in-out reverse;
+}
+
+@keyframes hologramFlicker {
+    0%, 94%, 100% { opacity: 1; }
+    95% { opacity: 0.8; }
+    96% { opacity: 1; }
+    97% { opacity: 0.9; }
+    98% { opacity: 1; }
+    99% { opacity: 0.95; }
+}
+
+@keyframes hologramDrift {
+    0%, 100% { transform: translate(-1px, 1px); }
+    50% { transform: translate(1px, -1px); }
+}
+
+/* Circuit Board Pattern */
+.circuit-bg {
+    position: relative;
+    overflow: hidden;
+}
+
+.circuit-bg::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image: 
+        linear-gradient(90deg, transparent 24px, var(--grunge-accent) 25px, var(--grunge-accent) 26px, transparent 27px, transparent 74px, var(--grunge-accent) 75px, var(--grunge-accent) 76px, transparent 77px),
+        linear-gradient(0deg, transparent 24px, var(--grunge-accent) 25px, var(--grunge-accent) 26px, transparent 27px, transparent 74px, var(--grunge-accent) 75px, var(--grunge-accent) 76px, transparent 77px);
+    background-size: 100px 100px;
+    opacity: 0.03;
+    animation: circuitFlow 20s infinite linear;
+}
+
+@keyframes circuitFlow {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(-100px, -100px) rotate(360deg); }
+}
+
+/* Data Stream Effect */
+.data-stream {
+    position: relative;
+    overflow: hidden;
+}
+
+.data-stream::after {
+    content: '01001000 01100001 01101001 01100011 01101000 01100001 01101110 00100000 01000011 01101000 01100001 01101111 01110011';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+    font-size: 8px;
+    color: var(--grunge-secondary);
+    opacity: 0.1;
+    white-space: nowrap;
+    animation: dataFlow 15s infinite linear;
+    pointer-events: none;
+}
+
+@keyframes dataFlow {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Cyberpunk Grid */
+.cyber-grid {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: 
+        linear-gradient(rgba(0, 255, 170, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 170, 0.02) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: -3;
+    animation: gridPulse 4s infinite alternate;
+}
+
+@keyframes gridPulse {
+    0% { opacity: 0.3; }
+    100% { opacity: 0.1; }
+}
+
+/* Chaos Distortion */
+.chaos-distort {
+    animation: chaosDistortion 6s infinite;
+}
+
+@keyframes chaosDistortion {
+    0%, 100% { 
+        filter: 
+            hue-rotate(0deg) 
+            saturate(1) 
+            brightness(1)
+            contrast(1);
+    }
+    16% { 
+        filter: 
+            hue-rotate(30deg) 
+            saturate(1.2) 
+            brightness(1.1)
+            contrast(1.1);
+    }
+    33% { 
+        filter: 
+            hue-rotate(60deg) 
+            saturate(0.8) 
+            brightness(0.9)
+            contrast(1.2);
+    }
+    50% { 
+        filter: 
+            hue-rotate(90deg) 
+            saturate(1.3) 
+            brightness(1.2)
+            contrast(0.9);
+    }
+    66% { 
+        filter: 
+            hue-rotate(120deg) 
+            saturate(0.7) 
+            brightness(0.8)
+            contrast(1.3);
+    }
+    83% { 
+        filter: 
+            hue-rotate(150deg) 
+            saturate(1.1) 
+            brightness(1.3)
+            contrast(1.1);
+    }
+}
+
+/* Floating UI Elements */
+.floating-element {
+    animation: floatingMotion 3s infinite ease-in-out;
+}
+
+.floating-element:nth-child(2n) {
+    animation-delay: -1s;
+    animation-duration: 4s;
+}
+
+.floating-element:nth-child(3n) {
+    animation-delay: -2s;
+    animation-duration: 5s;
+}
+
+@keyframes floatingMotion {
+    0%, 100% { 
+        transform: translateY(0px) rotate(0deg);
+        filter: brightness(1);
+    }
+    25% { 
+        transform: translateY(-10px) rotate(1deg);
+        filter: brightness(1.1);
+    }
+    50% { 
+        transform: translateY(0px) rotate(0deg);
+        filter: brightness(0.9);
+    }
+    75% { 
+        transform: translateY(-5px) rotate(-1deg);
+        filter: brightness(1.05);
+    }
+}
+
+/* Quantum Interference */
+.quantum-interference {
+    position: relative;
+    overflow: hidden;
+}
+
+.quantum-interference::before,
+.quantum-interference::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 30% 70%, rgba(255, 68, 68, 0.1), transparent 50%),
+        radial-gradient(circle at 70% 30%, rgba(68, 255, 68, 0.1), transparent 50%);
+    animation: quantumWave 8s infinite ease-in-out;
+    pointer-events: none;
+}
+
+.quantum-interference::after {
+    background: 
+        radial-gradient(circle at 80% 80%, rgba(68, 68, 255, 0.1), transparent 50%),
+        radial-gradient(circle at 20% 20%, rgba(170, 0, 255, 0.1), transparent 50%);
+    animation: quantumWave 8s infinite ease-in-out reverse;
+}
+
+@keyframes quantumWave {
+    0%, 100% { 
+        transform: scale(1) rotate(0deg);
+        opacity: 0.5;
+    }
+    25% { 
+        transform: scale(1.2) rotate(90deg);
+        opacity: 0.3;
+    }
+    50% { 
+        transform: scale(0.8) rotate(180deg);
+        opacity: 0.7;
+    }
+    75% { 
+        transform: scale(1.1) rotate(270deg);
+        opacity: 0.4;
+    }
+}

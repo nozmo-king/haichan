@@ -96,7 +96,7 @@
     </div>
     
     <div class="tui-reply-container">
-        <form method="POST" action="/{{ $board->code }}/{{ $thread->id }}" enctype="multipart/form-data" class="unified-post-form">
+        <form method="POST" action="/{{ $board->code }}/{{ $thread->id }}/reply" enctype="multipart/form-data" class="unified-post-form">
             @csrf
             
             <div class="tui-field">

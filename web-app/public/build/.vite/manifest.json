@@ -4,8 +4,18 @@
     "src": "resources/css/app.css",
     "isEntry": true
   },
+  "resources/css/chaos-effects.css": {
+    "file": "assets/chaos-effects-BLnaJKjV.css",
+    "src": "resources/css/chaos-effects.css",
+    "isEntry": true
+  },
+  "resources/css/grunge-chaos-scoped.css": {
+    "file": "assets/grunge-chaos-scoped-7hwgi9Sf.css",
+    "src": "resources/css/grunge-chaos-scoped.css",
+    "isEntry": true
+  },
   "resources/js/app.js": {
-    "file": "assets/app-CL5hQSsV.js",
+    "file": "assets/app-D85xQvbp.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

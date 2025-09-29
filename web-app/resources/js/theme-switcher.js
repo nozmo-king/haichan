@@ -1,13 +1,12 @@
 class ThemeSwitcher {
     constructor() {
-        this.currentTheme = localStorage.getItem('haichan-theme') || 'business';
+        this.currentTheme = 'classic'; // Force classic theme
         this.init();
     }
 
     init() {
-        this.createSwitcher();
+        // Don't create the switcher UI - just apply classic theme
         this.applyTheme(this.currentTheme);
-        this.attachEventListeners();
     }
 
     createSwitcher() {
@@ -190,34 +189,28 @@ class ThemeSwitcher {
     }
 
     switchTheme(theme) {
-        this.currentTheme = theme;
-        this.applyTheme(theme);
-        localStorage.setItem('haichan-theme', theme);
-        
-        // Update button states
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.theme === theme);
-        });
-
-        // Log theme change
-        console.log(`🎨 Theme switched to ${theme === 'business' ? 'Business (ビジネス)' : 'Pleasure (楽しみ)'}`);
+        // Force classic theme always - ignore any theme switching
+        this.currentTheme = 'classic';
+        this.applyTheme('classic');
+        // Do not save to localStorage to prevent theme persistence
     }
 
     applyTheme(theme) {
         // Remove existing theme classes
         document.body.classList.remove('theme-business', 'theme-pleasure');
         
-        // Apply new theme
-        document.body.classList.add(`theme-${theme}`);
-        
-        // Update button states
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.theme === theme);
-        });
+        // Force classic theme
+        document.body.classList.add('theme-classic');
+        document.documentElement.setAttribute('data-theme', 'classic');
     }
 }
 
-// Initialize theme switcher when DOM is ready
+// Theme switcher disabled - force classic theme only
 document.addEventListener('DOMContentLoaded', () => {
-    window.themeSwitcher = new ThemeSwitcher();
+    // Force classic theme and disable all theme switching
+    document.documentElement.setAttribute('data-theme', 'classic');
+    document.body.classList.add('theme-classic');
+    document.body.classList.remove('theme-business', 'theme-pleasure');
+    
+    console.log('🎨 Theme locked to classic - theme switching disabled');
 });

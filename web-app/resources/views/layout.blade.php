@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="/css/elegant-themes.css">
     <link rel="stylesheet" href="/css/quick-navigation.css">
     <link rel="stylesheet" href="/css/enhanced-dashboard.css">
+    @vite(['resources/css/grunge-chaos-scoped.css', 'resources/css/chaos-effects.css'])
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -21,6 +22,7 @@
     <script src="/js/enhanced-dashboard.js"></script>
     <script src="/js/content-processor.js"></script>
     <script src="/js/mouseover-mining-v2.js"></script>
+    <script src="/js/chaos-engine.js"></script>
     <script>
         // Unified Mining System Integration
         console.log('🚀 HAICHAN UNIFIED MINING - Loading...');
@@ -35,7 +37,7 @@
         });
     </script>
 </head>
-<body data-theme="classic">
+<body data-theme="classic" class="theme-classic chaos-distort floating-element tv-static">
 
     <!-- Neural Mining Visualization Canvas -->
     <canvas id="neural-mining-canvas" style="
@@ -53,7 +55,7 @@
     <div class="container">
         <div class="header">
             <div style="display: flex; justify-content: center; align-items: center; width: 100%; margin-bottom: 20px;">
-                <h1><a href="/" style="text-decoration: none; color: var(--header-color, #3D315B); font-family: 'Nova Cut', serif; font-size: 32px; font-weight: 300; letter-spacing: 3px; text-shadow: 0 2px 4px var(--header-shadow, rgba(0,0,0,0.1));" id="header-text">HAICHAN</a></h1>
+                <h1><a href="/" class="glitch-container hologram neon-pulse chaos-sparkle" data-text="HAICHAN" style="text-decoration: none; color: var(--header-color, #3D315B); font-family: 'Nova Cut', serif; font-size: 32px; font-weight: 300; letter-spacing: 3px; text-shadow: 0 2px 4px var(--header-shadow, rgba(0,0,0,0.1));" id="header-text">HAICHAN</a></h1>
             </div>
         </div>
         
@@ -68,9 +70,9 @@
     <script>
         // Additional initialization for unified mining system
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize theme switching
-            const theme = localStorage.getItem('haichan-theme') || 'classic';
-            document.documentElement.setAttribute('data-theme', theme);
+            // Force classic theme
+            document.documentElement.setAttribute('data-theme', 'classic');
+            document.body.classList.add('theme-classic');
             
             // Override with simple rising rainbow text
             window.createFloatingProof = function(element, points) {
