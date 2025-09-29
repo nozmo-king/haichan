@@ -228,50 +228,20 @@ class AuthApiController extends Controller
     }
 
     /**
-     * Test endpoint for debugging signature verification
-     * This should be removed or protected in production
+     * DEBUG METHOD REMOVED FOR SECURITY
+     * This method exposed sensitive authentication information and has been disabled
      */
-    public function debugSignature(Request $request)
+    private function debugSignature_REMOVED_FOR_SECURITY()
     {
-        $request->validate([
-            'signature' => 'required|string',
-            'challenge' => 'required|string',
-            'user_id' => 'required|integer',
-        ]);
-
-        $user = User::find($request->user_id);
-
-        if (! $user) {
-            return response()->json(['error' => 'User not found'], 404);
-        }
-
-        Log::info('DEBUG SIGNATURE TEST STARTED', [
-            'user_id' => $user->id,
-            'public_key' => $user->allowedPublicKey->public_key,
-            'challenge' => $request->challenge,
-            'signature' => $request->signature,
-            'challenge_length' => strlen($request->challenge),
-            'signature_length' => strlen($request->signature),
-        ]);
-
-        // Don't actually verify - just test the signature verification logic
-        $verificationResult = $user->verifySignature($request->signature, $request->challenge);
-
-        return response()->json([
-            'verification_result' => $verificationResult,
-            'user_id' => $user->id,
-            'challenge_provided' => $request->challenge,
-            'signature_provided' => $request->signature,
-            'debug_complete' => true,
-            'message' => 'Check logs for detailed verification process',
-        ]);
+        // This debug method has been removed to prevent information disclosure
+        return response()->json(['error' => 'Debug endpoints disabled for security'], 404);
     }
 
     /**
      * Create a test challenge without updating the user's stored challenge
      * Useful for testing signature generation on iOS side
      */
-    public function createTestChallenge(Request $request)
+    private function createTestChallenge_REMOVED_FOR_SECURITY(Request $request)
     {
         $testChallenge = bin2hex(random_bytes(32)).time();
 
@@ -285,7 +255,7 @@ class AuthApiController extends Controller
     /**
      * Compare iOS vs Website data step-by-step
      */
-    public function compareImplementations(Request $request)
+    private function compareImplementations_REMOVED_FOR_SECURITY(Request $request)
     {
         // Support both iOS format (combined signature) and website format (separate components)
         if ($request->has('signature') && ! $request->has('signature_full')) {
