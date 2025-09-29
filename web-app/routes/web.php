@@ -163,6 +163,18 @@ Route::middleware('bitcoin.auth')->group(function () {
             ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
     });
 
+    // PoW Chat System routes (protected)
+    Route::prefix('chat')->name('chat.')->group(function () {
+        Route::get('/', [App\Http\Controllers\ChatController::class, 'index'])->name('index');
+        Route::get('/{room}', [App\Http\Controllers\ChatController::class, 'show'])->name('room');
+        Route::post('/{room}/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send');
+        Route::get('/{room}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('messages');
+        Route::post('/{room}/join', [App\Http\Controllers\ChatController::class, 'joinRoom'])->name('join');
+        Route::post('/{room}/leave', [App\Http\Controllers\ChatController::class, 'leaveRoom'])->name('leave');
+        Route::delete('/{room}/messages/{message}', [App\Http\Controllers\ChatController::class, 'deleteMessage'])->name('delete-message');
+        Route::get('/{room}/stats', [App\Http\Controllers\ChatController::class, 'getRoomStats'])->name('stats');
+    });
+
     // Image Library routes (protected)
     Route::get('/library', [App\Http\Controllers\ImageLibraryController::class, 'index'])->name('image-library.index');
     Route::post('/api/image-library/mine', [App\Http\Controllers\ImageLibraryController::class, 'mine']);

@@ -209,7 +209,7 @@ class ForumController extends Controller
             $challengeData,
             $validated['pow_nonce'],
             $validated['pow_hash'],
-            '21e8' // Minimum 21e8 required for threads
+            '21e' // Current difficulty for threads
         );
 
         if (! $verification['valid']) {
@@ -220,7 +220,7 @@ class ForumController extends Controller
                 'challenge_data' => $challengeData,
                 'nonce' => $request->pow_nonce,
                 'submitted_hash' => $request->pow_hash,
-                'expected_pattern' => '21e8',
+                'expected_pattern' => '21e',
                 'hash_starts_with' => substr($request->pow_hash, 0, 10),
                 'calculated_hash' => hash('sha256', $challengeData.':'.$request->pow_nonce),
             ]);

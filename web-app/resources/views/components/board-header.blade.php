@@ -22,6 +22,7 @@
             <a href="/{{ $board->code }}/catalog" class="tui-tab">📑 Catalog</a>
         @endif
         <a href="/mining" class="tui-tab">⛏️ Mining</a>
+        <a href="{{ route('chat.index') }}" class="tui-tab">💬 PoW Chat</a>
     </div>
     @endif
 
