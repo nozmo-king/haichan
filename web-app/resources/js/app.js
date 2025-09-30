@@ -1,6 +1,6 @@
 import './bootstrap';
 import './auth';
-import './mining-system';
+import './mining-brain';
 
 // Theme is locked to classic - no theme switching allowed
 document.addEventListener('DOMContentLoaded', () => {
