@@ -57,6 +57,8 @@ Route::middleware(['throttle:120,1'])->group(function () {
     Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
 });
 Route::get('/mining-stats', [App\Http\Controllers\ProofOfWorkController::class, 'getStats']);
+// Telemetry ingestion (rate-limited inside controller)
+Route::post('/mining/telemetry', [App\Http\Controllers\Api\MiningTelemetryController::class, 'ingest']);
 Route::get('/random-hash', [App\Http\Controllers\RandomHashController::class, 'getRandomHash']);
 
 // Public subscription routes (requires public key but not auth token)

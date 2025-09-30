@@ -50,6 +50,17 @@ class ProofOfWorkController extends Controller
             ], 422);
         }
 
+        // Enforce 21e8 for authenticated users regardless of submitted pattern
+        if (session('bitcoin_auth_id')) {
+            $required = '21e8';
+            if (!str_starts_with(strtolower($request->input('hash')), $required)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authenticated mining requires 21e8 difficulty.',
+                ], 422);
+            }
+        }
+
         $verificationResult = $this->verifyProof(
             $request->input('data'),
             $request->input('nonce'),

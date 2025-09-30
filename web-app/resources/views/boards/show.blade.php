@@ -1,53 +1,71 @@
 @extends('layout')
 
-@section('title', $board->title)
+@section('title', '/'.$board->code.'/ - '.$board->name)
 
 @section('content')
-<div style="text-align: center; margin: 10px 0;">
-    <h1>{{ $board->title }}</h1>
-    <p style="font-size: 11px; color: var(--ib-muted);">{{ $board->description }}</p>
-</div>
-
-<div class="nav-links">
-    <a href="/">Board List</a> |
-    <a href="/{{ $board->code }}/catalog">Catalog</a> |
-    <a href="#bottom">Bottom</a>
+<div style="background: var(--primary-bg); padding: 30px; border-radius: 12px; border: 2px solid var(--border-color); margin-bottom: 30px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;">
+    <h1 style="font-family: 'Nova Cut', serif; font-size: 28px; color: var(--text-primary); margin: 0 0 10px 0;">
+        📋 /{{ $board->code }}/ - {{ $board->name }}
+    </h1>
+    <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 20px 0;">
+        {{ $board->description }}
+    </p>
+    
+    <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+        <a href="/" style="background: var(--content-bg); color: var(--text-primary); text-decoration: none; padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; font-weight: bold; transition: all 0.3s ease;">
+            🏠 Board List
+        </a>
+        <a href="/{{ $board->code }}/catalog" style="background: var(--content-bg); color: var(--text-primary); text-decoration: none; padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; font-weight: bold; transition: all 0.3s ease;">
+            📑 Catalog
+        </a>
+        <a href="#bottom" style="background: var(--content-bg); color: var(--text-primary); text-decoration: none; padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; font-weight: bold; transition: all 0.3s ease;">
+            ⬇️ Bottom
+        </a>
+    </div>
 </div>
 
 <!-- New Thread Creation Interface -->
-<div id="thread-creation-panel" class="haichan-form-panel">
-    <div class="form-header">
-        <h3>🧵 Create New Thread</h3>
-        <button type="button" class="toggle-btn" id="thread-form-toggle" onclick="toggleThreadForm()">−</button>
+<div style="background: var(--primary-bg); border: 2px solid var(--border-color); border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+    <div style="background: linear-gradient(135deg, var(--border-color), var(--accent-color)); color: var(--primary-bg); padding: 15px 20px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="font-family: 'Nova Cut', serif; font-size: 18px; margin: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+            🧵 Create New Thread
+        </h3>
+        <button type="button" style="background: rgba(245, 245, 220, 0.2); border: 1px solid rgba(245, 245, 220, 0.3); color: var(--primary-bg); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold;" id="thread-form-toggle" onclick="toggleThreadForm()">−</button>
     </div>
     
-    <div id="thread-form-container" class="form-container">
-        <form method="POST" action="/{{ $board->code }}" enctype="multipart/form-data" id="new-thread-form" class="haichan-unified-form">
+    <div id="thread-form-container" style="padding: 25px;">
+        <form method="POST" action="/{{ $board->code }}" enctype="multipart/form-data" id="new-thread-form" style="display: flex; flex-direction: column; gap: 20px;">
             @csrf
             
             <!-- Subject Field -->
-            <div class="field-group">
-                <label class="field-label required" for="thread-title">📝 Subject</label>
-                <input type="text" name="title" id="thread-title" class="field-input" 
-                       maxlength="200" required placeholder="Thread subject...">
-                <div class="field-hint">Required • 3-200 characters</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px; font-size: 13px;">
+                    📝 Subject <span style="color: #dc3545;">*</span>
+                </label>
+                <input type="text" name="title" id="thread-title" required maxlength="200" placeholder="Thread subject..."
+                       style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
+                <div style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Required • 3-200 characters</div>
             </div>
             
             <!-- Content Field -->
-            <div class="field-group">
-                <label class="field-label required" for="thread-content">💬 Comment</label>
-                <textarea name="content" id="thread-content" class="field-textarea" 
-                          required rows="5" placeholder="What's on your mind..."></textarea>
-                <div class="field-hint">Required • 5-5000 characters</div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px; font-size: 13px;">
+                    💬 Comment <span style="color: #dc3545;">*</span>
+                </label>
+                <textarea name="content" id="thread-content" required rows="5" placeholder="What's on your mind..."
+                          style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+                <div style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Required • 5-5000 characters</div>
             </div>
             
             <!-- Image Upload -->
-            <div class="field-group">
-                <label class="field-label required" for="thread-image">🖼️ Image</label>
-                <input type="file" name="image" id="thread-image" class="field-file" 
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px; font-size: 13px;">
+                    🖼️ Image <span style="color: #dc3545;">*</span>
+                </label>
+                <input type="file" name="image" id="thread-image" onchange="previewThreadImage(this)"
                        accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif"
-                       onchange="previewThreadImage(this)">
-                <div class="field-hint">Required • Max 25MB • Images, Videos, GIFs</div>
+                       style="width: 100%; padding: 10px; border: 2px dashed var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
+                <div style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Required • Max 25MB • Images, Videos, GIFs</div>
                 
                 <!-- Image Preview -->
                 <div id="thread-image-preview" class="image-preview" style="display: none;">
@@ -94,12 +112,17 @@
             <input type="hidden" name="pow_challenge_id" id="thread-pow-challenge-id" required>
             
             <!-- Submit Actions -->
-            <div class="form-actions">
-                <button type="submit" class="submit-btn disabled" id="thread-submit-btn" disabled>
-                    <span class="btn-icon">⛏️</span>
-                    <span class="btn-text">Mining Required...</span>
+            <div style="display: flex; gap: 15px; justify-content: center; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                <button type="submit" id="thread-submit-btn" disabled
+                        style="background: linear-gradient(135deg, var(--border-color), var(--accent-color)); color: var(--primary-bg); border: none; padding: 12px 25px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: not-allowed; opacity: 0.6; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;">
+                    <span>⛏️</span>
+                    <span>Mining Required...</span>
                 </button>
-                <button type="button" class="reset-btn" onclick="resetThreadForm()">🔄 Reset</button>
+                <button type="button" onclick="resetThreadForm()" 
+                        style="background: var(--content-bg); color: var(--text-primary); border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;">
+                    <span>🔄</span>
+                    <span>Reset</span>
+                </button>
             </div>
         </form>
     </div>
@@ -109,7 +132,7 @@
 
 <!-- Threads -->
 @forelse($threads as $thread)
-<div class="post" data-thread-id="{{ $thread->id }}">
+<div class="post" data-thread-id="{{ $thread->id }}" data-mine-type="thread" data-board-code="{{ $board->code }}">
     <div class="post-header">
         <span class="post-name">
             @if($thread->user_id && $thread->bitcoinUser)
@@ -124,13 +147,20 @@
             <span style="color: var(--ib-accent); font-weight: bold;">[⚡{{ number_format($thread->accumulated_points, 1) }}]</span>
         @endif
         <a href="/{{ $board->code }}/{{ $thread->id }}" style="margin-left: 10px;">[Reply]</a>
+        @if(session('bitcoin_auth_id') && ($thread->user_id === session('bitcoin_auth_id') || (session('bitcoin_auth_user') && (session('bitcoin_auth_user')->is_admin || session('bitcoin_auth_user')->is_moderator))))
+            <form method="POST" action="{{ route('threads.delete.user', $thread->id) }}" style="display: inline; margin-left: 10px;" onsubmit="return confirm('Delete this thread?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" style="background: none; border: none; color: #c86b4a; cursor: pointer; font-size: 12px;">[Delete]</button>
+            </form>
+        @endif
     </div>
     
     @if($thread->image_path)
     <div style="float: left; margin: 5px 10px 5px 0;">
         <a href="{{ route('thread.image', $thread->id) }}" target="_blank">
             <img src="{{ route('thread.image', $thread->id) }}" 
-                 data-hash="{{ $thread->image_hash ?? '' }}" data-thread-id="{{ $thread->id }}"
+                 data-hash="{{ $thread->image_hash ?? '' }}" data-thread-id="{{ $thread->id }}" data-mine-type="image"
                  style="max-width: 125px; max-height: 125px; border: 1px solid var(--ib-border);">
         </a>
     </div>
@@ -141,22 +171,30 @@
         {{ $thread->content }}
     </div>
     
-    <div style="clear: both; font-size: 10px; color: var(--ib-muted); margin-top: 8px;">
+    <div style="clear: both; font-size: 10px; color: var(--ib-text-muted); margin-top: 8px;">
         💬 {{ $thread->reply_count }} replies | 🖼️ {{ $thread->image_count }} images | 
         {{ $thread->bumped_at ? $thread->bumped_at->diffForHumans() : $thread->created_at->diffForHumans() }}
     </div>
 </div>
 @empty
 <div style="text-align: center; padding: 40px;">
-    <p style="color: var(--ib-muted);">No threads yet. Be the first to start the conversation!</p>
+    <p style="color: var(--ib-text-muted);">No threads yet. Be the first to start the conversation!</p>
 </div>
 @endforelse
 
-<div class="nav-links">
+<div style="background: var(--primary-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 30px; text-align: center;">
     <a name="bottom"></a>
-    <a href="#">Top</a> |
-    <a href="/">Board List</a> |
-    <a href="/{{ $board->code }}/catalog">Catalog</a>
+    <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+        <a href="#" style="background: var(--content-bg); color: var(--text-primary); text-decoration: none; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; font-weight: bold; transition: all 0.3s ease;">
+            ⬆️ Top
+        </a>
+        <a href="/" style="background: var(--content-bg); color: var(--text-primary); text-decoration: none; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; font-weight: bold; transition: all 0.3s ease;">
+            🏠 Board List
+        </a>
+        <a href="/{{ $board->code }}/catalog" style="background: var(--content-bg); color: var(--text-primary); text-decoration: none; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 12px; font-weight: bold; transition: all 0.3s ease;">
+            📑 Catalog
+        </a>
+    </div>
 </div>
 
 <script>
@@ -341,16 +379,18 @@ class HaichanThreadCreator {
     
     enableSubmit() {
         this.submitBtn.disabled = false;
-        this.submitBtn.classList.remove('disabled');
-        this.submitBtn.querySelector('.btn-icon').textContent = '🚀';
-        this.submitBtn.querySelector('.btn-text').textContent = 'Post Thread';
+        this.submitBtn.style.cursor = 'pointer';
+        this.submitBtn.style.opacity = '1';
+        this.submitBtn.querySelector('span:first-child').textContent = '🚀';
+        this.submitBtn.querySelector('span:last-child').textContent = 'Post Thread';
     }
     
     disableSubmit() {
         this.submitBtn.disabled = true;
-        this.submitBtn.classList.add('disabled');
-        this.submitBtn.querySelector('.btn-icon').textContent = '⛏️';
-        this.submitBtn.querySelector('.btn-text').textContent = 'Mining Required...';
+        this.submitBtn.style.cursor = 'not-allowed';
+        this.submitBtn.style.opacity = '0.6';
+        this.submitBtn.querySelector('span:first-child').textContent = '⛏️';
+        this.submitBtn.querySelector('span:last-child').textContent = 'Mining Required...';
     }
     
     stopMining() {
@@ -377,13 +417,18 @@ class HaichanThreadCreator {
 function toggleThreadForm() {
     const container = document.getElementById('thread-form-container');
     const toggle = document.getElementById('thread-form-toggle');
-    
-    if (container.style.display === 'none') {
+    if (!container || !toggle) return;
+
+    if (container.style.display === 'none' || container.dataset.state === 'collapsed') {
         container.style.display = 'block';
+        container.dataset.state = 'expanded';
         toggle.textContent = '−';
+        localStorage.setItem('haichan-thread-form-collapsed', 'false');
     } else {
         container.style.display = 'none';
+        container.dataset.state = 'collapsed';
         toggle.textContent = '+';
+        localStorage.setItem('haichan-thread-form-collapsed', 'true');
     }
 }
 
@@ -453,6 +498,23 @@ function resetThreadForm() {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     window.threadCreator = new HaichanThreadCreator();
+
+    const container = document.getElementById('thread-form-container');
+    const toggle = document.getElementById('thread-form-toggle');
+    const collapsed = localStorage.getItem('haichan-thread-form-collapsed') === 'true';
+
+    if (container && toggle) {
+        if (collapsed) {
+            container.style.display = 'none';
+            container.dataset.state = 'collapsed';
+            toggle.textContent = '+';
+        } else {
+            container.style.display = 'block';
+            container.dataset.state = 'expanded';
+            toggle.textContent = '−';
+        }
+    }
+
     console.log('🎯 Thread creation system loaded');
 });
 </script>
@@ -631,7 +693,7 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .status-dot.incomplete { background: #ffc107; }
-.status-dot.mining { background: #007bff; animation: pulse 1s infinite; }
+.status-dot.mining { background: #708B75; animation: pulse 1s infinite; }
 .status-dot.success { background: #28a745; }
 .status-dot.error { background: #dc3545; }
 
@@ -654,7 +716,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #007bff, #0056b3);
+    background: linear-gradient(90deg, #708B75, #9AB87A);
     width: 0%;
     transition: width 0.3s ease;
 }

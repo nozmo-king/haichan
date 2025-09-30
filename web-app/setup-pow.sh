@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# HAI3 Proof of Work Setup Script
+# haichan Proof of Work Setup Script
 # This script sets up the complete mining system for your Laravel application
 
-echo "=== HAI3 Proof of Work Mining Setup ==="
+echo "=== haichan Proof of Work Mining Setup ==="
 echo
 
 # Check if we're in the right directory
@@ -434,7 +434,7 @@ cat > resources/views/mining/dashboard.blade.php << 'EOF'
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>HAI3 Mining Dashboard</title>
+    <title>haichan Mining Dashboard</title>
     <style>
         body { 
             font-family: 'Monaco', monospace; 
@@ -463,7 +463,7 @@ cat > resources/views/mining/dashboard.blade.php << 'EOF'
 <body>
     <div class="mining-container">
         <div class="header">
-            <h1>HAI3 Proof of Work Mining</h1>
+            <h1>haichan Proof of Work Mining</h1>
             <p>Ultimate computational intensity for 256 elite miners</p>
         </div>
 
@@ -509,7 +509,7 @@ cat > resources/views/mining/dashboard.blade.php << 'EOF'
     </div>
 
     <script>
-        class HAI3Miner {
+        class HaichanMiner {
             constructor() {
                 this.isMining = false;
                 this.totalHashes = 0;
@@ -537,7 +537,7 @@ cat > resources/views/mining/dashboard.blade.php << 'EOF'
             }
 
             async mine() {
-                const baseData = `HAI3_${Date.now()}_${Math.random()}`;
+                const baseData = `haichan_${Date.now()}_${Math.random()}`;
                 
                 while (this.isMining) {
                     const data = `${baseData}_${this.nonce}`;
@@ -642,7 +642,7 @@ cat > resources/views/mining/dashboard.blade.php << 'EOF'
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            window.hai3Miner = new HAI3Miner();
+            window.haichanMiner = new HaichanMiner();
         });
     </script>
 </body>
@@ -654,7 +654,7 @@ echo "✓ Mining dashboard view created"
 # Add routes to web.php
 cat >> routes/web.php << 'EOF'
 
-// HAI3 Proof of Work Routes
+// haichan Proof of Work Routes
 Route::get('/mining', function() {
     return view('mining.dashboard');
 })->name('mining.dashboard');
@@ -692,7 +692,7 @@ chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || echo "Note: Co
 echo "✓ Permissions set"
 
 echo
-echo "=== HAI3 Proof of Work Mining System Setup Complete! ==="
+echo "=== haichan Proof of Work Mining System Setup Complete! ==="
 echo
 echo "🚀 NEXT STEPS:"
 echo "1. Start your Laravel development server:"

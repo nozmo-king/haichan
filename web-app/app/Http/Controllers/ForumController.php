@@ -540,9 +540,11 @@ class ForumController extends Controller
     {
         $post = Post::findOrFail($postId);
         $userId = session('bitcoin_auth_id');
+        $authUser = session('bitcoin_auth_user');
+        $canModerate = $authUser && ($authUser->is_admin || $authUser->is_moderator);
 
-        // Check if user owns this post or is admin
-        if ($post->user_id !== $userId && (! session('bitcoin_auth_user') || ! session('bitcoin_auth_user')->is_admin)) {
+        // Check if user owns this post or has moderation privileges
+        if ($post->user_id !== $userId && ! $canModerate) {
             return back()->with('error', 'You can only delete your own posts');
         }
 
@@ -558,9 +560,11 @@ class ForumController extends Controller
     {
         $thread = Thread::findOrFail($threadId);
         $userId = session('bitcoin_auth_id');
+        $authUser = session('bitcoin_auth_user');
+        $canModerate = $authUser && ($authUser->is_admin || $authUser->is_moderator);
 
-        // Check if user owns this thread or is admin
-        if ($thread->user_id !== $userId && (! session('bitcoin_auth_user') || ! session('bitcoin_auth_user')->is_admin)) {
+        // Check if user owns this thread or has moderation privileges
+        if ($thread->user_id !== $userId && ! $canModerate) {
             return back()->with('error', 'You can only delete your own threads');
         }
 

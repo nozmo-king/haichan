@@ -1,10 +1,10 @@
 @extends('layout')
 
-@section('title', ($thread->title ?: 'Thread') . ' - /' . $board->code . '/')
+@section('title', '/'.$board->code.'/ - '.$board->name)
 
 @section('content')
 <div style="text-align: center; margin: 10px 0;">
-    <h1>/{{ $board->code }}/ - {{ $board->title }}</h1>
+    <h1>/{{ $board->code }}/ - {{ $board->name }}</h1>
     <p style="font-size: 12px; color: var(--ib-text-muted);">{{ $board->description }}</p>
 </div>
 
@@ -16,7 +16,7 @@
 </div>
 
 <!-- Original Post -->
-<div class="post" style="margin: 20px 0;">
+<div class="post" style="margin: 20px 0;" data-mine-type="thread-op" data-thread-id="{{ $thread->id }}" data-board-code="{{ $board->code }}">
     <div class="post-header">
         <span class="post-name">
             @if($thread->user_id && $thread->bitcoinUser)
@@ -31,13 +31,20 @@
             <span style="color: var(--ib-accent); font-weight: bold;">[⚡{{ number_format($thread->accumulated_points, 1) }}]</span>
         @endif
         <button onclick="toggleQuickReply()" id="quick-reply-btn" class="tui-btn tui-btn-sm" style="margin-left: 10px;">💬 Reply</button>
+        @if(session('bitcoin_auth_id') && ($thread->user_id === session('bitcoin_auth_id') || (session('bitcoin_auth_user') && (session('bitcoin_auth_user')->is_admin || session('bitcoin_auth_user')->is_moderator))))
+            <form method="POST" action="{{ route('threads.delete.user', $thread->id) }}" style="display: inline-block; margin-left: 8px;" onsubmit="return confirm('Delete this thread?');">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="tui-btn tui-btn-danger tui-btn-sm">🗑️ Delete</button>
+            </form>
+        @endif
     </div>
     
     @if($thread->image_path)
     <div style="float: left; margin: 10px 15px 10px 0;">
         <a href="{{ route('thread.image', $thread->id) }}" target="_blank">
             <img src="{{ route('thread.image', $thread->id) }}" 
-                 data-hash="{{ $thread->image_hash ?? '' }}" data-thread-id="{{ $thread->id }}"
+                 data-hash="{{ $thread->image_hash ?? '' }}" data-thread-id="{{ $thread->id }}" data-mine-type="image"
                  style="max-width: 250px; max-height: 250px; border: 1px solid var(--ib-border);">
         </a>
     </div>
@@ -53,7 +60,7 @@
 
 <!-- Replies -->
 @foreach($thread->posts as $post)
-<div class="post">
+<div class="post" data-mine-type="post" data-post-id="{{ $post->id }}" data-thread-id="{{ $thread->id }}" data-board-code="{{ $board->code }}">
     <div class="post-header">
         <span class="post-name">
             @if($post->user_id && $post->bitcoinUser)
@@ -74,7 +81,7 @@
     <div style="float: left; margin: 10px 15px 10px 0;">
         <a href="{{ route('post.image', $post->id) }}" target="_blank">
             <img src="{{ route('post.image', $post->id) }}" 
-                 data-hash="{{ $post->image_hash ?? '' }}" data-post-id="{{ $post->id }}"
+                 data-hash="{{ $post->image_hash ?? '' }}" data-post-id="{{ $post->id }}" data-mine-type="image"
                  style="max-width: 200px; max-height: 200px; border: 1px solid var(--ib-border);">
         </a>
     </div>

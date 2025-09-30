@@ -1,8 +1,8 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
-  "name": "hai3-web-app",
+  "name": "haichan-web-app",
   "version": "1.0.0",
-  "description": "HAI3 Forum Web Application",
+  "description": "haichan Forum Web Application",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,16 +1,22 @@
 @import 'tailwindcss';
 
-/* Elegant Weird Forest Theme */
+/* Force tan background */
+html, body {
+    background: linear-gradient(135deg, #f8efd5 0%, #e6d2ab 45%, #9ea985 100%) !important;
+    background-attachment: fixed !important;
+}
+
+/* Elegant Tan Beige Theme */
 :root {
-    /* Deep forest mystical colors */
-    --ib-bg: #1a1a0f;
-    --ib-panel: #2a2a1a;
-    --ib-border: #4a5d23;
-    --ib-text: #b8d4a0;
-    --ib-text-muted: #708b75;
-    --ib-link: #9fd971;
-    --ib-accent: #e6cc80;
-    --ib-header: #3a3a2a;
+    /* Tan beige colors */
+    --ib-bg: #F5F5DC;
+    --ib-panel: #FFFACD;
+    --ib-border: #708B75;
+    --ib-text: #3D315B;
+    --ib-text-muted: #6B7A6B;
+    --ib-link: #708B75;
+    --ib-accent: #9AB87A;
+    --ib-header: #FFFACD;
     
     /* TUI variables */
     --tui-ink: var(--ib-text);
@@ -29,15 +35,18 @@
     
     /* Theme variables */
     --text-primary: var(--ib-text);
-    --text-muted: var(--ib-text-muted);
+    --text-secondary: var(--ib-text-muted);
     --accent-color: var(--ib-accent);
     --content-bg: var(--ib-panel);
     --secondary-bg: var(--ib-bg);
+    --primary-bg: var(--ib-bg);
+    --border-color: var(--ib-border);
 }
 
 body {
-    background: var(--ib-bg);
-    color: var(--ib-text);
+    background: linear-gradient(135deg, #f8efd5 0%, #e6d2ab 45%, #9ea985 100%) !important;
+    background-attachment: fixed !important;
+    color: var(--ib-text) !important;
     font-family: 'Courier New', monospace;
     margin: 0;
     padding: 20px;
@@ -334,13 +343,13 @@ body {
 }
 
 .tui-btn-primary {
-    background: #007bff;
+    background: #708B75;
     color: white;
-    border-color: #0056b3;
+    border-color: #708B75;
 }
 
 .tui-btn-primary:hover {
-    background: #0056b3;
+    background: #9AB87A;
 }
 
 .tui-btn-success {

@@ -55,6 +55,7 @@ class BitcoinAuth extends Authenticatable
         'level' => 'integer',
         'is_banned' => 'boolean',
         'is_admin' => 'boolean',
+        'is_moderator' => 'boolean',
         'admin_level' => 'integer',
         'social_links' => 'json',
         'show_email' => 'boolean',

@@ -251,7 +251,7 @@ class HaichanMiningDashboard {
         document.getElementById('current-target').textContent = this.stats.currentTarget;
     }
     
-    // Public methods for integration
+    // Public methods for integration with unified mining system
     addProof(hash, points) {
         this.stats.sessionProofs++;
         this.stats.sessionPoints += points;
@@ -297,33 +297,50 @@ class HaichanMiningDashboard {
         return this.currentPrefix;
     }
     
+    // Get mining intensity based on power level (0-10 -> delay in ms)
+    getMiningIntensity() {
+        if (this.powerLevel === 0) return 0; // Disabled
+        // Convert power level to delay: level 10 = 10ms, level 1 = 1000ms
+        return Math.max(10, Math.floor(1000 / this.powerLevel));
+    }
+    
+    // Get number of concurrent workers based on power level
+    getWorkerCount() {
+        if (this.powerLevel === 0) return 0;
+        if (this.powerLevel <= 3) return 1;
+        if (this.powerLevel <= 6) return 2;
+        if (this.powerLevel <= 8) return 4;
+        return navigator.hardwareConcurrency || 8; // Use all available cores at max power
+    }
+    
     addStyles() {
         const style = document.createElement('style');
         style.textContent = `
             :root {
-                --primary-bg: #1a1a2e;
-                --secondary-bg: #16213e;
-                --accent-color: #00d4ff;
-                --text-color: #ffffff;
-                --muted-color: #888;
-                --success-color: #00ff88;
-                --border-radius: 8px;
+                --primary-bg: #F5F5DC;
+                --secondary-bg: #FFFACD;
+                --accent-color: #708B75;
+                --text-color: #3D315B;
+                --muted-color: #6B7A6B;
+                --success-color: #7CAE7A;
+                --border-radius: 12px;
             }
             
             #mining-dashboard {
                 position: fixed;
                 top: 20px;
                 right: 20px;
-                width: 280px;
+                width: 300px;
                 background: var(--primary-bg);
-                border: 1px solid var(--accent-color);
+                border: 2px solid var(--accent-color);
                 border-radius: var(--border-radius);
-                font-family: 'Courier New', monospace;
-                font-size: 11px;
+                font-family: 'Nova Cut', serif;
+                font-size: 12px;
                 color: var(--text-color);
                 z-index: 10000;
-                box-shadow: 0 4px 20px rgba(0, 212, 255, 0.2);
+                box-shadow: 0 8px 32px rgba(112, 139, 117, 0.4);
                 display: none;
+                backdrop-filter: blur(5px);
             }
             
             #mining-dashboard.dragging {
@@ -332,19 +349,21 @@ class HaichanMiningDashboard {
             }
             
             .dashboard-header {
-                background: var(--accent-color);
+                background: linear-gradient(135deg, var(--accent-color), #9AB87A);
                 color: var(--primary-bg);
-                padding: 8px 12px;
+                padding: 15px 20px;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                border-radius: var(--border-radius) var(--border-radius) 0 0;
+                border-radius: 10px 10px 0 0;
                 cursor: move;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.3);
             }
             
             .dashboard-title {
                 font-weight: bold;
-                font-size: 12px;
+                font-size: 16px;
+                font-family: 'Nova Cut', serif;
             }
             
             .dashboard-controls {
@@ -353,31 +372,35 @@ class HaichanMiningDashboard {
             }
             
             .dash-btn {
-                background: rgba(26, 26, 46, 0.3);
-                border: none;
+                background: rgba(245, 245, 220, 0.2);
+                border: 1px solid rgba(245, 245, 220, 0.3);
                 color: var(--primary-bg);
-                padding: 2px 6px;
-                border-radius: 3px;
+                padding: 6px 10px;
+                border-radius: 4px;
                 cursor: pointer;
-                font-size: 10px;
+                font-size: 12px;
                 font-weight: bold;
+                transition: all 0.3s ease;
             }
             
             .dash-btn:hover {
-                background: rgba(26, 26, 46, 0.5);
+                background: rgba(245, 245, 220, 0.3);
+                transform: translateY(-1px);
             }
             
             .dashboard-content {
-                padding: 12px;
+                padding: 20px;
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: 16px;
             }
             
             .power-section {
                 background: var(--secondary-bg);
-                padding: 8px;
-                border-radius: var(--border-radius);
+                padding: 15px;
+                border-radius: 8px;
+                border: 1px solid var(--accent-color);
+                box-shadow: 0 2px 8px rgba(112, 139, 117, 0.1);
             }
             
             .power-header {
@@ -411,7 +434,7 @@ class HaichanMiningDashboard {
                 border-radius: 2px;
                 outline: none;
                 appearance: none;
-                background: #333;
+                background: #D4AC7A;
                 cursor: pointer;
             }
             
@@ -422,7 +445,7 @@ class HaichanMiningDashboard {
                 background: var(--accent-color);
                 border-radius: 50%;
                 cursor: pointer;
-                box-shadow: 0 0 4px rgba(0, 212, 255, 0.5);
+                box-shadow: 0 0 4px rgba(112, 139, 117, 0.5);
             }
             
             .power-description {
@@ -472,7 +495,7 @@ class HaichanMiningDashboard {
             .stat-item {
                 text-align: center;
                 padding: 4px;
-                background: rgba(0, 212, 255, 0.1);
+                background: rgba(112, 139, 117, 0.1);
                 border-radius: 4px;
                 transition: color 0.3s ease;
             }
@@ -518,37 +541,39 @@ class HaichanMiningDashboard {
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
-                width: 60px;
-                height: 60px;
-                background: var(--accent-color);
-                border: none;
+                width: 70px;
+                height: 70px;
+                background: linear-gradient(135deg, var(--accent-color), #9AB87A);
+                border: 2px solid var(--primary-bg);
                 border-radius: 50%;
                 color: var(--primary-bg);
                 cursor: pointer;
-                font-family: 'Courier New', monospace;
+                font-family: 'Nova Cut', serif;
                 font-weight: bold;
                 z-index: 9999;
-                box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+                box-shadow: 0 6px 20px rgba(112, 139, 117, 0.4);
                 transition: all 0.3s ease;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 justify-content: center;
-                gap: 2px;
+                gap: 3px;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.3);
             }
             
             .dashboard-toggle:hover {
                 transform: scale(1.1);
-                box-shadow: 0 6px 16px rgba(0, 212, 255, 0.4);
+                box-shadow: 0 8px 25px rgba(112, 139, 117, 0.5);
             }
             
             .toggle-icon {
-                font-size: 16px;
+                font-size: 20px;
             }
             
             .toggle-text {
-                font-size: 8px;
+                font-size: 9px;
                 font-weight: bold;
+                letter-spacing: 1px;
             }
         `;
         

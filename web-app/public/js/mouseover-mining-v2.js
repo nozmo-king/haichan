@@ -15,41 +15,60 @@ class MouseoverMiningSystemV2 {
         };
         this.targetPattern = '21e8';
         this.hoverTimeout = null;
+        this.pointerStableSince = 0;
+        this.lastPointer = { x: 0, y: 0 };
+        this.hoverHysteresisMs = 120;
+        this.pointerRadiusPx = 8;
+        this.batchTimeBudgetMs = 6;
+        this.telemetrySessionId = Math.random().toString(36).slice(2);
+        this.wasm = { ready: false, hash: null };
         
         this.init();
     }
     
     init() {
         console.log('🔥 Mouseover Mining System v2.1 initializing...');
-        this.setupMouseoverDetection();
+        this.setupPointerDetection();
         this.setupMiningStyles();
         this.connectToDashboard();
+        this.loadWasmHasher();
         console.log('✅ Mouseover Mining System v2.1 ready');
     }
     
-    setupMouseoverDetection() {
-        // Remove existing listeners
-        document.removeEventListener('mouseover', this.handleMouseover);
-        document.removeEventListener('mouseout', this.handleMouseout);
-        
-        // Add new listeners with smooth transitions
-        document.addEventListener('mouseover', (e) => this.handleMouseover(e));
-        document.addEventListener('mouseout', (e) => this.handleMouseout(e));
+    setupPointerDetection() {
+        const root = document;
+        root.addEventListener('pointermove', (e) => {
+            const dx = e.clientX - this.lastPointer.x;
+            const dy = e.clientY - this.lastPointer.y;
+            const dist = Math.hypot(dx, dy);
+            this.lastPointer = { x: e.clientX, y: e.clientY };
+            if (dist <= this.pointerRadiusPx) {
+                if (this.pointerStableSince === 0) this.pointerStableSince = performance.now();
+            } else {
+                this.pointerStableSince = 0;
+            }
+        }, { passive: true });
+
+        root.addEventListener('pointerenter', (e) => this.handlePointerEnter(e), true);
+        root.addEventListener('pointerleave', (e) => this.handlePointerLeave(e), true);
     }
     
-    handleMouseover(event) {
+    handlePointerEnter(event) {
         if (!this.isEnabled) return;
-        
+
         const target = event.target;
         const mineableData = this.getMineableData(target);
-        
+
         if (mineableData) {
             // Clear any pending stop timeout
             if (this.hoverTimeout) {
                 clearTimeout(this.hoverTimeout);
                 this.hoverTimeout = null;
             }
-            
+            // require hysteresis and pointer stability
+            if (!this.pointerStableSince || (performance.now() - this.pointerStableSince) < this.hoverHysteresisMs) {
+                return;
+            }
             // Don't restart if already mining the same target
             if (this.currentTarget && this.currentTarget.id === mineableData.id && this.currentTarget.type === mineableData.type) {
                 return;
@@ -59,10 +78,10 @@ class MouseoverMiningSystemV2 {
         }
     }
     
-    handleMouseout(event) {
+    handlePointerLeave(event) {
         const target = event.target;
         const mineableData = this.getMineableData(target);
-        
+
         if (mineableData) {
             // Add small delay before stopping to prevent flickering
             this.hoverTimeout = setTimeout(() => {
@@ -227,12 +246,13 @@ class MouseoverMiningSystemV2 {
     async performMining(session) {
         const { data, element } = session;
         let nonce = Math.floor(Math.random() * 1000000);
-        const batchSize = 1000;
+        let batchSize = 512;
         
         while (session.isActive && nonce < 10000000) {
+            const batchStart = performance.now();
             for (let i = 0; i < batchSize && session.isActive; i++) {
                 const input = `${data.data}_${nonce}`;
-                const hash = await this.calculateSHA256(input);
+                const hash = await this.hash(input);
                 
                 session.hashes++;
                 this.miningStats.totalHashes++;
@@ -263,15 +283,23 @@ class MouseoverMiningSystemV2 {
                         nonce: nonce,
                         input: input,
                         attempts: session.hashes,
-                        points: data.points
+                        points: data.points,
+                        pattern: this.targetPattern
                     });
+                    this.sendTelemetry({ kind: 'proof', target: data, attempts: session.hashes, hash, pattern: this.targetPattern });
                     
                     break;
                 }
-                
+
                 nonce++;
             }
-            
+
+            // adapt batch to budget and Update display
+            const elapsed = performance.now() - batchStart;
+            if (elapsed > 0) {
+                const scale = this.batchTimeBudgetMs / Math.max(1, elapsed);
+                batchSize = Math.max(64, Math.min(4096, Math.floor(batchSize * (0.6 + 0.4 * scale))));
+            }
             // Update display
             this.updateMiningDisplay(session);
             
@@ -286,6 +314,31 @@ class MouseoverMiningSystemV2 {
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    
+    async hash(input) {
+        if (this.wasm.ready && this.wasm.hash) return this.wasm.hash(input);
+        return this.calculateSHA256(input);
+    }
+    
+    async loadWasmHasher() {
+        try {
+            if (window.WasmSha256 && typeof window.WasmSha256.hash === 'function') {
+                this.wasm = { ready: true, hash: window.WasmSha256.hash };
+                console.log('⚙️ Using WASM SHA-256');
+                return;
+            }
+            const script = document.querySelector('script[data-wasm-sha256]');
+            if (script) {
+                await new Promise((res, rej) => { script.addEventListener('load', res, { once: true }); script.addEventListener('error', rej, { once: true }); });
+                if (window.WasmSha256 && typeof window.WasmSha256.hash === 'function') {
+                    this.wasm = { ready: true, hash: window.WasmSha256.hash };
+                    console.log('⚙️ Using WASM SHA-256');
+                }
+            }
+        } catch (e) {
+            console.warn('WASM SHA-256 not available, falling back to SubtleCrypto');
+        }
     }
     
     addMiningVisual(element) {
@@ -526,9 +579,9 @@ class MouseoverMiningSystemV2 {
             currentTarget: this.currentTarget?.displayName || 'None'
         };
     }
-}
+    }
 
-// Initialize the system
+    // Initialize the system
 document.addEventListener('DOMContentLoaded', function() {
     if (window.mouseoverMining) {
         console.log('🔄 Replacing existing mouseover mining system');

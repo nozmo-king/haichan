@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\StatsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -12,6 +13,9 @@ Route::get('/', function () {
         return response()->json(['error' => $e->getMessage()]);
     }
 });
+
+// Stats page
+Route::get('/stats', [StatsController::class, 'index'])->name('stats');
 
 // Anonymous access route
 Route::get('/anon', function () {

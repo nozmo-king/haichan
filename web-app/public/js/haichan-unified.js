@@ -33,7 +33,7 @@ class HaichanUnified {
         if (this.isInitialized) return;
         this.isInitialized = true;
 
-        this.createMiningDashboard();
+        // Don't create dashboard - use enhanced-dashboard.js instead
         this.setupGlobalMining();
         this.setupFormMining();
         this.setupEventListeners();
@@ -322,6 +322,13 @@ class HaichanUnified {
 
         element.classList.add('mining-active');
         this.updateCurrentTarget(element, type);
+        
+        // Update dashboard target
+        if (window.enhancedMiningDashboard) {
+            const targetText = this.getTargetDescription(element, type);
+            window.enhancedMiningDashboard.setTarget(targetText);
+        }
+        
         this.mineTarget(miningId, element, type);
     }
 
@@ -338,6 +345,10 @@ class HaichanUnified {
 
         if (this.activeMiningTargets.size === 0) {
             this.updateCurrentTarget(null, null);
+            // Update dashboard when no targets
+            if (window.enhancedMiningDashboard) {
+                window.enhancedMiningDashboard.setTarget('Hover over content');
+            }
         }
     }
 
@@ -353,13 +364,28 @@ class HaichanUnified {
                 this.sessionStats.proofs++;
                 this.sessionStats.points += proof.points;
                 this.showProofAnimation(element, proof);
+                
+                // Update dashboard with proof
+                if (window.enhancedMiningDashboard) {
+                    window.enhancedMiningDashboard.addProof(proof.hash, proof.points);
+                }
             }
             
             this.sessionStats.hashes++;
             
+            // Update dashboard stats
+            if (window.enhancedMiningDashboard) {
+                window.enhancedMiningDashboard.updateHashCount(this.sessionStats.hashes);
+                const hashrate = this.calculateHashrate();
+                window.enhancedMiningDashboard.updateHashrate(hashrate);
+            }
+            
             // Continue mining if still active
             if (this.activeMiningTargets.has(miningId)) {
-                setTimeout(() => this.mineTarget(miningId, element, type), 100);
+                const delay = this.getMiningDelay();
+                if (delay > 0) {
+                    setTimeout(() => this.mineTarget(miningId, element, type), delay);
+                }
             }
         } catch (error) {
             console.warn('Mining error:', error);
@@ -862,6 +888,42 @@ class HaichanUnified {
         });
         
         this.mineTarget(miningId, element, 'content-auto');
+    }
+    
+    // Helper functions for dashboard integration
+    getMiningDelay() {
+        if (window.enhancedMiningDashboard) {
+            return window.enhancedMiningDashboard.getMiningIntensity();
+        }
+        return 100; // Default delay
+    }
+    
+    calculateHashrate() {
+        const elapsed = (Date.now() - this.sessionStats.startTime) / 1000;
+        return elapsed > 0 ? Math.floor(this.sessionStats.hashes / elapsed) : 0;
+    }
+    
+    getTargetDescription(element, type) {
+        switch (type) {
+            case 'image':
+                return 'Mining image...';
+            case 'content':
+                if (element.classList.contains('post')) {
+                    return 'Mining post...';
+                } else if (element.classList.contains('thread-preview')) {
+                    return 'Mining thread...';
+                }
+                return 'Mining content...';
+            default:
+                return 'Mining active...';
+        }
+    }
+    
+    isMiningEnabled() {
+        if (window.enhancedMiningDashboard) {
+            return window.enhancedMiningDashboard.getPowerLevel() > 0;
+        }
+        return true; // Default enabled
     }
 }
 

@@ -45,7 +45,7 @@
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="font-family: 'Nova Cut', serif; font-size: 32px; color: var(--text-primary); margin: 0 0 10px 0;">
-                🔐 HAICHAN LOGIN
+                🔐 HAICHAN
             </h1>
             <p style="color: var(--text-secondary); font-size: 14px;">
                 If you want the love, you have to <span class="glow-text">log in</span>.

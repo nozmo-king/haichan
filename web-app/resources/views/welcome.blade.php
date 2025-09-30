@@ -4,16 +4,16 @@
 
 @section('content')
     <!-- Japanese Web Aesthetic Hero with proper Haichan colors -->
-    <div style="margin: 60px auto; max-width: 900px; background: var(--primary-bg); border: 2px solid var(--border-color); box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);">
+    <div style="margin: 60px auto; max-width: 900px; background: #F5F5DC; border: 2px solid #708B75; box-shadow: 0 4px 16px rgba(112, 139, 117, 0.3);">
 
         <!-- Header with proper color scheme -->
-        <div style="background: var(--secondary-bg); padding: 40px 30px; border-bottom: 2px solid var(--border-color); position: relative;">
+        <div style="background: #FFFACD; padding: 40px 30px; border-bottom: 2px solid #708B75; position: relative;">
             <div style="position: absolute; top: 15px; right: 20px; background: #3D315B; color: #FFFFEE; padding: 2px 8px; font-size: 9px; font-weight: 500; letter-spacing: 0.5px; border-radius: 3px;">
                 β版
             </div>
 
             <div style="text-align: center;">
-                <h1 style="font-size: 32px; color: var(--text-primary); margin: 0 0 15px 0; font-weight: 300; letter-spacing: 2px;">
+                <h1 style="font-size: 32px; color: #3D315B; margin: 0 0 15px 0; font-weight: 300; letter-spacing: 2px;">
                     <span class="strobing-emoji" style="font-size: 28px; color: #B87333;">📻</span>
                     <span style="font-family: 'Nova Cut', serif; margin: 0 8px;">Haichan</span>
                     <span class="strobing-emoji" style="font-size: 28px; color: #CD5C5C;">⚡</span>
@@ -21,14 +21,14 @@
 
                 <div style="width: 120px; height: 3px; background: linear-gradient(to right, #708B75, #9AB87A); margin: 20px auto;"></div>
 
-                <p style="color: var(--text-secondary); font-size: 16px; line-height: 1.6; margin: 20px 0; font-weight: 500; max-width: 600px; margin-left: auto; margin-right: auto;">
+                <p style="color: #6B7A6B; font-size: 16px; line-height: 1.6; margin: 20px 0; font-weight: 500; max-width: 600px; margin-left: auto; margin-right: auto;">
                     Posts require a computational cost; a mini-proof-of-work puzzle. Messages verified through SHA-256.
                 </p>
             </div>
         </div>
 
         <!-- Main Content Area -->
-        <div style="padding: 40px; background: var(--content-bg);">
+        <div style="padding: 40px; background: #FFFACD;">
 
             <!-- Site Explanation -->
             <div style="background: #F5F5DC; border: 2px solid #708B75; border-radius: 8px; padding: 30px; margin-bottom: 40px;">
@@ -125,6 +125,12 @@
                         <div style="font-size: 20px; margin-bottom: 5px;">⛏️</div>
                         <div style="font-size: 12px; font-weight: 600;">Mining Dashboard</div>
                         <div style="font-size: 9px; opacity: 0.9;">Monitor your mining</div>
+                    </a>
+
+                    <a href="/stats" style="display: block; text-decoration: none; background: #CD5C5C; color: #FFFFEE; padding: 15px; border-radius: 5px; text-align: center; transition: all 0.2s ease;">
+                        <div style="font-size: 20px; margin-bottom: 5px;">📊</div>
+                        <div style="font-size: 12px; font-weight: 600;">Site Statistics</div>
+                        <div style="font-size: 9px; opacity: 0.9;">Live metrics & charts</div>
                     </a>
 
                     <a href="/faq" style="display: block; text-decoration: none; background: #444B6E; color: #FFFFEE; padding: 15px; border-radius: 5px; text-align: center; transition: all 0.2s ease;">
