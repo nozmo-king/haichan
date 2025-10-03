@@ -12,9 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('proof_of_works', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->nullable()->after('thread_id');
-            $table->foreign('user_id')->references('id')->on('bitcoin_auth')->onDelete('set null');
-            $table->index(['user_id', 'points']); // Index for user leaderboard queries
+            if (!Schema::hasColumn('proof_of_works', 'user_id')) {
+                $table->unsignedBigInteger('user_id')->nullable()->after('thread_id');
+                $table->foreign('user_id')->references('id')->on('bitcoin_auth')->onDelete('set null');
+                $table->index(['user_id', 'points']); // Index for user leaderboard queries
+            }
         });
     }
 
