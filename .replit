@@ -37,10 +37,6 @@ externalPort = 80
 localPort = 5173
 externalPort = 5173
 
-[[ports]]
-localPort = 43511
-externalPort = 3000
-
 [deployment]
 deploymentTarget = "vm"
 run = ["bash", "-c", "cd web-app && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=5000 & php artisan queue:work --tries=1"]
