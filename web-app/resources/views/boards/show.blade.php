@@ -786,4 +786,5 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 </style>
 
+@include('components.mining-dashboard')
 @endsection

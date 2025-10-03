@@ -170,4 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 </script>
+
+@include('components.mining-dashboard')
 @endsection

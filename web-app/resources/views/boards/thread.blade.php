@@ -320,4 +320,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+@include('components.mining-dashboard')
 @endsection

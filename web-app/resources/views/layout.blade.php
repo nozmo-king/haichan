@@ -18,6 +18,7 @@
     <script src="/js/haichan-unified.js"></script>
     <script src="/js/wasm-sha256.js" data-wasm-sha256></script>
     <script src="/js/enhanced-dashboard.js"></script>
+    <script src="/js/mining-brain.js"></script>
     <script src="/js/content-processor.js"></script>
     <style>
         /* FORCE TAN BACKGROUND - SELECTIVE */

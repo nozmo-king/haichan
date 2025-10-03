@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\StatsController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -71,10 +72,10 @@ Route::middleware('inject.dummy.user')->group(function () {
     Route::get('/d', function() { return app(App\Http\Controllers\ForumController::class)->showBoard('d'); })->name('board.show');
     Route::get('/d/catalog', function() { return app(App\Http\Controllers\ForumController::class)->showCatalog('d'); })->name('board.catalog');
     Route::get('/d/create', function() { return app(App\Http\Controllers\ForumController::class)->createThread('d'); })->name('board.create');
-    Route::post('/d/create', function() { return app(App\Http\Controllers\ForumController::class)->storeThread('d'); })->name('board.store');
-    Route::post('/d', function() { return app(App\Http\Controllers\ForumController::class)->storeThread('d'); })->name('board.thread.store');
+    Route::post('/d/create', function(Request $request) { return app(App\Http\Controllers\ForumController::class)->storeThread($request, 'd'); })->name('board.store');
+    Route::post('/d', function(Request $request) { return app(App\Http\Controllers\ForumController::class)->storeThread($request, 'd'); })->name('board.thread.store');
     Route::get('/d/{threadId}', function($threadId) { return app(App\Http\Controllers\ForumController::class)->showThread('d', $threadId); })->name('forum.thread');
-    Route::post('/d/{threadId}/reply', function($threadId) { return app(App\Http\Controllers\ForumController::class)->storeReply('d', $threadId); })->name('forum.reply')-> where('threadId', '[0-9]+');
+    Route::post('/d/{threadId}/reply', function(Request $request, $threadId) { return app(App\Http\Controllers\ForumController::class)->storeReply($request, 'd', $threadId); })->name('forum.reply')-> where('threadId', '[0-9]+');
     
     Route::prefix('chat')->name('dummy.chat.')->group(function () {
         Route::get('/', [App\Http\Controllers\ChatController::class, 'index'])->name('index');
