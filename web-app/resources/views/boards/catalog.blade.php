@@ -15,7 +15,7 @@
     <a href="#bottom">Bottom</a>
 </div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 0 auto; max-width: 1400px;">
+<div class="catalog-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 0 auto; max-width: 1400px;">
     @forelse($threads as $thread)
     <div class="catalog-thread" 
          style="cursor: pointer; 
@@ -31,15 +31,14 @@
          onmouseover="this.style.borderColor='#999'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'"
          onmouseout="this.style.borderColor='#ddd'; this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.1)'">
         
-        @if($thread->accumulated_points > 0)
-        <div style="position: absolute; top: 8px; right: 8px; 
+        <div class="pow-indicator" data-value="{{ $thread->accumulated_points ?? 0 }}"
+             style="position: absolute; top: 8px; right: 8px; 
                     background: #2e7d32; color: white; 
                     font-size: 10px; font-weight: bold; 
                     padding: 2px 6px; border-radius: 10px; 
-                    z-index: 10;">
-            ⚡{{ number_format($thread->accumulated_points, 1) }}
+                    z-index: 10; transition: all 0.3s ease;">
+            ⚡{{ number_format($thread->accumulated_points ?? 0, 1) }}
         </div>
-        @endif
 
         @if($thread->image_path)
         <div style="height: 140px; overflow: hidden; background: #f5f5f5;">
@@ -92,4 +91,88 @@
     <a href="/">Board List</a> |
     <a href="/{{ $board->code }}">Board Index</a>
 </div>
+
+<script>
+let catalogPollInterval;
+
+function startCatalogPolling() {
+    updateCatalogOrder();
+    catalogPollInterval = setInterval(updateCatalogOrder, 5000);
+}
+
+async function updateCatalogOrder() {
+    try {
+        const response = await fetch('/api/boards/{{ $board->code }}/thread-order');
+        const data = await response.json();
+        
+        data.threads.forEach(thread => {
+            const threadEl = document.querySelector(`[data-thread-id="${thread.id}"]`);
+            if (threadEl) {
+                const powIndicator = threadEl.querySelector('.pow-indicator');
+                if (powIndicator) {
+                    const oldValue = parseFloat(powIndicator.dataset.value || 0);
+                    const newValue = thread.accumulated_points;
+                    
+                    if (newValue !== oldValue) {
+                        powIndicator.dataset.value = newValue;
+                        powIndicator.textContent = `⚡${newValue.toFixed(1)}`;
+                        
+                        if (newValue > oldValue) {
+                            powIndicator.classList.add('pow-increased');
+                            setTimeout(() => powIndicator.classList.remove('pow-increased'), 1000);
+                        }
+                    }
+                }
+            }
+        });
+        
+        const container = document.querySelector('.catalog-grid');
+        if (container) {
+            data.threads.forEach((thread, index) => {
+                const threadEl = document.querySelector(`[data-thread-id="${thread.id}"]`);
+                if (threadEl && threadEl.parentElement === container) {
+                    const currentIndex = Array.from(container.children).indexOf(threadEl);
+                    if (currentIndex !== index && currentIndex !== -1) {
+                        threadEl.style.transition = 'transform 0.5s ease';
+                        if (index === 0) {
+                            container.prepend(threadEl);
+                        } else {
+                            const beforeEl = container.children[index];
+                            if (beforeEl && beforeEl !== threadEl) {
+                                container.insertBefore(threadEl, beforeEl);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Catalog polling error:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', startCatalogPolling);
+</script>
+
+<style>
+.pow-indicator {
+    transition: all 0.3s ease;
+}
+
+.pow-increased {
+    animation: powPulse 0.8s ease;
+}
+
+@keyframes powPulse {
+    0%, 100% { 
+        transform: scale(1); 
+        background: #2e7d32;
+    }
+    50% { 
+        transform: scale(1.2); 
+        background: #4caf50;
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+    }
+}
+</style>
 @endsection

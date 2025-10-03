@@ -25,47 +25,47 @@
 </div>
 
 <!-- New Thread Creation Interface -->
-<div style="background: var(--primary-bg); border: 2px solid var(--border-color); border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
-    <div style="background: linear-gradient(135deg, var(--border-color), var(--accent-color)); color: var(--primary-bg); padding: 15px 20px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="font-family: 'Nova Cut', serif; font-size: 18px; margin: 0; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">
+<div style="background: transparent; margin-bottom: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="font-size: 16px; color: #444B6E; margin: 0;">
             🧵 Create New Thread
         </h3>
-        <button type="button" style="background: rgba(245, 245, 220, 0.2); border: 1px solid rgba(245, 245, 220, 0.3); color: var(--primary-bg); width: 28px; height: 28px; border-radius: 4px; cursor: pointer; font-size: 16px; font-weight: bold;" id="thread-form-toggle" onclick="toggleThreadForm()">−</button>
+        <button type="button" style="background: transparent; border: 1px solid #d4d4d4; color: #444B6E; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;" id="thread-form-toggle" onclick="toggleThreadForm()">−</button>
     </div>
     
-    <div id="thread-form-container" style="padding: 25px;">
-        <form method="POST" action="/{{ $board->code }}" enctype="multipart/form-data" id="new-thread-form" style="display: flex; flex-direction: column; gap: 20px;">
+    <div id="thread-form-container" style="padding: 0;">
+        <form method="POST" action="/{{ $board->code }}" enctype="multipart/form-data" id="new-thread-form" style="display: flex; flex-direction: column; gap: 15px;">
             @csrf
             
             <!-- Subject Field -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px; font-size: 13px;">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="display: block; color: #444B6E; font-weight: 600; font-size: 13px;">
                     📝 Subject <span style="color: #dc3545;">*</span>
                 </label>
                 <input type="text" name="title" id="thread-title" required maxlength="200" placeholder="Thread subject..."
-                       style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
-                <div style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Required • 3-200 characters</div>
+                       style="width: 100%; padding: 8px; border: 1px solid #d4d4d4; border-radius: 4px; background: white; color: #333; font-size: 14px; box-sizing: border-box;">
+                <div style="color: #888; font-size: 11px;">Required • 3-200 characters</div>
             </div>
             
             <!-- Content Field -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px; font-size: 13px;">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="display: block; color: #444B6E; font-weight: 600; font-size: 13px;">
                     💬 Comment <span style="color: #dc3545;">*</span>
                 </label>
                 <textarea name="content" id="thread-content" required rows="5" placeholder="What's on your mind..."
-                          style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
-                <div style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Required • 5-5000 characters</div>
+                          style="width: 100%; padding: 8px; border: 1px solid #d4d4d4; border-radius: 4px; background: white; color: #333; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+                <div style="color: #888; font-size: 11px;">Required • 5-5000 characters</div>
             </div>
             
             <!-- Image Upload -->
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px; font-size: 13px;">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="display: block; color: #444B6E; font-weight: 600; font-size: 13px;">
                     🖼️ Image <span style="color: #dc3545;">*</span>
                 </label>
                 <input type="file" name="image" id="thread-image" onchange="previewThreadImage(this)"
                        accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif"
-                       style="width: 100%; padding: 10px; border: 2px dashed var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
-                <div style="color: var(--text-secondary); font-size: 12px; font-style: italic;">Required • Max 25MB • Images, Videos, GIFs</div>
+                       style="width: 100%; padding: 8px; border: 1px dashed #d4d4d4; border-radius: 4px; background: white; color: #333; font-size: 13px; box-sizing: border-box;">
+                <div style="color: #888; font-size: 11px;">Required • Max 25MB • Images, Videos, GIFs</div>
                 
                 <!-- Image Preview -->
                 <div id="thread-image-preview" class="image-preview" style="display: none;">
@@ -98,14 +98,13 @@
             <input type="hidden" name="pow_challenge_id" id="thread-pow-challenge-id" required>
             
             <!-- Submit Actions -->
-            <div style="display: flex; gap: 15px; justify-content: center; padding-top: 20px; border-top: 1px solid var(--border-color);">
-                <button type="submit" class="tui-btn tui-btn-primary">
+            <div style="display: flex; gap: 10px; padding-top: 10px;">
+                <button type="submit" style="padding: 8px 16px; background: #9AB87A; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: 500;">
                     📤 Post Thread
                 </button>
                 <button type="button" onclick="resetThreadForm()" 
-                        style="background: var(--content-bg); color: var(--text-primary); border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;">
-                    <span>🔄</span>
-                    <span>Reset</span>
+                        style="background: transparent; color: #444B6E; border: 1px solid #d4d4d4; padding: 8px 16px; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                    🔄 Reset
                 </button>
             </div>
         </form>
@@ -115,6 +114,7 @@
 <hr>
 
 <!-- Threads -->
+<div class="threads-list">
 @forelse($threads as $thread)
 <div class="post" data-thread-id="{{ $thread->id }}" data-mine-type="thread" data-board-code="{{ $board->code }}">
     <div class="post-header">
@@ -127,9 +127,10 @@
         </span>
         {{ $thread->created_at->format('m/d/y(D) H:i:s') }}
         <span class="post-no">No.{{ $thread->id }}</span>
-        @if($thread->accumulated_points > 0)
-            <span style="color: var(--ib-accent); font-weight: bold;">[⚡{{ number_format($thread->accumulated_points, 1) }}]</span>
-        @endif
+        <span class="pow-indicator" data-value="{{ $thread->accumulated_points ?? 0 }}" 
+              style="color: #FFD700; font-weight: bold; margin-left: 8px; font-size: 11px; padding: 2px 6px; background: rgba(255, 215, 0, 0.15); border-radius: 4px; display: inline-block;">
+            ⚡{{ number_format($thread->accumulated_points ?? 0, 1) }}
+        </span>
         <a href="/{{ $board->code }}/{{ $thread->id }}" style="margin-left: 10px;">[Reply]</a>
         @if(session('bitcoin_auth_id') && ($thread->user_id === session('bitcoin_auth_id') || (session('bitcoin_auth_user') && (session('bitcoin_auth_user')->is_admin || session('bitcoin_auth_user')->is_moderator))))
             <form method="POST" action="{{ route('threads.delete.user', $thread->id) }}" style="display: inline; margin-left: 10px;" onsubmit="return confirm('Delete this thread?');">
@@ -165,6 +166,7 @@
     <p style="color: var(--ib-text-muted);">No threads yet. Be the first to start the conversation!</p>
 </div>
 @endforelse
+</div>
 
 <div style="background: var(--primary-bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 30px; text-align: center;">
     <a name="bottom"></a>
@@ -193,6 +195,7 @@ document.getElementById('new-thread-form').addEventListener('submit', async func
         const proof = await window.haichanMiningBrain.acquireProofFor({
             board_code: '{{ $board->code }}',
             target_type: 'thread',
+            target_id: null,
             action: 'create',
             difficulty: '21e8'
         });
@@ -307,6 +310,67 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('🎯 Thread creation system loaded');
 });
+
+// Real-time thread reordering and PoW updates
+let pollInterval;
+
+function startThreadPolling() {
+    updateThreadOrder();
+    pollInterval = setInterval(updateThreadOrder, 5000);
+}
+
+async function updateThreadOrder() {
+    try {
+        const response = await fetch('/api/boards/{{ $board->code }}/thread-order');
+        const data = await response.json();
+        
+        data.threads.forEach(thread => {
+            const threadEl = document.querySelector(`[data-thread-id="${thread.id}"]`);
+            if (threadEl) {
+                const powIndicator = threadEl.querySelector('.pow-indicator');
+                if (powIndicator) {
+                    const oldValue = parseFloat(powIndicator.dataset.value || 0);
+                    const newValue = thread.accumulated_points;
+                    
+                    if (newValue !== oldValue) {
+                        powIndicator.dataset.value = newValue;
+                        powIndicator.textContent = `⚡${newValue.toFixed(1)}`;
+                        
+                        if (newValue > oldValue) {
+                            powIndicator.classList.add('pow-increased');
+                            setTimeout(() => powIndicator.classList.remove('pow-increased'), 1000);
+                        }
+                    }
+                }
+            }
+        });
+        
+        const container = document.querySelector('.threads-list');
+        if (container) {
+            data.threads.forEach((thread, index) => {
+                const threadEl = document.querySelector(`[data-thread-id="${thread.id}"]`);
+                if (threadEl && threadEl.parentElement === container) {
+                    const currentIndex = Array.from(container.children).indexOf(threadEl);
+                    if (currentIndex !== index && currentIndex !== -1) {
+                        threadEl.style.transition = 'transform 0.5s ease';
+                        if (index === 0) {
+                            container.prepend(threadEl);
+                        } else {
+                            const beforeEl = container.children[index];
+                            if (beforeEl && beforeEl !== threadEl) {
+                                container.insertBefore(threadEl, beforeEl);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Thread polling error:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', startThreadPolling);
 </script>
 
 <!-- Thread Creation Styles -->
@@ -513,6 +577,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .btn-text {
     font-size: 12px;
+}
+
+.pow-indicator {
+    transition: all 0.3s ease;
+}
+
+.pow-increased {
+    animation: powPulse 0.8s ease;
+}
+
+@keyframes powPulse {
+    0%, 100% { 
+        transform: scale(1); 
+        background: rgba(255, 215, 0, 0.15);
+    }
+    50% { 
+        transform: scale(1.2); 
+        background: rgba(255, 215, 0, 0.4);
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
 }
 </style>
 

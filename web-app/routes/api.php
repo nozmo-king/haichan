@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\ForumApiController;
 use App\Http\Controllers\Api\ProofController;
 use App\Http\Controllers\QuickNavigationController;
+use App\Models\Board;
+use App\Models\Thread;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 // API Authentication routes
@@ -120,3 +123,22 @@ Route::get('/threads/active', [QuickNavigationController::class, 'getActiveThrea
 Route::get('/threads/random', [QuickNavigationController::class, 'getRandomThread']);
 Route::get('/threads/{threadId}/previous', [QuickNavigationController::class, 'getPreviousThread']);
 Route::get('/threads/{threadId}/next', [QuickNavigationController::class, 'getNextThread']);
+
+// Thread Order API (public endpoint for real-time updates)
+Route::get('/boards/{board}/thread-order', function($board) {
+    $boardModel = Board::where('code', $board)->firstOrFail();
+    $threads = Thread::where('board_id', $boardModel->id)
+        ->select('id', 'bump_score', 'accumulated_points')
+        ->orderByDesc('bump_score')
+        ->orderByDesc('accumulated_points')
+        ->get()
+        ->map(function($thread) {
+            return [
+                'id' => $thread->id,
+                'total_pow' => ($thread->bump_score ?? 0) + ($thread->accumulated_points ?? 0),
+                'accumulated_points' => $thread->accumulated_points ?? 0
+            ];
+        });
+    
+    return response()->json(['threads' => $threads]);
+});
