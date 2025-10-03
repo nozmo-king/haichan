@@ -19,97 +19,79 @@ class ProofOfWorkController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        // Check if this is thread/reply related mining vs general mining
-        $isThreadReply = in_array($request->input('target_type'), ['thread', 'reply']) ||
-                        str_contains($request->input('data', ''), 'thread-') ||
-                        str_contains($request->input('data', ''), 'post_bump:');
-
-        // Define allowed patterns based on context
-        $allowedPatterns = $isThreadReply ?
-            ['21e8', '21e80', '21e800', '21e8000', '000021e8', '000', '111', '222', '333', '444', '555', '666', '777', '888', '999', 'aaa', 'bbb', 'ccc', 'ddd', 'eee', 'fff', 'ace', 'bad', 'cab', 'dad', 'ded', 'fab', 'fed', 'beef', 'cafe', 'face', 'babe', 'fade', 'dead', 'deed', 'feed', 'c0de', 'b00b', '1337', 'pwnd', 'rekt', 'epic', 'Chad', 'deadbeef'] :
-            ['21', '21e', '21e8', '21e80', '21e800', '21e8000', '000021e8', '000', '111', '222', '333', '444', '555', '666', '777', '888', '999', 'aaa', 'bbb', 'ccc', 'ddd', 'eee', 'fff', 'ace', 'bad', 'cab', 'dad', 'ded', 'fab', 'fed', 'beef', 'cafe', 'face', 'babe', 'fade', 'dead', 'deed', 'feed', 'c0de', 'b00b', '1337', 'pwnd', 'rekt', 'epic', 'Chad', 'deadbeef'];
-
         $validator = Validator::make($request->all(), [
+            'challenge_token' => 'required|string',
+            'client_nonce' => 'required|string',
             'hash' => 'required|string|size:64',
-            'nonce' => 'required|integer|min:0',
-            'data' => 'required|string',
-            'pattern' => 'required|string|in:'.implode(',', $allowedPatterns),
-            'target_type' => 'nullable|string',
-            'target_id' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
-            $errorMessage = 'Invalid proof format';
-            if ($isThreadReply && in_array($request->input('pattern'), ['21', '21e'])) {
-                $errorMessage = 'Thread creation and replies require minimum 21e8 pattern. Use mining dashboard to experiment with easier patterns.';
-            }
-
             return response()->json([
                 'success' => false,
-                'message' => $errorMessage,
+                'message' => 'Invalid proof format: challenge_token, client_nonce, and hash are required',
+                'errors' => $validator->errors(),
             ], 422);
         }
 
-        // Enforce 21e8 for authenticated users regardless of submitted pattern
-        if (session('bitcoin_auth_id')) {
-            $required = '21e8';
-            if (!str_starts_with(strtolower($request->input('hash')), $required)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Authenticated mining requires 21e8 difficulty.',
-                ], 422);
-            }
-        }
-
-        $verificationResult = $this->verifyProof(
-            $request->input('data'),
-            $request->input('nonce'),
-            $request->input('hash'),
-            $request->input('pattern')
+        $verifier = new \App\Services\ChallengeVerifier();
+        $verificationResult = $verifier->verifyChallenge(
+            $request->input('challenge_token'),
+            $request->input('client_nonce'),
+            $request->input('hash')
         );
 
-        if (! $verificationResult['valid']) {
+        if (!$verificationResult['valid']) {
+            Log::error('CHALLENGE VERIFICATION FAILED', [
+                'token' => $request->input('challenge_token'),
+                'error' => $verificationResult['error'],
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => $verificationResult['error'],
+                'details' => $verificationResult,
             ], 400);
         }
 
-        $points = $this->calculatePoints($request->input('pattern'));
+        $challenge = $verificationResult['challenge'];
 
-        // Link proof to thread if target is thread-related
-        $threadId = null;
-        if ($request->input('target_type') === 'thread') {
-            $threadId = $request->input('target_id');
-        } elseif ($request->input('target_type') === 'reply') {
-            // For reply mining, get the thread ID from the data string or request
-            // The reply mining sends thread context data
-            $dataString = $request->input('data');
-            if (preg_match('/thread-(\d+)/', $dataString, $matches)) {
-                $threadId = $matches[1];
-            }
+        if (ProofOfWork::where('hash', $request->input('hash'))->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Duplicate proof',
+            ], 400);
         }
 
+        $points = $this->calculatePoints($challenge->difficulty);
+
+        $threadId = null;
+        if ($challenge->target_type === 'thread') {
+            $threadId = $challenge->target_id;
+        } elseif ($challenge->target_type === 'reply') {
+            $threadId = $challenge->target_id;
+        }
+
+        $challenge->markAsUsed();
+
         ProofOfWork::create([
+            'challenge_id' => $challenge->id,
             'thread_id' => $threadId,
             'hash' => $request->input('hash'),
-            'nonce' => $request->input('nonce'),
-            'data' => $request->input('data'),
-            'pattern' => $request->input('pattern'),
+            'nonce' => 0,
+            'data' => json_encode($challenge->canonical_payload),
+            'pattern' => $challenge->difficulty,
             'points' => $points,
             'ip_address' => $request->ip(),
             'verified_at' => now(),
+            'user_id' => $challenge->user_id,
         ]);
 
-        // Add PoW points and bump thread if this is thread-related mining
         if ($threadId) {
             $thread = Thread::find($threadId);
             if ($thread) {
-                // Increment thread bump score with PoW points
                 $thread->increment('bump_score', $points);
                 $thread->update(['bumped_at' => now()]);
 
-                // Also add to board if method exists
                 if ($thread->board && method_exists($thread->board, 'addPowPoints')) {
                     $thread->board->addPowPoints($points);
                 }
@@ -118,7 +100,7 @@ class ProofOfWorkController extends Controller
                     'thread_id' => $threadId,
                     'points_added' => $points,
                     'new_bump_score' => $thread->fresh()->bump_score,
-                    'pattern' => $request->input('pattern'),
+                    'pattern' => $challenge->difficulty,
                 ]);
             }
         }
@@ -128,6 +110,7 @@ class ProofOfWorkController extends Controller
             'message' => 'Proof accepted!',
             'points' => $points,
             'total_points' => $points,
+            'challenge_id' => $challenge->id,
         ]);
     }
 

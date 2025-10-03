@@ -52,6 +52,7 @@ Route::post('/friend-codes/validate', [AuthApiController::class, 'validateFriend
 
 // Mining API endpoints (protected with throttling)
 Route::middleware(['throttle:120,1'])->group(function () {
+    Route::post('/mining/challenges', [App\Http\Controllers\MiningChallengeController::class, 'issue']);
     Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
     Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
     Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
