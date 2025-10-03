@@ -146,8 +146,8 @@
             <input type="hidden" name="pow_challenge_id" required>
             
             <div class="tui-actions">
-                <button type="submit" class="tui-btn tui-btn-primary tui-btn-disabled" disabled>
-                    Mine Proof First
+                <button type="submit" class="tui-btn tui-btn-primary">
+                    📤 Post Reply
                 </button>
                 <button type="button" class="tui-btn tui-btn-outline" onclick="toggleQuickReply()">
                     Cancel
@@ -297,7 +297,35 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Unified system will automatically handle PoW mining for this form
+document.querySelector('.unified-post-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = '⏳ Mining proof...';
+    
+    try {
+        const proof = await window.haichanMiningBrain.acquireProofFor({
+            board_code: '{{ $board->code }}',
+            target_type: 'reply',
+            target_id: '{{ $thread->id }}',
+            action: 'create',
+            difficulty: '21e8'
+        });
+        
+        this.querySelector('[name="pow_nonce"]').value = proof.nonce;
+        this.querySelector('[name="pow_hash"]').value = proof.hash;
+        this.querySelector('[name="pow_challenge_id"]').value = proof.challenge_id;
+        
+        this.submit();
+    } catch (error) {
+        alert('Mining failed: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = '📤 Post Reply';
+    }
+});
+
+// Auto-focus content area when reply form is opened
 document.addEventListener('DOMContentLoaded', function() {
     // Auto-focus content area when reply form is opened
     const observer = new MutationObserver((mutations) => {

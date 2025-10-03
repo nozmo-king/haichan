@@ -92,20 +92,6 @@
                 <div class="field-hint">Leave blank for anonymous posting</div>
             </div>
             
-            <!-- Mining Status -->
-            <div class="mining-status-panel">
-                <div class="mining-indicator">
-                    <span class="status-dot" id="thread-status-dot"></span>
-                    <span class="status-text" id="thread-mining-status">⏳ Complete form to start mining...</span>
-                </div>
-                <div class="mining-progress" id="thread-mining-progress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="thread-progress-fill"></div>
-                    </div>
-                    <div class="mining-stats" id="thread-mining-stats"></div>
-                </div>
-            </div>
-            
             <!-- Hidden PoW Fields -->
             <input type="hidden" name="pow_nonce" id="thread-pow-nonce" required>
             <input type="hidden" name="pow_hash" id="thread-pow-hash" required>
@@ -113,10 +99,8 @@
             
             <!-- Submit Actions -->
             <div style="display: flex; gap: 15px; justify-content: center; padding-top: 20px; border-top: 1px solid var(--border-color);">
-                <button type="submit" id="thread-submit-btn" disabled
-                        style="background: linear-gradient(135deg, var(--border-color), var(--accent-color)); color: var(--primary-bg); border: none; padding: 12px 25px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: not-allowed; opacity: 0.6; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;">
-                    <span>⛏️</span>
-                    <span>Mining Required...</span>
+                <button type="submit" class="tui-btn tui-btn-primary">
+                    📤 Post Thread
                 </button>
                 <button type="button" onclick="resetThreadForm()" 
                         style="background: var(--content-bg); color: var(--text-primary); border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; gap: 8px;">
@@ -198,220 +182,32 @@
 </div>
 
 <script>
-// New Thread Creation System
-class HaichanThreadCreator {
-    constructor() {
-        this.form = document.getElementById('new-thread-form');
-        this.isMining = false;
-        this.currentChallenge = null;
-        this.miningStartTime = 0;
-        this.hashCount = 0;
-        
-        this.init();
-    }
+document.getElementById('new-thread-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
     
-    init() {
-        if (!this.form) return;
-        
-        // Get form elements
-        this.titleInput = document.getElementById('thread-title');
-        this.contentInput = document.getElementById('thread-content');
-        this.imageInput = document.getElementById('thread-image');
-        this.hashInput = document.getElementById('thread-image-hash');
-        this.submitBtn = document.getElementById('thread-submit-btn');
-        this.statusDot = document.getElementById('thread-status-dot');
-        this.statusText = document.getElementById('thread-mining-status');
-        this.progressPanel = document.getElementById('thread-mining-progress');
-        this.progressFill = document.getElementById('thread-progress-fill');
-        this.statsDisplay = document.getElementById('thread-mining-stats');
-        
-        // Setup event listeners
-        this.setupEventListeners();
-        
-        console.log('🧵 Thread Creator initialized');
-    }
+    const btn = this.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = '⏳ Mining proof...';
     
-    setupEventListeners() {
-        // Form field validation and mining trigger
-        this.titleInput.addEventListener('input', () => this.debounce(() => this.validateAndMine(), 500));
-        this.contentInput.addEventListener('input', () => this.debounce(() => this.validateAndMine(), 500));
-        this.imageInput.addEventListener('change', () => this.validateAndMine());
-        this.hashInput.addEventListener('input', () => this.validateAndMine());
+    try {
+        const proof = await window.haichanMiningBrain.acquireProofFor({
+            board_code: '{{ $board->code }}',
+            target_type: 'thread',
+            action: 'create',
+            difficulty: '21e8'
+        });
         
-        // Form submission
-        this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+        document.getElementById('thread-pow-nonce').value = proof.nonce;
+        document.getElementById('thread-pow-hash').value = proof.hash;
+        document.getElementById('thread-pow-challenge-id').value = proof.challenge_id;
+        
+        this.submit();
+    } catch (error) {
+        alert('Mining failed: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = '📤 Post Thread';
     }
-    
-    debounce(func, wait) {
-        clearTimeout(this.debounceTimer);
-        this.debounceTimer = setTimeout(func, wait);
-    }
-    
-    validateForm() {
-        const title = this.titleInput.value.trim();
-        const content = this.contentInput.value.trim();
-        const hasImage = this.imageInput.files[0];
-        const hasHash = this.hashInput.value.trim();
-        
-        const isValid = title.length >= 3 && 
-                       content.length >= 5 && 
-                       (hasImage || hasHash);
-        
-        return { isValid, title, content, hasImage, hasHash };
-    }
-    
-    async validateAndMine() {
-        const validation = this.validateForm();
-        
-        if (!validation.isValid) {
-            this.updateStatus('incomplete', '⏳ Complete all required fields...');
-            this.disableSubmit();
-            return;
-        }
-        
-        if (this.isMining) {
-            this.stopMining();
-        }
-        
-        await this.startMining(validation.title, validation.content);
-    }
-    
-    async startMining(title, content) {
-        this.isMining = true;
-        this.currentChallenge = this.generateChallengeId();
-        this.miningStartTime = Date.now();
-        this.hashCount = 0;
-        
-        // Set challenge ID
-        document.getElementById('thread-pow-challenge-id').value = this.currentChallenge;
-        
-        // Update UI
-        this.updateStatus('mining', '⛏️ Mining proof of work...');
-        this.showMiningProgress();
-        
-        const challengeData = `thread:{{ $board->code }}:${title}:${this.currentChallenge}`;
-        const targetPattern = '21e8';
-        
-        console.log(`🎯 Mining thread: ${challengeData}`);
-        
-        await this.mineProof(challengeData, targetPattern);
-    }
-    
-    async mineProof(data, pattern) {
-        let nonce = 0;
-        const batchSize = 1000;
-        
-        while (this.isMining && nonce < 1000000) {
-            for (let i = 0; i < batchSize && this.isMining; i++) {
-                const testData = `${data}:${nonce}`;
-                const hash = await this.calculateHash(testData);
-                this.hashCount++;
-                
-                if (hash.startsWith(pattern.toLowerCase())) {
-                    // Found proof!
-                    document.getElementById('thread-pow-nonce').value = nonce;
-                    document.getElementById('thread-pow-hash').value = hash;
-                    
-                    this.updateStatus('success', `✅ Proof found! ${hash.substring(0, 16)}...`);
-                    this.hideMiningProgress();
-                    this.enableSubmit();
-                    this.isMining = false;
-                    
-                    console.log(`💎 Thread proof found: ${hash}`);
-                    return;
-                }
-                
-                nonce++;
-            }
-            
-            // Update progress
-            this.updateMiningProgress();
-            
-            // Yield control
-            await new Promise(resolve => setTimeout(resolve, 1));
-        }
-        
-        // Mining failed or stopped
-        if (this.isMining) {
-            this.updateStatus('error', '❌ Mining timeout - try simpler content');
-            this.hideMiningProgress();
-            this.isMining = false;
-        }
-    }
-    
-    async calculateHash(data) {
-        const encoder = new TextEncoder();
-        const dataBuffer = encoder.encode(data);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-    
-    generateChallengeId() {
-        const array = new Uint8Array(16);
-        crypto.getRandomValues(array);
-        return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-    }
-    
-    updateStatus(type, message) {
-        this.statusDot.className = `status-dot ${type}`;
-        this.statusText.textContent = message;
-    }
-    
-    showMiningProgress() {
-        this.progressPanel.style.display = 'block';
-    }
-    
-    hideMiningProgress() {
-        this.progressPanel.style.display = 'none';
-    }
-    
-    updateMiningProgress() {
-        const elapsed = (Date.now() - this.miningStartTime) / 1000;
-        const hashrate = Math.floor(this.hashCount / elapsed);
-        
-        this.statsDisplay.textContent = `${hashrate.toLocaleString()} H/s • ${this.hashCount.toLocaleString()} hashes`;
-        
-        // Animate progress bar
-        const progress = Math.min(90, (this.hashCount / 10000) * 100);
-        this.progressFill.style.width = `${progress}%`;
-    }
-    
-    enableSubmit() {
-        this.submitBtn.disabled = false;
-        this.submitBtn.style.cursor = 'pointer';
-        this.submitBtn.style.opacity = '1';
-        this.submitBtn.querySelector('span:first-child').textContent = '🚀';
-        this.submitBtn.querySelector('span:last-child').textContent = 'Post Thread';
-    }
-    
-    disableSubmit() {
-        this.submitBtn.disabled = true;
-        this.submitBtn.style.cursor = 'not-allowed';
-        this.submitBtn.style.opacity = '0.6';
-        this.submitBtn.querySelector('span:first-child').textContent = '⛏️';
-        this.submitBtn.querySelector('span:last-child').textContent = 'Mining Required...';
-    }
-    
-    stopMining() {
-        this.isMining = false;
-        this.hideMiningProgress();
-    }
-    
-    handleSubmit(e) {
-        const powHash = document.getElementById('thread-pow-hash').value;
-        const powNonce = document.getElementById('thread-pow-nonce').value;
-        
-        if (!powHash || !powNonce) {
-            e.preventDefault();
-            alert('Proof of work mining is required!');
-            return false;
-        }
-        
-        console.log('🚀 Thread submission with PoW:', powHash.substring(0, 16) + '...');
-        return true;
-    }
-}
+});
 
 // Thread Form Management Functions
 function toggleThreadForm() {
@@ -481,10 +277,6 @@ function handleThreadHashInput() {
 }
 
 function resetThreadForm() {
-    if (window.threadCreator) {
-        window.threadCreator.stopMining();
-    }
-    
     document.getElementById('new-thread-form').reset();
     document.getElementById('thread-image-preview').style.display = 'none';
     document.getElementById('thread-image-hash').style.borderColor = '';
@@ -495,10 +287,8 @@ function resetThreadForm() {
     document.getElementById('thread-pow-challenge-id').value = '';
 }
 
-// Initialize when DOM is ready
+// Initialize form collapse state from localStorage
 document.addEventListener('DOMContentLoaded', function() {
-    window.threadCreator = new HaichanThreadCreator();
-
     const container = document.getElementById('thread-form-container');
     const toggle = document.getElementById('thread-form-toggle');
     const collapsed = localStorage.getItem('haichan-thread-form-collapsed') === 'true';
@@ -666,66 +456,6 @@ document.addEventListener('DOMContentLoaded', function() {
     cursor: pointer;
     font-size: 12px;
     line-height: 1;
-}
-
-.mining-status-panel {
-    background: var(--ib-bg, #fffacd);
-    border: 1px solid var(--ib-border, #d4af37);
-    border-radius: 4px;
-    padding: 12px;
-}
-
-.mining-indicator {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    font-family: 'Courier New', monospace;
-}
-
-.status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #ccc;
-    display: inline-block;
-    transition: background-color 0.2s ease;
-}
-
-.status-dot.incomplete { background: #ffc107; }
-.status-dot.mining { background: #708B75; animation: pulse 1s infinite; }
-.status-dot.success { background: #28a745; }
-.status-dot.error { background: #dc3545; }
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-.mining-progress {
-    margin-top: 8px;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 4px;
-    background: #e9ecef;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, #708B75, #9AB87A);
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
-.mining-stats {
-    font-size: 10px;
-    color: var(--ib-text-muted, #666);
-    margin-top: 4px;
-    text-align: center;
 }
 
 .form-actions {

@@ -1144,6 +1144,69 @@ class HaichanMiningBrain {
         }, 10000);
     }
 
+    // Form PoW Integration
+    async acquireProofFor(formPayload) {
+        // formPayload = { board_code, target_type, target_id, action, difficulty }
+        
+        // 1. Request challenge from server
+        const challengeResponse = await fetch('/api/mining/challenges', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify(formPayload)
+        });
+        
+        if (!challengeResponse.ok) {
+            throw new Error('Failed to get challenge');
+        }
+        
+        const challenge = await challengeResponse.json();
+        
+        // 2. Mine proof for this challenge
+        const proof = await this.mineProof(challenge.canonical_payload, challenge.signature, formPayload.difficulty);
+        
+        // 3. Return proof with challenge token
+        return {
+            nonce: proof.nonce,
+            hash: proof.hash,
+            challenge_id: challenge.token
+        };
+    }
+
+    async mineProof(canonicalPayload, signature, difficulty) {
+        // Mine until we find a hash starting with the difficulty pattern
+        let nonce = 0;
+        const data = JSON.stringify(canonicalPayload) + signature;
+        
+        while (true) {
+            const hash = await this.computeSHA256(data + ':' + nonce);
+            
+            if (hash.toLowerCase().startsWith(difficulty.toLowerCase())) {
+                return { nonce, hash };
+            }
+            
+            nonce++;
+            
+            // Yield to UI every 1000 hashes
+            if (nonce % 1000 === 0) {
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        }
+    }
+
+    async computeSHA256(str) {
+        // Use WasmSha256 for hashing
+        if (window.WasmSha256 && window.WasmSha256.hash) {
+            return await window.WasmSha256.hash(str);
+        }
+        // Fallback to SubtleCrypto
+        const enc = new TextEncoder();
+        const buf = await crypto.subtle.digest('SHA-256', enc.encode(str));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
     // Cleanup
     destroy() {
         console.log('🧠 MINING BRAIN: Shutting down');
