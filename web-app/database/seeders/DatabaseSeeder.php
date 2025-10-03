@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             BoardSeeder::class,
             SubscriptionPlanSeeder::class,
             InitialUserSeeder::class,
+            DummyBoardSeeder::class,
         ]);
     }
 }

@@ -66,6 +66,38 @@ Route::get('/mining', function () {
     return view('mining.dashboard');
 })->name('mining.dashboard');
 
+// /d/ - Dummy board routes - auto-authenticated for testing
+Route::middleware('inject.dummy.user')->group(function () {
+    Route::get('/d', function() { return app(App\Http\Controllers\ForumController::class)->showBoard('d'); })->name('board.show');
+    Route::get('/d/catalog', function() { return app(App\Http\Controllers\ForumController::class)->showCatalog('d'); })->name('board.catalog');
+    Route::get('/d/create', function() { return app(App\Http\Controllers\ForumController::class)->createThread('d'); })->name('board.create');
+    Route::post('/d/create', function() { return app(App\Http\Controllers\ForumController::class)->storeThread('d'); })->name('board.store');
+    Route::post('/d', function() { return app(App\Http\Controllers\ForumController::class)->storeThread('d'); })->name('board.thread.store');
+    Route::get('/d/{threadId}', function($threadId) { return app(App\Http\Controllers\ForumController::class)->showThread('d', $threadId); })->name('forum.thread');
+    Route::post('/d/{threadId}/reply', function($threadId) { return app(App\Http\Controllers\ForumController::class)->storeReply('d', $threadId); })->name('forum.reply')-> where('threadId', '[0-9]+');
+    
+    Route::prefix('chat')->name('dummy.chat.')->group(function () {
+        Route::get('/', [App\Http\Controllers\ChatController::class, 'index'])->name('index');
+        Route::get('/{room}', [App\Http\Controllers\ChatController::class, 'show'])->name('room');
+        Route::post('/{room}/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send');
+        Route::get('/{room}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('messages');
+        Route::post('/{room}/join', [App\Http\Controllers\ChatController::class, 'joinRoom'])->name('join');
+        Route::post('/{room}/leave', [App\Http\Controllers\ChatController::class, 'leaveRoom'])->name('leave');
+        Route::delete('/{room}/messages/{message}', [App\Http\Controllers\ChatController::class, 'deleteMessage'])->name('delete-message');
+        Route::get('/{room}/stats', [App\Http\Controllers\ChatController::class, 'getRoomStats'])->name('stats');
+    });
+    
+    Route::get('/library', [App\Http\Controllers\ImageLibraryController::class, 'index'])->name('dummy.image-library.index');
+    Route::post('/api/image-library/mine', [App\Http\Controllers\ImageLibraryController::class, 'mine']);
+    Route::post('/api/image-library/upload', [App\Http\Controllers\ImageLibraryController::class, 'upload']);
+    Route::get('/api/image-library/{id}/full', [App\Http\Controllers\ImageLibraryController::class, 'fullImage']);
+    Route::get('/api/image-library/{id}/download', [App\Http\Controllers\ImageLibraryController::class, 'download']);
+    Route::get('/api/image-library/hash/{hash}', [App\Http\Controllers\ImageLibraryController::class, 'getByHash']);
+    Route::get('/api/image-library/stats', [App\Http\Controllers\ImageLibraryController::class, 'getStats']);
+    Route::get('/api/image-library/search', [App\Http\Controllers\ImageLibraryController::class, 'search']);
+    Route::get('/api/image-library/shifting', [App\Http\Controllers\ImageLibraryController::class, 'getShiftingArrangement']);
+});
+
 // Protected routes - require authentication
 Route::middleware('bitcoin.auth')->group(function () {
     Route::get('/', function () {
