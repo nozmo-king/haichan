@@ -1,4 +1,4 @@
-@extends('layout')
+@extends('layout', ['boardCode' => $board->code])
 
 @section('title', '/'.$board->code.'/ - '.$board->name)
 
@@ -28,7 +28,7 @@
 <div style="background: transparent; margin-bottom: 30px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3 style="font-size: 16px; color: #444B6E; margin: 0;">
-            🧵 Create New Thread
+            <a href="/gen/create" style="color: #444B6E; text-decoration: none;">🧵 Create New Thread</a>
         </h3>
         <button type="button" style="background: transparent; border: 1px solid #d4d4d4; color: #444B6E; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;" id="thread-form-toggle" onclick="toggleThreadForm()">−</button>
     </div>
@@ -192,7 +192,42 @@ document.getElementById('new-thread-form').addEventListener('submit', async func
     btn.textContent = '⏳ Mining proof...';
     
     try {
-        const proof = await window.haichanMiningBrain.acquireProofFor({
+        // Wait for mining brain or fallback systems to be available
+        let miner = null;
+        let retries = 0;
+        
+        while (!miner && retries < 50) {
+            // Check for mining brain first
+            if (window.haichanMiningBrain && window.haichanMiningBrain.isInitialized) {
+                miner = window.haichanMiningBrain;
+                console.log('Using haichanMiningBrain for thread creation');
+            }
+            // Check for simplePoW as fallback
+            else if (window.simplePoW && typeof window.simplePoW.acquireProofFor === 'function') {
+                miner = window.simplePoW;
+                console.log('Using simplePoW for thread creation');
+            }
+            // Try to create mining brain if class exists
+            else if (window.HaichanMiningBrain && !window.haichanMiningBrain) {
+                try {
+                    console.log('Creating new HaichanMiningBrain instance');
+                    window.haichanMiningBrain = new HaichanMiningBrain();
+                } catch (e) {
+                    console.error('Failed to create mining brain:', e);
+                }
+            }
+            
+            if (!miner) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
+        }
+        
+        if (!miner) {
+            throw new Error('No mining system available after ' + retries + ' retries');
+        }
+        
+        const proof = await miner.acquireProofFor({
             board_code: '{{ $board->code }}',
             target_type: 'thread',
             target_id: null,

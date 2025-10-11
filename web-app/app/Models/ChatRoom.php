@@ -30,6 +30,14 @@ class ChatRoom extends Model
         'is_public' => 'boolean',
     ];
 
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
     public function messages(): HasMany
     {
         return $this->hasMany(ChatMessage::class)->where('is_deleted', false);
@@ -42,7 +50,7 @@ class ChatRoom extends Model
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class, 'chat_room_users')
+        return $this->belongsToMany(BitcoinAuth::class, 'chat_room_users', 'chat_room_id', 'user_id')
                     ->withPivot([
                         'display_name',
                         'joined_at',
@@ -69,14 +77,14 @@ class ChatRoom extends Model
                     ->limit($limit);
     }
 
-    public function canUserJoin(User $user): bool
+    public function canUserJoin($user): bool
     {
         if (!$this->is_active || !$this->is_public) {
             return false;
         }
 
         // Check if user has minimum PoW points
-        $userTotalPow = $user->bitcoinUser?->accumulated_points ?? 0;
+        $userTotalPow = $user->accumulated_points ?? 0;
         if ($userTotalPow < $this->min_pow_points) {
             return false;
         }
@@ -89,12 +97,12 @@ class ChatRoom extends Model
         return true;
     }
 
-    public function isUserModerator(User $user): bool
+    public function isUserModerator($user): bool
     {
         return in_array($user->id, $this->moderators ?? []);
     }
 
-    public function getUserMessageCount(User $user, int $minutes = 1): int
+    public function getUserMessageCount($user, int $minutes = 1): int
     {
         return $this->messages()
                     ->where('user_id', $user->id)
@@ -102,7 +110,7 @@ class ChatRoom extends Model
                     ->count();
     }
 
-    public function canUserSendMessage(User $user): array
+    public function canUserSendMessage($user): array
     {
         // Check if user is in room
         if (!$this->users()->where('user_id', $user->id)->exists()) {

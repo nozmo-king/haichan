@@ -8,8 +8,8 @@ class Post extends Model
 {
     protected $fillable = [
         'thread_id', 'content', 'user_id', 'author_name', 'parent_id',
-        'image_path', 'image_filename',
-        'ip_address', 'poster_hash',
+        'image_path', 'image_filename', 'image_hash',
+        'ip_address', 'poster_hash', 'country_flag',
         'pow_nonce', 'pow_hash', 'pow_challenge_id', 'pow_pattern', 'pow_difficulty', 'pow_verified_at',
     ];
 

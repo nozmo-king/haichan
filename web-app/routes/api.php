@@ -57,10 +57,12 @@ Route::post('/friend-codes/validate', [AuthApiController::class, 'validateFriend
 Route::middleware(['throttle:120,1'])->group(function () {
     Route::post('/mining/challenges', [App\Http\Controllers\MiningChallengeController::class, 'issue']);
     Route::post('/submit-proof', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
+    Route::post('/proof-submissions', [App\Http\Controllers\ProofOfWorkController::class, 'submitProof']);
     Route::post('/start-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'startMiningSession']);
     Route::post('/end-mining-session', [App\Http\Controllers\ProofOfWorkController::class, 'endMiningSession']);
 });
 Route::get('/mining-stats', [App\Http\Controllers\ProofOfWorkController::class, 'getStats']);
+Route::get('/stats/brain', [App\Http\Controllers\StatsController::class, 'brainStats']);
 // Telemetry ingestion (rate-limited inside controller)
 Route::post('/mining/telemetry', [App\Http\Controllers\Api\MiningTelemetryController::class, 'ingest']);
 Route::get('/random-hash', [App\Http\Controllers\RandomHashController::class, 'getRandomHash']);

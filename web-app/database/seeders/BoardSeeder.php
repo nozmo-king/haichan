@@ -52,5 +52,11 @@ class BoardSeeder extends Seeder
             'name' => 'Music',
             'description' => 'Music discussion, sharing, and reviews',
         ]);
+
+        \App\Models\Board::create([
+            'code' => 'pol',
+            'name' => 'Politically Incorrect',
+            'description' => 'Politics, current events, and debate',
+        ]);
     }
 }

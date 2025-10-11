@@ -1,21 +1,21 @@
 @extends('layout')
 
-@section('title', 'PoW Chat Rooms - Haichan')
+@section('title', 'Chat Rooms - Haichan PoW Imageboard')
 
 @section('content')
-<div style="margin: 60px auto; max-width: 1200px; background: var(--primary-bg); border: 2px solid var(--border-color); box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);">
+<div style="margin: 60px auto; max-width: 1200px; background: #F5F5DC; border: 2px solid #708B75; box-shadow: 0 4px 16px rgba(112, 139, 117, 0.3);">
     <!-- Header -->
-    <div style="background: var(--secondary-bg); padding: 20px 30px; border-bottom: 2px solid var(--border-color); text-align: center;">
-        <h1 style="font-size: 28px; color: var(--text-primary); margin: 0 0 8px 0; font-weight: 300; letter-spacing: 1.5px; font-family: 'Nova Cut', serif;">
+    <div style="background: #FFFACD; padding: 20px 30px; border-bottom: 2px solid #708B75; text-align: center;">
+        <h1 style="font-size: 28px; color: #3D315B; margin: 0 0 8px 0; font-weight: 300; letter-spacing: 1.5px; font-family: 'Nova Cut', serif;">
             💬 PoW Chat Rooms ⛏️
         </h1>
-        <p style="color: var(--text-secondary); font-size: 14px; margin: 8px 0 0 0;">
-            Proof-of-work powered chat rooms • Your PoW Points: <strong>{{ number_format($userPowPoints) }}</strong>
+        <p style="color: #6B7A6B; font-size: 14px; margin: 8px 0 0 0;">
+            Proof-of-work powered chat rooms • Mine a simple hash to chat
         </p>
     </div>
 
     <!-- Chat Rooms Grid -->
-    <div style="padding: 30px; background: var(--content-bg);">
+    <div style="padding: 30px; background: #F5F5DC;">
         @if(session('error'))
             <div style="background: #ffebee; color: #c62828; padding: 12px 16px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #c62828;">
                 {{ session('error') }}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mining Performance Test</title>
+</head>
+<body>
+    <h1>Mining Performance Test</h1>
+    <div id="results"></div>
+    <button onclick="testMining()">Test Mining Performance</button>
+    
+    <script>
+        // Simplified version of the mining algorithm for testing
+        async function realSha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function testBatchMining(batchSize) {
+            const startTime = performance.now();
+            const promises = [];
+            
+            for (let i = 0; i < batchSize; i++) {
+                const nonce = Math.floor(Math.random() * 4294967295);
+                const data = `test-mining-${Date.now()}-${nonce}`;
+                promises.push(realSha256(data));
+            }
+            
+            const hashes = await Promise.all(promises);
+            const elapsed = performance.now() - startTime;
+            const hashrate = Math.floor((batchSize / elapsed) * 1000); // H/s
+            
+            return { hashes: batchSize, elapsed, hashrate };
+        }
+
+        async function testMining() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Testing mining performance...</p>';
+            
+            try {
+                // Test different batch sizes
+                const tests = [100, 500, 1000, 2000];
+                const results = [];
+                
+                for (const batchSize of tests) {
+                    resultsDiv.innerHTML += `<p>Testing batch size: ${batchSize}...</p>`;
+                    const result = await testBatchMining(batchSize);
+                    results.push({ batchSize, ...result });
+                    resultsDiv.innerHTML += `<p>Batch ${batchSize}: ${result.hashrate} H/s (${result.elapsed.toFixed(1)}ms)</p>`;
+                }
+                
+                const maxHashrate = Math.max(...results.map(r => r.hashrate));
+                resultsDiv.innerHTML += `<h3>Maximum hashrate achieved: ${maxHashrate} H/s</h3>`;
+                
+                // Test WebWorker capability
+                const numWorkers = navigator.hardwareConcurrency || 4;
+                resultsDiv.innerHTML += `<p>Available CPU cores for WebWorkers: ${numWorkers}</p>`;
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

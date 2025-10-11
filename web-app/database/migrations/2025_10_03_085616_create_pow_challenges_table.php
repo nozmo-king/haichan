@@ -32,7 +32,7 @@ return new class extends Migration
             $table->index(['target_type', 'target_id']);
             
             $table->foreign('board_id')->references('id')->on('boards')->onDelete('cascade');
-            $table->foreign('user_id')->references('id')->on('bitcoin_auths')->onDelete('set null');
+            $table->foreign('user_id')->references('id')->on('bitcoin_auth')->onDelete('set null');
         });
     }
 

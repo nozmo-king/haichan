@@ -40,7 +40,7 @@ class ChallengeVerifier
         }
 
         $canonicalPayloadJson = json_encode($challenge->canonical_payload, JSON_UNESCAPED_SLASHES);
-        $hashInput = $canonicalPayloadJson . $clientNonce;
+        $hashInput = $canonicalPayloadJson . ':' . $clientNonce;
         $computedHash = hash('sha256', $hashInput);
 
         Log::info('Challenge verification', [
@@ -119,6 +119,7 @@ class ChallengeVerifier
 
     public function getMinimumDifficulty(string $action, string $targetType): array
     {
+        // All actions use 21e8 difficulty for now
         $minimumPattern = '21e8';
         $minimumValue = $this->getDifficultyValue($minimumPattern);
 

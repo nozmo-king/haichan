@@ -1,6 +1,6 @@
 @extends('layout')
 
-@section('title', 'Stats - Haichan')
+@section('title', 'Statistics - Haichan PoW Imageboard')
 
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -51,6 +51,29 @@
                     {{ $stats['threads_today'] ?? 0 }}
                 </div>
                 <div style="color: #6B7A6B; font-size: 12px; text-transform: uppercase;">Threads Today</div>
+            </div>
+        </div>
+        
+        <!-- Mining Brain Stats -->
+        <div style="background: #FFFACD; padding: 20px; border-radius: 8px; border: 1px solid #708B75; margin-bottom: 20px;">
+            <h4 style="color: #708B75; margin: 0 0 15px 0; font-size: 14px; text-align: center;">🧠 Live Mining Brain Stats</h4>
+            <div id="brain-live-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; text-align: center;">
+                <div>
+                    <div id="live-hashrate" style="font-size: 24px; font-weight: bold; color: #00FF00; font-family: 'Courier New', monospace;">--</div>
+                    <div style="color: #6B7A6B; font-size: 11px;">Current H/s</div>
+                </div>
+                <div>
+                    <div id="live-session-proofs" style="font-size: 24px; font-weight: bold; color: #708B75; font-family: 'Courier New', monospace;">--</div>
+                    <div style="color: #6B7A6B; font-size: 11px;">Session Proofs</div>
+                </div>
+                <div>
+                    <div id="live-session-points" style="font-size: 24px; font-weight: bold; color: #9AB87A; font-family: 'Courier New', monospace;">--</div>
+                    <div style="color: #6B7A6B; font-size: 11px;">Session Points</div>
+                </div>
+                <div>
+                    <div id="live-power-level" style="font-size: 24px; font-weight: bold; color: #CD5C5C; font-family: 'Courier New', monospace;">--</div>
+                    <div style="color: #6B7A6B; font-size: 11px;">Power Level</div>
+                </div>
             </div>
         </div>
         
@@ -216,7 +239,7 @@
                             {{ $activity['type'] === 'thread' ? '🧵' : '💬' }}
                             <strong>{{ Str::limit($activity['title'], 60) }}</strong>
                         </div>
-                        <div style="color: #6B7A6B; font-size: 11px;">
+                        <div style="color: #6B7A6B; font-size: 12px; text-transform: uppercase;">
                             /{{ $activity['board'] }}/ • {{ $activity['created_at']->diffForHumans() }}
                         </div>
                     </div>
@@ -310,6 +333,105 @@ const difficultyChart = new Chart(difficultyCtx, {
         }
     }
 });
+
+// Mining Brain Integration
+let brainStatsInterval = null;
+let miningBrain = null;
+
+function initializeBrainIntegration() {
+    // Check if mining brain is available
+    if (window.haichanMiningBrain) {
+        miningBrain = window.haichanMiningBrain;
+        console.log('📊 STATS: Mining brain detected, starting live updates');
+        
+        // Update live stats immediately
+        updateLiveBrainStats();
+        
+        // Start periodic updates
+        brainStatsInterval = setInterval(updateLiveBrainStats, 2000);
+        
+        // Fetch enhanced server stats
+        fetchEnhancedStats();
+    } else {
+        console.log('📊 STATS: Mining brain not detected, using fallback mode');
+        // Retry in 2 seconds
+        setTimeout(initializeBrainIntegration, 2000);
+    }
+}
+
+function updateLiveBrainStats() {
+    if (!miningBrain) return;
+    
+    try {
+        const stats = miningBrain.state.sessionStats;
+        const performance = miningBrain.state.performance;
+        
+        // Update live displays
+        document.getElementById('live-hashrate').textContent = 
+            stats.currentHashrate ? stats.currentHashrate.toLocaleString() : '--';
+        document.getElementById('live-session-proofs').textContent = 
+            stats.totalProofs ? stats.totalProofs.toString() : '--';
+        document.getElementById('live-session-points').textContent = 
+            stats.totalPoints ? stats.totalPoints.toFixed(1) : '--';
+        document.getElementById('live-power-level').textContent = 
+            miningBrain.state.power + '/10';
+    } catch (error) {
+        console.error('📊 STATS: Error updating live brain stats:', error);
+    }
+}
+
+function fetchEnhancedStats() {
+    fetch('/api/stats/brain')
+        .then(response => response.json())
+        .then(data => {
+            console.log('📊 STATS: Enhanced brain stats received:', data);
+            
+            // Update enhanced mining performance
+            if (data.server_stats) {
+                document.getElementById('active-miners-count').textContent = 
+                    data.server_stats.active_miners + ' active';
+            }
+            
+            if (data.performance_metrics) {
+                document.getElementById('mining-efficiency').textContent = 
+                    data.performance_metrics.mining_efficiency.toFixed(2) + '/1000';
+            }
+            
+            // Update difficulty chart with enhanced pattern data
+            if (data.pattern_distribution && difficultyChart) {
+                const patternData = data.pattern_distribution;
+                difficultyChart.data.datasets[0].data = [
+                    patternData.trivial + patternData.easy,
+                    patternData.standard,
+                    patternData.hard + patternData.very_hard,
+                    patternData.extreme
+                ];
+                difficultyChart.update();
+            }
+        })
+        .catch(error => {
+            console.error('📊 STATS: Error fetching enhanced stats:', error);
+        });
+}
+
+// Initialize brain integration when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(initializeBrainIntegration, 1000);
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (brainStatsInterval) {
+        clearInterval(brainStatsInterval);
+    }
+});
+
+// Auto-refresh page every 5 minutes
+setInterval(function() {
+    if (!document.hidden && window.location.pathname.includes('/stats')) {
+        window.location.reload();
+    }
+}, 300000); // 5 minutes
 </script>
 
 @endsection

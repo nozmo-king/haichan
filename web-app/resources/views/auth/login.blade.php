@@ -73,18 +73,18 @@
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
-                    📍 Bitcoin Address
+                    👤 Username or Bitcoin Address
                 </label>
-                <input type="text" name="address" required
-                       placeholder="Enter your Bitcoin address..."
-                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
+                <input type="text" name="login_identifier" required
+                       placeholder="Enter your username or Bitcoin address..."
+                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
             </div>
 
             <div style="margin-bottom: 25px;">
                 <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
                     🔑 Password
                 </label>
-                <input type="password" name="password" required
+                <input type="password" name="password" required minlength="6"
                        placeholder="Enter your password..."
                        style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
             </div>
@@ -93,6 +93,17 @@
                 🚀 LOGIN TO HAICHAN
             </button>
         </form>
+
+        <!-- Anonymous Access -->
+        <div style="text-align: center; margin-bottom: 20px; padding: 20px; background: var(--content-bg); border: 1px solid var(--border-color); border-radius: 8px;">
+            <h3 style="color: var(--text-primary); font-size: 16px; margin: 0 0 10px 0;">🕵️ Anonymous Access</h3>
+            <p style="color: var(--text-secondary); font-size: 12px; margin-bottom: 15px;">
+                Browse boards without logging in (read-only)
+            </p>
+            <a href="/anon" style="display: inline-block; background: #6B7A6B; color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; text-decoration: none; transition: all 0.3s ease;">
+                Enter Anonymously
+            </a>
+        </div>
 
         <!-- Backup Login -->
         <div style="text-align: center; margin-bottom: 20px;">
@@ -141,6 +152,21 @@
                 <button onclick="generateNewKeys()" style="background: var(--highlight-color); color: white; border: none; padding: 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
                     🔧 GEN KEYS
                 </button>
+            </div>
+            
+            <!-- Anonymous Login Option -->
+            <div style="margin-bottom: 20px;">
+                <button onclick="loginAnonymously()" style="background: #333; color: white; border: none; width: 100%; padding: 14px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 10px;"
+                        onmouseover="this.style.background='#000'; this.style.transform='scale(1.02)';"
+                        onmouseout="this.style.background='#333'; this.style.transform='scale(1)';">
+                    <span style="font-size: 18px;">👻</span> BROWSE ANONYMOUSLY
+                </button>
+                <div style="color: var(--text-secondary); font-size: 11px; margin-top: 8px; line-height: 1.4;">
+                    • No account needed<br>
+                    • Read-only access<br>
+                    • Dark mode enabled<br>
+                    • Can't post or mine
+                </div>
             </div>
 
             <!-- Friend Code Section -->
@@ -291,6 +317,13 @@ async function loadUserStatus() {
     } catch (error) {
         document.getElementById('status-display').textContent = 'Status unavailable';
     }
+}
+
+// Anonymous login function
+function loginAnonymously() {
+    // Set anonymous session flag and redirect
+    sessionStorage.setItem('anonymous_mode', 'true');
+    window.location.href = '/';
 }
 
 // Initialize

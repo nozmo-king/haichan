@@ -41,7 +41,18 @@
         @if(count($images) > 0)
             <div id="image-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;">
                 @foreach($images as $image)
-            <div class="image-item" data-id="{{ $image->id }}" data-pow="{{ $image->total_pow_earned }}" data-usage="{{ $image->usage_count }}" data-mine-type="images" data-mine-target="{{ $image->id }}" data-mine-title="Image {{ $image->id }}" style="
+            <div class="image-item" 
+                 data-mineable="true"
+                 data-mine-id="{{ $image->id }}"
+                 data-mine-type="image"
+                 data-mine-difficulty="21e8"
+                 data-mine-content="image_{{ $image->id }}_{{ $image->hash }}"
+                 data-id="{{ $image->id }}" 
+                 data-pow="{{ $image->total_pow_earned }}" 
+                 data-usage="{{ $image->usage_count }}" 
+                 data-mine-target="{{ $image->id }}" 
+                 data-mine-title="Image {{ $image->id }}" 
+                 style="
                 background: #FFFFFF;
                 border: 2px solid #CCCCCC;
                 border-radius: 8px;
@@ -86,7 +97,33 @@
                 <!-- Info -->
                 <div style="font-size: 10px; color: #666; line-height: 1.4;">
                     <div style="font-weight: bold; color: #3D315B; margin-bottom: 3px;">{{ Str::limit($image->original_name, 20) }}</div>
-                    <div>Usage: {{ $image->usage_count }} | Hash: <span class="hash-copy" data-hash="{{ $image->hash }}" title="Click to copy full hash" style="cursor: pointer; color: #708B75; font-weight: bold; text-decoration: underline;">{{ substr($image->hash, 0, 8) }}...</span></div>
+                    <div style="margin-bottom: 5px;">Usage: {{ $image->usage_count }} times</div>
+                    
+                    <!-- Clickable Hash -->
+                    <div style="background: #f8f8f8; padding: 5px; border-radius: 3px; border: 1px solid #ddd; margin-bottom: 5px;">
+                        <div style="font-weight: bold; font-size: 9px; color: #999; margin-bottom: 2px;">HASH (click to copy):</div>
+                        <div class="hash-copy" 
+                             data-hash="{{ $image->hash }}" 
+                             data-image-id="{{ $image->id }}"
+                             title="Click to copy full hash and add to form clipboard" 
+                             style="cursor: pointer; color: #708B75; font-weight: bold; font-family: monospace; font-size: 8px; word-break: break-all; line-height: 1.2;">
+                            {{ $image->hash }}
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div style="display: flex; gap: 5px; justify-content: center; margin-top: 5px;">
+                        <button onclick="copyImageData({{ $image->id }}, '{{ $image->hash }}')" 
+                                style="background: #708B75; color: white; border: none; padding: 2px 6px; border-radius: 2px; font-size: 8px; cursor: pointer;" 
+                                title="Copy hash to clipboard">
+                            📋 Copy
+                        </button>
+                        <button onclick="useInForm({{ $image->id }}, '{{ $image->hash }}')" 
+                                style="background: #5a7860; color: white; border: none; padding: 2px 6px; border-radius: 2px; font-size: 8px; cursor: pointer;" 
+                                title="Use in thread/reply form">
+                            📝 Use
+                        </button>
+                    </div>
                 </div>
 
             </div>
@@ -161,6 +198,15 @@ class ImageLibrary {
         // Upload functionality
         document.getElementById('upload-btn').addEventListener('click', () => {
             this.uploadImage();
+        });
+        
+        // Hash copy functionality
+        document.querySelectorAll('.hash-copy').forEach(element => {
+            element.addEventListener('click', (e) => {
+                const hash = e.target.dataset.hash;
+                const imageId = e.target.dataset.imageId;
+                this.copyImageData(imageId, hash);
+            });
         });
     }
 
@@ -470,6 +516,154 @@ document.addEventListener('DOMContentLoaded', () => {
             item.style.boxShadow = 'none';
         });
     });
+});
+
+// Enhanced clipboard and form integration functions
+async function copyImageData(imageId, hash) {
+    try {
+        await navigator.clipboard.writeText(hash);
+        storeInFormClipboard(imageId, hash);
+        showNotification('📋 Hash copied to clipboard!', 'success');
+    } catch (error) {
+        // Fallback for browsers without clipboard API
+        fallbackCopy(hash);
+        storeInFormClipboard(imageId, hash);
+        showNotification('📋 Hash copied!', 'success');
+    }
+}
+
+// Use image directly in any form on site
+function useInForm(imageId, hash) {
+    storeInFormClipboard(imageId, hash);
+    
+    // Try to find and populate image hash fields on current page
+    const hashFields = document.querySelectorAll('input[name="image_hash"], #image_hash, .image-hash-field');
+    let fieldFound = false;
+    
+    hashFields.forEach(field => {
+        field.value = hash;
+        field.style.backgroundColor = '#e8f5e8';
+        field.style.border = '2px solid #28a745';
+        
+        // Trigger change event to update form validation
+        field.dispatchEvent(new Event('change'));
+        field.dispatchEvent(new Event('input'));
+        fieldFound = true;
+    });
+    
+    if (fieldFound) {
+        showNotification('✅ Image hash inserted into form!', 'success');
+    } else {
+        showNotification('📝 Image ready for use - go to any thread/reply form!', 'info');
+    }
+}
+
+// Store image data persistently for cross-page usage
+function storeInFormClipboard(imageId, hash) {
+    const clipboardData = {
+        type: 'image',
+        id: imageId,
+        hash: hash,
+        timestamp: Date.now(),
+        url: `/api/image-library/${imageId}/full`
+    };
+    
+    // Store in localStorage for persistence across pages
+    localStorage.setItem('haichan_image_clipboard', JSON.stringify(clipboardData));
+    
+    // Also store in sessionStorage for current session
+    sessionStorage.setItem('haichan_current_image', JSON.stringify(clipboardData));
+    
+    console.log('📋 Image stored in form clipboard:', clipboardData);
+}
+
+// Fallback copy method for older browsers
+function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+}
+
+// Show notification to user
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    const colors = {
+        success: '#28a745',
+        error: '#dc3545', 
+        info: '#708B75',
+        warning: '#ffc107'
+    };
+    
+    notification.style.cssText = `
+        position: fixed; 
+        top: 20px; 
+        right: 20px; 
+        background: ${colors[type]}; 
+        color: white; 
+        padding: 12px 18px; 
+        border-radius: 8px; 
+        z-index: 10000; 
+        font-size: 14px; 
+        font-weight: bold; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+    `;
+    
+    notification.innerHTML = message;
+    document.body.appendChild(notification);
+    
+    // Fade out after 3 seconds
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Auto-populate forms with clipboard data on page load (for thread/reply pages)
+document.addEventListener('DOMContentLoaded', () => {
+    // Only run on pages with image hash fields
+    const hashFields = document.querySelectorAll('input[name="image_hash"], #image_hash');
+    if (hashFields.length === 0) return;
+    
+    const clipboardData = localStorage.getItem('haichan_image_clipboard');
+    if (clipboardData) {
+        try {
+            const data = JSON.parse(clipboardData);
+            const age = Date.now() - data.timestamp;
+            
+            // Use clipboard data if less than 1 hour old
+            if (age < 3600000) {
+                hashFields.forEach(field => {
+                    if (!field.value) { // Only fill empty fields
+                        field.value = data.hash;
+                        field.style.backgroundColor = '#f0f8ff';
+                        field.style.border = '1px solid #708B75';
+                        
+                        // Add helpful indicator
+                        const indicator = document.createElement('span');
+                        indicator.style.cssText = 'font-size: 10px; color: #666; margin-left: 8px;';
+                        indicator.innerHTML = `📋 Ready to use`;
+                        field.parentNode.appendChild(indicator);
+                        
+                        // Validate the hash field if there's a validation function
+                        if (typeof handleHashInput === 'function') {
+                            handleHashInput.call(field);
+                        }
+                    }
+                });
+                
+                console.log('📋 Auto-populated form with clipboard image:', data);
+            }
+        } catch (error) {
+            console.error('Error loading clipboard data:', error);
+        }
+    }
 });
 </script>
 @endsection

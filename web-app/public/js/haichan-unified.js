@@ -1,31 +1,85 @@
 /**
- * HAICHAN UNIFIED MINING SYSTEM
- * Complete rewrite combining all mining functionality
- * Provides consistent, efficient mining across all components
+ * HAICHAN CANONICAL MINING SYSTEM v2.0
+ * Single unified implementation combining best features from all mining systems
+ * Ultra-high performance mining with Web Workers and optimized algorithms
  */
 
-class HaichanUnified {
+class HaichanCanonicalMining {
     constructor() {
         this.isInitialized = false;
-        this.activeMiningTargets = new Map();
-        this.sessionStats = {
-            hashes: 0,
-            proofs: 0,
-            points: 0,
-            startTime: Date.now()
-        };
-        this.patterns = {
-            basic: { pattern: '21e8', points: 1, color: '#9fd971' },
-            rare: {
-                '777': { points: 777, color: '#FFD700', rarity: '🍀 LUCKY' },
-                '666': { points: 666, color: '#FF4444', rarity: '😈 CURSED' },
-                '000': { points: 500, color: '#00FFFF', rarity: '⚡ RARE' },
-                '111': { points: 400, color: '#FF69B4', rarity: '⚡ RARE' },
-                'deadbeef': { points: 5000, color: '#FFD700', rarity: '🏆 LEGENDARY' },
-                '1337': { points: 2500, color: '#FF6B35', rarity: '👑 ELITE' }
+        this.isActive = true;
+        
+        // Central state management
+        this.state = {
+            power: 5, // 0-10 power levels
+            mode: 'mouseover', // mouseover, manual, background, idle
+            currentTarget: null,
+            
+            // Session statistics
+            sessionStats: {
+                startTime: Date.now(),
+                totalHashes: 0,
+                totalProofs: 0,
+                totalPoints: 0,
+                currentHashrate: 0
+            },
+            
+            // Active mining targets
+            activeTargets: new Map(),
+            
+            // Performance metrics
+            performance: {
+                avgHashTime: 0,
+                cpuUsage: 0
             }
         };
-        
+
+        // Mining configurations - ULTRA HIGH PERFORMANCE
+        this.configs = {
+            patterns: {
+                '21': { points: 0.1, difficulty: 'Trivial' },
+                '21e': { points: 0.5, difficulty: 'Easy' },
+                '21e8': { points: 100, difficulty: 'Standard' },
+                '21e80': { points: 500, difficulty: 'Hard' },
+                '21e800': { points: 2500, difficulty: 'Very Hard' },
+                '21e8000': { points: 10000, difficulty: 'Extreme' }
+            },
+            rare: {
+                'deadbeef': { points: 5000, rarity: '🏆 LEGENDARY' },
+                '1337': { points: 2500, rarity: '👑 ELITE' },
+                '777': { points: 777, rarity: '🍀 LUCKY' },
+                '666': { points: 666, rarity: '😈 CURSED' },
+                '000': { points: 500, rarity: '⚡ RARE' },
+                '111': { points: 400, rarity: '⚡ RARE' }
+            },
+            powerLevels: {
+                0: { name: 'Disabled', batchSize: 0, interval: 0 },
+                1: { name: 'Minimal', batchSize: 100000, interval: 5 },
+                2: { name: 'Low', batchSize: 250000, interval: 3 },
+                3: { name: 'Light', batchSize: 500000, interval: 2 },
+                4: { name: 'Below Average', batchSize: 1000000, interval: 1 },
+                5: { name: 'Standard', batchSize: 2000000, interval: 1 },
+                6: { name: 'Above Average', batchSize: 3000000, interval: 1 },
+                7: { name: 'High', batchSize: 5000000, interval: 1 },
+                8: { name: 'Very High', batchSize: 7500000, interval: 1 },
+                9: { name: 'Extreme', batchSize: 10000000, interval: 1 },
+                10: { name: 'MAXIMUM POWER', batchSize: 15000000, interval: 1 }
+            }
+        };
+
+        // Web Workers for multithreaded mining
+        this.workers = {
+            webWorkers: [],
+            mouseover: null,
+            manual: null,
+            background: null
+        };
+
+        this.intervals = {
+            stats: null,
+            performance: null
+        };
+
         this.init();
     }
 
@@ -33,931 +87,937 @@ class HaichanUnified {
         if (this.isInitialized) return;
         this.isInitialized = true;
 
-        // Don't create dashboard - use enhanced-dashboard.js instead
-        this.setupGlobalMining();
+        console.log('🧠 CANONICAL MINING: Initializing ultra-high performance mining system...');
+
+        // Disable old systems
+        this.disableOldSystems();
+
+        // Initialize Web Workers
+        this.initializeWebWorkers();
+
+        // Setup mining modes
+        this.setupMouseoverMining();
         this.setupFormMining();
-        this.setupEventListeners();
-        
-        console.log('🚀 Haichan Unified Mining System initialized');
+        this.setupToolbarControls();
+
+        // Start performance monitoring
+        this.startPerformanceMonitoring();
+        this.startUIUpdates();
+
+        // Load saved state
+        this.loadState();
+
+        console.log('🧠 CANONICAL MINING: System fully operational');
     }
 
-    createMiningDashboard() {
-        // Remove existing dashboards to avoid conflicts
-        const existing = document.getElementById('unified-mining-dashboard');
-        if (existing) existing.remove();
+    disableOldSystems() {
+        // Disable all conflicting mining systems
+        const oldSystems = [
+            'mouseoverMiningV2', 'mouseoverMining', 'enhancedMiningDashboard',
+            'haichanMiner', 'emergencyMiner', 'haichanUnified', 'haichan2',
+            'simpleMining', 'miningBrain'
+        ];
 
-        const dashboard = document.createElement('div');
-        dashboard.id = 'unified-mining-dashboard';
-        dashboard.className = 'unified-dashboard';
-        dashboard.innerHTML = `
-            <div class="dashboard-header">
-                <div class="dashboard-title">⛏️ HAICHAN MINING</div>
-                <div class="dashboard-controls">
-                    <button id="mining-toggle" class="toggle-btn">ON</button>
-                    <button id="dashboard-collapse" class="collapse-btn">_</button>
-                </div>
-            </div>
-            <div class="dashboard-content" id="dashboard-content">
-                <div class="mining-stats">
-                    <div class="stat-group">
-                        <div class="stat-item">
-                            <span class="stat-label">Hash Rate</span>
-                            <span class="stat-value" id="hash-rate">0 H/s</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Session Hashes</span>
-                            <span class="stat-value" id="session-hashes">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Proofs Found</span>
-                            <span class="stat-value" id="session-proofs">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Points Earned</span>
-                            <span class="stat-value" id="session-points">0</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="current-target">
-                    <div class="target-label">Current Target:</div>
-                    <div class="target-value" id="current-target">Hover over content to mine</div>
-                </div>
-                <div class="rare-finds" id="rare-finds" style="display: none;">
-                    <div class="rare-title">🎯 Rare Finds</div>
-                    <div class="rare-list" id="rare-list"></div>
-                </div>
-            </div>
-        `;
-
-        // Add CSS styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .unified-dashboard {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                width: 300px;
-                background: var(--ib-panel);
-                border: 2px solid var(--ib-border);
-                border-radius: 8px;
-                font-family: 'Courier New', monospace;
-                font-size: 11px;
-                z-index: 10000;
-                box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-                transition: all 0.3s ease;
-            }
-
-            .dashboard-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 8px 12px;
-                background: var(--ib-accent);
-                color: var(--ib-bg);
-                font-weight: bold;
-                border-radius: 6px 6px 0 0;
-            }
-
-            .dashboard-title {
-                font-size: 12px;
-                letter-spacing: 1px;
-            }
-
-            .dashboard-controls {
-                display: flex;
-                gap: 4px;
-            }
-
-            .toggle-btn, .collapse-btn {
-                background: var(--ib-bg);
-                color: var(--ib-accent);
-                border: 1px solid var(--ib-accent);
-                padding: 2px 6px;
-                border-radius: 3px;
-                cursor: pointer;
-                font-size: 9px;
-                font-weight: bold;
-            }
-
-            .dashboard-content {
-                padding: 12px;
-                background: var(--ib-panel);
-                border-radius: 0 0 6px 6px;
-            }
-
-            .mining-stats {
-                margin-bottom: 12px;
-            }
-
-            .stat-group {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 8px;
-            }
-
-            .stat-item {
-                display: flex;
-                justify-content: space-between;
-                padding: 4px;
-                background: var(--ib-bg);
-                border: 1px solid var(--ib-border);
-                border-radius: 3px;
-            }
-
-            .stat-label {
-                color: var(--ib-text-muted);
-                font-size: 9px;
-            }
-
-            .stat-value {
-                color: var(--ib-accent);
-                font-weight: bold;
-            }
-
-            .current-target {
-                padding: 8px;
-                background: var(--ib-bg);
-                border: 1px solid var(--ib-border);
-                border-radius: 3px;
-                margin-bottom: 8px;
-            }
-
-            .target-label {
-                color: var(--ib-text-muted);
-                font-size: 9px;
-                margin-bottom: 2px;
-            }
-
-            .target-value {
-                color: var(--ib-text);
-                font-weight: bold;
-            }
-
-            .rare-finds {
-                padding: 8px;
-                background: var(--ib-bg);
-                border: 1px solid var(--ib-border);
-                border-radius: 3px;
-            }
-
-            .rare-title {
-                color: var(--ib-accent);
-                font-weight: bold;
-                margin-bottom: 4px;
-                font-size: 10px;
-            }
-
-            .rare-item {
-                padding: 4px;
-                margin: 2px 0;
-                background: rgba(159, 217, 113, 0.1);
-                border-radius: 2px;
-                font-size: 9px;
-            }
-
-            .mineable {
-                transition: all 0.2s ease;
-                cursor: crosshair;
-            }
-
-            .mining-active {
-                box-shadow: 0 0 12px var(--ib-accent) !important;
-                border-color: var(--ib-accent) !important;
-                transform: scale(1.02);
-            }
-
-            .proof-float {
-                position: fixed;
-                background: var(--ib-accent);
-                color: var(--ib-bg);
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-weight: bold;
-                font-size: 10px;
-                pointer-events: none;
-                z-index: 10001;
-                animation: floatUp 2s ease-out forwards;
-            }
-
-            @keyframes floatUp {
-                0% { opacity: 1; transform: translateY(0); }
-                100% { opacity: 0; transform: translateY(-50px); }
-            }
-
-            /* Mobile responsive */
-            @media (max-width: 768px) {
-                .unified-dashboard {
-                    width: 280px;
-                    top: 10px;
-                    right: 10px;
-                }
-                
-                .stat-group {
-                    grid-template-columns: 1fr;
+        oldSystems.forEach(system => {
+            if (window[system]) {
+                console.log(`🧠 CANONICAL MINING: Disabling old system: ${system}`);
+                try {
+                    if (typeof window[system].disable === 'function') window[system].disable();
+                    if (typeof window[system].stop === 'function') window[system].stop();
+                    if (typeof window[system].destroy === 'function') window[system].destroy();
+                } catch (e) {
+                    console.log(`🧠 CANONICAL MINING: Could not disable ${system}:`, e);
                 }
             }
-        `;
-        
-        document.head.appendChild(style);
-        document.body.appendChild(dashboard);
-        
-        // Initialize as collapsed on mobile
-        if (window.innerWidth <= 768) {
-            this.toggleDashboard();
+        });
+
+        // Clear all mining intervals
+        for (let i = 0; i < 10000; i++) {
+            clearInterval(i);
         }
     }
 
-    setupEventListeners() {
-        document.getElementById('mining-toggle')?.addEventListener('click', () => this.toggleMining());
-        document.getElementById('dashboard-collapse')?.addEventListener('click', () => this.toggleDashboard());
-        
-        // Update stats every second
-        setInterval(() => this.updateDashboardStats(), 1000);
-    }
+    // Initialize Web Workers for maximum performance
+    initializeWebWorkers() {
+        const numWorkers = Math.min(navigator.hardwareConcurrency || 4, 8);
+        console.log(`🧠 CANONICAL MINING: Initializing ${numWorkers} Web Workers`);
 
-    setupGlobalMining() {
-        // Make images mineable
-        this.makeMineable('img', 'image');
-        
-        // Make posts/threads mineable
-        this.makeMineable('.post, .catalog-thread, .thread-preview', 'content');
-        
-        // Make text areas auto-mine after typing
-        this.setupTextAreaMining();
-    }
+        const workerScript = `
+            // Ultra-high performance SHA-256 mining worker
+            async function sha256(message) {
+                const msgBuffer = new TextEncoder().encode(message);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            }
 
-    makeMineable(selector, type) {
-        document.querySelectorAll(selector).forEach(element => {
-            if (element.classList.contains('mineable')) return; // Already processed
-            
-            element.classList.add('mineable');
-            element.addEventListener('mouseenter', () => this.startMining(element, type));
-            element.addEventListener('mouseleave', () => this.stopMining(element));
-        });
-    }
+            // Ultra-fast hash for initial screening
+            function ultraFastHash(str) {
+                let hash = 0x811c9dc5; // FNV-1a
+                for (let i = 0; i < str.length; i++) {
+                    hash ^= str.charCodeAt(i);
+                    hash = Math.imul(hash, 0x01000193);
+                }
+                const hex = Math.abs(hash).toString(16).padStart(8, '0');
+                return hex + '0'.repeat(56);
+            }
 
-    setupTextAreaMining() {
-        document.querySelectorAll('textarea').forEach(textarea => {
-            let timeout;
-            textarea.addEventListener('input', () => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => {
-                    if (textarea.value.length > 10) {
-                        this.startContentMining(textarea);
+            self.onmessage = async function(e) {
+                const { target, batchSize, workerId, taskId } = e.data;
+                let results = [];
+                let hashes = 0;
+
+                for (let i = 0; i < batchSize; i++) {
+                    const nonce = Math.floor(Math.random() * 4294967295);
+                    const data = \`\${target.type}-\${target.id}-\${Date.now()}-\${nonce}\`;
+                    
+                    // Quick screening with fast hash
+                    const fastHash = ultraFastHash(data);
+                    if (fastHash.startsWith('21') || fastHash.includes('777') || 
+                        fastHash.includes('666') || fastHash.includes('000') || 
+                        fastHash.includes('111') || fastHash.includes('deadbe') || 
+                        fastHash.includes('1337')) {
+                        
+                        // Verify with real SHA-256
+                        const realHash = await sha256(data);
+                        results.push({ hash: realHash, nonce, data });
                     }
-                }, 1000);
-            });
-        });
-    }
+                    
+                    hashes++;
+                    
+                    // Progress updates for large batches
+                    if (i > 0 && i % 100000 === 0) {
+                        self.postMessage({
+                            type: 'progress',
+                            workerId,
+                            taskId,
+                            completed: i,
+                            total: batchSize
+                        });
+                    }
+                }
 
-    startMining(element, type) {
-        if (!this.isMiningEnabled()) return;
+                self.postMessage({
+                    type: 'complete',
+                    workerId,
+                    taskId,
+                    results,
+                    hashes
+                });
+            };
+        `;
 
-        const miningId = this.generateMiningId();
-        this.activeMiningTargets.set(miningId, {
-            element,
-            type,
-            startTime: Date.now()
-        });
+        for (let i = 0; i < numWorkers; i++) {
+            try {
+                const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
+                const workerUrl = URL.createObjectURL(workerBlob);
+                const worker = new Worker(workerUrl);
 
-        element.classList.add('mining-active');
-        this.updateCurrentTarget(element, type);
-        
-        // Update dashboard target
-        if (window.enhancedMiningDashboard) {
-            const targetText = this.getTargetDescription(element, type);
-            window.enhancedMiningDashboard.setTarget(targetText);
-        }
-        
-        this.mineTarget(miningId, element, type);
-    }
+                worker.onmessage = (e) => this.handleWorkerMessage(e, i);
+                worker.onerror = (e) => console.error(`WebWorker ${i} error:`, e);
 
-    stopMining(element) {
-        element.classList.remove('mining-active');
-        
-        // Remove from active targets
-        for (const [id, target] of this.activeMiningTargets.entries()) {
-            if (target.element === element) {
-                this.activeMiningTargets.delete(id);
+                this.workers.webWorkers.push({
+                    worker,
+                    id: i,
+                    busy: false,
+                    url: workerUrl
+                });
+            } catch (e) {
+                console.warn('WebWorker initialization failed, falling back to main thread:', e);
                 break;
             }
         }
+    }
 
-        if (this.activeMiningTargets.size === 0) {
-            this.updateCurrentTarget(null, null);
-            // Update dashboard when no targets
-            if (window.enhancedMiningDashboard) {
-                window.enhancedMiningDashboard.setTarget('Hover over content');
-            }
+    // Setup mouseover mining
+    setupMouseoverMining() {
+        if (this.state.mode !== 'mouseover') return;
+
+        console.log('🧠 CANONICAL MINING: Setting up mouseover mining');
+
+        document.removeEventListener('mouseover', this.handleMouseover);
+        document.removeEventListener('mouseout', this.handleMouseout);
+
+        this.handleMouseover = this.handleMouseover.bind(this);
+        this.handleMouseout = this.handleMouseout.bind(this);
+
+        document.addEventListener('mouseover', this.handleMouseover);
+        document.addEventListener('mouseout', this.handleMouseout);
+    }
+
+    handleMouseover(event) {
+        if (this.state.mode !== 'mouseover' || this.state.power === 0) return;
+
+        const target = this.getMineableTarget(event.target);
+        if (target && !this.state.activeTargets.has(target.id)) {
+            this.startMining(target);
         }
     }
 
-    async mineTarget(miningId, element, type) {
-        if (!this.activeMiningTargets.has(miningId)) return;
-
-        try {
-            const target = this.getMiningData(element, type);
-            const proof = await this.generateProof(target, type);
-            
-            if (proof && this.activeMiningTargets.has(miningId)) {
-                await this.handleProofFound(proof, element, type);
-                this.sessionStats.proofs++;
-                this.sessionStats.points += proof.points;
-                this.showProofAnimation(element, proof);
-                
-                // Update dashboard with proof
-                if (window.enhancedMiningDashboard) {
-                    window.enhancedMiningDashboard.addProof(proof.hash, proof.points);
+    handleMouseout(event) {
+        const target = this.getMineableTarget(event.target);
+        if (target && this.state.activeTargets.has(target.id)) {
+            setTimeout(() => {
+                if (!event.target.matches(':hover')) {
+                    this.stopMining(target);
                 }
-            }
-            
-            this.sessionStats.hashes++;
-            
-            // Update dashboard stats
-            if (window.enhancedMiningDashboard) {
-                window.enhancedMiningDashboard.updateHashCount(this.sessionStats.hashes);
-                const hashrate = this.calculateHashrate();
-                window.enhancedMiningDashboard.updateHashrate(hashrate);
-            }
-            
-            // Continue mining if still active
-            if (this.activeMiningTargets.has(miningId)) {
-                const delay = this.getMiningDelay();
-                if (delay > 0) {
-                    setTimeout(() => this.mineTarget(miningId, element, type), delay);
-                }
-            }
-        } catch (error) {
-            console.warn('Mining error:', error);
+            }, 100);
         }
     }
 
-    getMiningData(element, type) {
-        switch (type) {
-            case 'image':
-                // Try to get hash from various sources
-                const hash = element.dataset.hash || 
-                            element.dataset.imageHash || 
-                            element.closest('[data-hash]')?.dataset.hash ||
-                            element.closest('[data-image-hash]')?.dataset.imageHash;
-                
-                if (hash) {
-                    return hash.substring(0, 16) + '...'; // Show first 16 chars of hash
-                }
-                
-                // Fallback to filename from URL
-                const filename = element.src ? element.src.split('/').pop() : 'unknown';
-                return filename.replace(/\.[^/.]+$/, ""); // Remove extension
-                
-            case 'content':
-                return element.textContent?.substring(0, 100) || element.dataset.threadId || 'content';
-            default:
-                return 'generic';
-        }
-    }
+    getMineableTarget(element) {
+        let current = element;
+        for (let i = 0; i < 6; i++) {
+            if (!current) break;
 
-    async generateProof(target, type) {
-        const data = `${type}:${target}:${Date.now()}`;
-        const nonce = Math.floor(Math.random() * 1000000);
-        const input = `${data}:${nonce}`;
-        const hash = await this.sha256(input);
-
-        // Check for rare patterns first
-        for (const [pattern, config] of Object.entries(this.patterns.rare)) {
-            if (hash.startsWith(pattern.toLowerCase())) {
+            // Check for images
+            if (current.tagName === 'IMG' && current.src) {
                 return {
-                    hash,
-                    nonce,
-                    data: input,
-                    pattern,
-                    points: config.points,
-                    rarity: config.rarity,
-                    color: config.color
+                    id: current.src,
+                    type: 'image',
+                    element: current,
+                    displayName: `🖼️ Image`,
+                    points: 25
                 };
             }
-        }
 
-        // Check basic pattern
-        if (hash.startsWith(this.patterns.basic.pattern)) {
-            return {
-                hash,
-                nonce,
-                data: input,
-                pattern: this.patterns.basic.pattern,
-                points: this.patterns.basic.points,
-                color: this.patterns.basic.color
-            };
-        }
+            // Check for posts
+            if (current.classList && current.classList.contains('post')) {
+                const postNo = current.querySelector('.post-no');
+                if (postNo) {
+                    const match = postNo.textContent.match(/No\.(\d+)/);
+                    if (match) {
+                        return {
+                            id: `post-${match[1]}`,
+                            type: 'post',
+                            element: current,
+                            displayName: `💬 Post #${match[1]}`,
+                            points: 20
+                        };
+                    }
+                }
+            }
 
+            // Check for threads
+            if (current.classList && current.classList.contains('catalog-thread')) {
+                const threadId = current.dataset.threadId;
+                if (threadId) {
+                    return {
+                        id: `thread-${threadId}`,
+                        type: 'thread',
+                        element: current,
+                        displayName: `🧵 Thread #${threadId}`,
+                        points: 22
+                    };
+                }
+            }
+
+            current = current.parentElement;
+        }
         return null;
     }
 
-    async handleProofFound(proof, element, type) {
-        // Submit proof to server
-        try {
-            const response = await fetch('/api/mining/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-                },
-                body: JSON.stringify({
-                    hash: proof.hash,
-                    nonce: proof.nonce,
-                    data: proof.data,
-                    pattern: proof.pattern,
-                    type: type,
-                    points: proof.points
-                })
-            });
+    async startMining(target) {
+        console.log(`🧠 CANONICAL MINING: Starting ultra-fast mining on ${target.displayName}`);
 
-            if (response.ok) {
-                const result = await response.json();
-                if (proof.rarity) {
-                    this.addRareFind(proof);
+        this.state.currentTarget = target;
+        this.state.activeTargets.set(target.id, {
+            target,
+            startTime: Date.now(),
+            hashes: 0,
+            worker: null
+        });
+
+        this.addMiningVisual(target.element);
+        this.updateDashboardTarget(target.displayName);
+
+        // Start mining worker
+        const session = this.state.activeTargets.get(target.id);
+        session.worker = setInterval(() => {
+            this.performMining(target);
+        }, this.configs.powerLevels[this.state.power].interval);
+    }
+
+    stopMining(target) {
+        console.log(`🧠 CANONICAL MINING: Stopping mining on ${target.displayName}`);
+
+        const session = this.state.activeTargets.get(target.id);
+        if (session) {
+            clearInterval(session.worker);
+            this.state.activeTargets.delete(target.id);
+            this.removeMiningVisual(target.element);
+        }
+
+        if (this.state.currentTarget && this.state.currentTarget.id === target.id) {
+            this.state.currentTarget = null;
+            this.updateDashboardTarget('Hover over content to begin mining');
+        }
+    }
+
+    async performMining(target) {
+        const batchSize = this.configs.powerLevels[this.state.power].batchSize;
+        const startTime = performance.now();
+
+        // Use Web Workers for maximum performance if available
+        const result = this.workers.webWorkers.length > 0
+            ? await this.performWebWorkerMining(target, batchSize)
+            : await this.performHighSpeedMining(target, batchSize);
+
+        if (result.found) {
+            this.handleProofFound(result.hash, result.nonce, result.data, result.pattern, result.points, target);
+        }
+
+        this.state.sessionStats.totalHashes += result.hashes;
+        this.updatePerformanceMetrics(startTime, result.hashes);
+    }
+
+    async performHighSpeedMining(target, maxHashes) {
+        const startTime = performance.now();
+        let totalHashes = 0;
+
+        while (totalHashes < maxHashes) {
+            const batchSize = Math.min(50000, maxHashes - totalHashes);
+
+            for (let i = 0; i < batchSize; i++) {
+                const nonce = Math.floor(Math.random() * 4294967295);
+                const data = `${target.type}-${target.id}-${Date.now()}-${nonce}`;
+
+                // Ultra-fast screening
+                const fastHash = this.ultraFastHash(data);
+                if (this.fastPatternCheck(fastHash)) {
+                    // Verify with real SHA-256
+                    const realHash = await this.realSha256(data);
+
+                    // Check for patterns
+                    const result = this.checkAllPatterns(realHash);
+                    if (result.found) {
+                        return {
+                            found: true,
+                            hash: realHash,
+                            nonce: nonce,
+                            data: data,
+                            pattern: result.pattern,
+                            points: result.points,
+                            hashes: totalHashes + i + 1
+                        };
+                    }
                 }
+                totalHashes++;
             }
-        } catch (error) {
-            console.warn('Proof submission failed:', error);
+
+            // Yield control
+            await new Promise(resolve => setTimeout(resolve, 0));
         }
+
+        return { found: false, hashes: totalHashes };
     }
 
-    addRareFind(proof) {
-        const rareFinds = document.getElementById('rare-finds');
-        const rareList = document.getElementById('rare-list');
-        
-        if (!rareFinds || !rareList) return;
-
-        rareFinds.style.display = 'block';
-        
-        const item = document.createElement('div');
-        item.className = 'rare-item';
-        item.style.color = proof.color;
-        item.innerHTML = `
-            <div>${proof.rarity} ${proof.pattern.toUpperCase()}</div>
-            <div style="font-size: 8px; opacity: 0.7;">${proof.hash.substring(0, 16)}... (+${proof.points})</div>
-        `;
-        
-        rareList.insertBefore(item, rareList.firstChild);
-        
-        // Keep only last 5 finds
-        while (rareList.children.length > 5) {
-            rareList.removeChild(rareList.lastChild);
+    async performWebWorkerMining(target, maxHashes) {
+        if (this.workers.webWorkers.length === 0) {
+            return await this.performHighSpeedMining(target, maxHashes);
         }
-    }
 
-    showProofAnimation(element, proof) {
-        const rect = element.getBoundingClientRect();
-        const float = document.createElement('div');
-        float.className = 'proof-float';
-        float.textContent = `+${proof.points} ⚡`;
-        float.style.left = (rect.left + rect.width / 2) + 'px';
-        float.style.top = (rect.top + rect.height / 2) + 'px';
-        
-        document.body.appendChild(float);
-        setTimeout(() => float.remove(), 2000);
-    }
-
-    updateCurrentTarget(element, type) {
-        const targetElement = document.getElementById('current-target');
-        if (!targetElement) return;
-
-        if (element && type) {
-            const target = this.getMiningData(element, type);
-            targetElement.textContent = `${type}: ${target.substring(0, 30)}${target.length > 30 ? '...' : ''}`;
-        } else {
-            targetElement.textContent = 'Hover over content to mine';
+        const availableWorkers = this.workers.webWorkers.filter(w => !w.busy);
+        if (availableWorkers.length === 0) {
+            return await this.performHighSpeedMining(target, maxHashes);
         }
-    }
 
-    updateDashboardStats() {
-        const elapsed = (Date.now() - this.sessionStats.startTime) / 1000;
-        const hashRate = Math.floor(this.sessionStats.hashes / elapsed);
+        // Distribute work across workers
+        const hashesPerWorker = Math.ceil(maxHashes / availableWorkers.length);
+        const promises = [];
+        const taskId = Date.now();
 
-        document.getElementById('hash-rate').textContent = `${hashRate} H/s`;
-        document.getElementById('session-hashes').textContent = this.sessionStats.hashes.toLocaleString();
-        document.getElementById('session-proofs').textContent = this.sessionStats.proofs.toLocaleString();
-        document.getElementById('session-points').textContent = this.sessionStats.points.toLocaleString();
-    }
+        for (let i = 0; i < availableWorkers.length; i++) {
+            const worker = availableWorkers[i];
+            worker.busy = true;
 
-    toggleMining() {
-        const button = document.getElementById('mining-toggle');
-        const isEnabled = button.textContent === 'ON';
-        
-        button.textContent = isEnabled ? 'OFF' : 'ON';
-        button.style.background = isEnabled ? '#dc3545' : '#28a745';
-        
-        if (isEnabled) {
-            // Stop all active mining
-            this.activeMiningTargets.clear();
-            document.querySelectorAll('.mining-active').forEach(el => {
-                el.classList.remove('mining-active');
+            const promise = new Promise((resolve) => {
+                const timeout = setTimeout(() => {
+                    resolve({ found: false, hashes: 0, worker: worker.id });
+                }, 30000);
+
+                const handler = (e) => {
+                    if (e.data.workerId === worker.id && e.data.taskId === taskId && e.data.type === 'complete') {
+                        clearTimeout(timeout);
+                        worker.worker.removeEventListener('message', handler);
+                        worker.busy = false;
+
+                        // Check results for patterns
+                        for (const result of e.data.results) {
+                            const found = this.checkAllPatterns(result.hash);
+                            if (found.found) {
+                                resolve({
+                                    found: true,
+                                    ...found,
+                                    ...result,
+                                    hashes: e.data.hashes,
+                                    worker: worker.id
+                                });
+                                return;
+                            }
+                        }
+
+                        resolve({
+                            found: false,
+                            hashes: e.data.hashes,
+                            worker: worker.id
+                        });
+                    }
+                };
+
+                worker.worker.addEventListener('message', handler);
             });
+
+            worker.worker.postMessage({
+                target,
+                batchSize: hashesPerWorker,
+                workerId: worker.id,
+                taskId
+            });
+
+            promises.push(promise);
         }
-    }
 
-    toggleDashboard() {
-        const content = document.getElementById('dashboard-content');
-        const button = document.getElementById('dashboard-collapse');
-        
-        if (content.style.display === 'none') {
-            content.style.display = 'block';
-            button.textContent = '_';
-        } else {
-            content.style.display = 'none';
-            button.textContent = '+';
+        const results = await Promise.allSettled(promises);
+
+        // Find first successful result
+        for (const result of results) {
+            if (result.status === 'fulfilled' && result.value.found) {
+                return result.value;
+            }
         }
+
+        // Calculate total hashes
+        const totalHashes = results
+            .filter(r => r.status === 'fulfilled')
+            .reduce((sum, r) => sum + r.value.hashes, 0);
+
+        return { found: false, hashes: totalHashes };
     }
 
-    isMiningEnabled() {
-        return document.getElementById('mining-toggle')?.textContent === 'ON';
+    ultraFastHash(str) {
+        let hash = 0x811c9dc5; // FNV-1a
+        for (let i = 0; i < str.length; i++) {
+            hash ^= str.charCodeAt(i);
+            hash = Math.imul(hash, 0x01000193);
+        }
+        const hex = Math.abs(hash).toString(16).padStart(8, '0');
+        return hex + '0'.repeat(56);
     }
 
-    generateMiningId() {
-        return Date.now() + '_' + Math.random().toString(36).substring(7);
+    fastPatternCheck(hash) {
+        const start = hash.substring(0, 4);
+        return start.startsWith('21') ||
+               hash.includes('777') ||
+               hash.includes('666') ||
+               hash.includes('000') ||
+               hash.includes('111') ||
+               hash.includes('deadbe') ||
+               hash.includes('1337');
     }
 
-    async sha256(message) {
+    async realSha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    // Form mining methods
-    setupFormMining() {
-        this.observeFormChanges();
-        this.setupFormMiningButtons();
+    checkAllPatterns(hash) {
+        // Check rare patterns first
+        for (const [pattern, data] of Object.entries(this.configs.rare)) {
+            if (hash.toLowerCase().includes(pattern.toLowerCase())) {
+                return { found: true, pattern, points: data.points };
+            }
+        }
+
+        // Check standard patterns
+        for (const [pattern, config] of Object.entries(this.configs.patterns)) {
+            if (hash.startsWith(pattern)) {
+                return { found: true, pattern, points: config.points };
+            }
+        }
+
+        return { found: false };
     }
 
-    observeFormChanges() {
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                        const forms = node.querySelectorAll ? node.querySelectorAll('form') : [];
-                        forms.forEach(form => this.enhanceForm(form));
-                        
-                        if (node.tagName === 'FORM') {
-                            this.enhanceForm(node);
-                        }
-                    }
-                });
-            });
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
-        
-        // Enhance existing forms
-        document.querySelectorAll('form').forEach(form => this.enhanceForm(form));
-    }
-
-    enhanceForm(form) {
-        if (form.dataset.haichanEnhanced) return;
-        form.dataset.haichanEnhanced = 'true';
-
-        // Add mining section for forms that need PoW
-        const powFields = form.querySelectorAll('input[name*="pow_"]');
-        if (powFields.length > 0) {
-            this.addFormMiningUI(form);
+    handleWorkerMessage(e, workerId) {
+        if (e.data.type === 'progress') {
+            console.log(`Worker ${workerId}: ${e.data.completed}/${e.data.total} hashes`);
         }
     }
 
-    addFormMiningUI(form) {
-        const existingMining = form.querySelector('.form-mining-section');
-        if (existingMining) return;
+    async handleProofFound(hash, nonce, data, pattern, points, target) {
+        console.log(`🧠 CANONICAL MINING: 💎 PROOF FOUND! ${pattern} (+${points} points)`);
 
-        const miningSection = document.createElement('div');
-        miningSection.className = 'form-mining-section';
-        miningSection.innerHTML = `
-            <div class="form-mining-header">
-                <span class="mining-label">⛏️ Proof of Work</span>
-                <button type="button" class="start-mining-btn">Start Mining</button>
-            </div>
-            <div class="mining-status" id="form-mining-status-${form.id || 'form'}">Ready to mine</div>
-            <div class="mining-progress">
-                <div class="progress-bar" id="form-progress-${form.id || 'form'}"></div>
-            </div>
-        `;
+        this.state.sessionStats.totalProofs++;
+        this.state.sessionStats.totalPoints += points;
 
-        // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .form-mining-section {
-                background: var(--ib-panel);
-                border: 2px solid var(--ib-border);
-                padding: 12px;
-                margin: 10px 0;
-                border-radius: 4px;
-            }
-            .form-mining-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 8px;
-            }
-            .mining-label {
-                font-weight: bold;
-                color: var(--ib-accent);
-            }
-            .start-mining-btn {
-                background: var(--ib-accent);
-                color: var(--ib-bg);
-                border: none;
-                padding: 4px 8px;
-                border-radius: 3px;
-                cursor: pointer;
-                font-size: 10px;
-            }
-            .mining-status {
-                font-size: 11px;
-                color: var(--ib-text-muted);
-                margin-bottom: 4px;
-            }
-            .mining-progress {
-                height: 6px;
-                background: var(--ib-bg);
-                border: 1px solid var(--ib-border);
-                overflow: hidden;
-            }
-            .progress-bar {
-                height: 100%;
-                background: var(--ib-accent);
-                width: 0%;
-                transition: width 0.3s ease;
-            }
-        `;
-        
-        if (!document.head.querySelector('#form-mining-styles')) {
-            style.id = 'form-mining-styles';
+        // Update enhanced dashboard with proof
+        if (window.enhancedMiningDashboard) {
+            window.enhancedMiningDashboard.addProof(hash, points);
+        }
+
+        // Show celebration
+        this.showProofCelebration(target.element, points);
+
+        // Submit proof
+        try {
+            await this.submitProof({
+                hash,
+                nonce,
+                data,
+                pattern,
+                points,
+                target_type: target.type,
+                target_id: target.id
+            });
+        } catch (error) {
+            console.error('🧠 CANONICAL MINING: Submit error:', error);
+        }
+    }
+
+    async submitProof(proof) {
+        const response = await fetch('/api/submit-proof', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+            },
+            body: JSON.stringify(proof)
+        });
+        return await response.json();
+    }
+
+    updatePerformanceMetrics(startTime, hashCount) {
+        const elapsed = performance.now() - startTime;
+        this.state.performance.avgHashTime = elapsed / hashCount;
+
+        const hashrate = elapsed > 0 ? hashCount / (elapsed / 1000) : 0;
+        this.state.sessionStats.currentHashrate = Math.floor(hashrate);
+
+        // Log high performance
+        if (hashrate > 1000000) {
+            console.log(`🧠 CANONICAL MINING: ULTRA HIGH PERFORMANCE - ${Math.floor(hashrate/1000000)}M H/s`);
+        }
+    }
+
+    // Visual effects
+    addMiningVisual(element) {
+        if (!element) return;
+        element.classList.add('mining-active');
+        if (!document.getElementById('mining-active-styles')) {
+            const style = document.createElement('style');
+            style.id = 'mining-active-styles';
+            style.textContent = `
+                .mining-active {
+                    box-shadow: 0 0 20px rgba(0, 255, 136, 0.8) !important;
+                    border: 2px solid #00ff88 !important;
+                    animation: miningGlow 1.5s infinite alternate;
+                }
+                @keyframes miningGlow {
+                    0% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.8); }
+                    100% { box-shadow: 0 0 30px rgba(0, 255, 136, 1.0); }
+                }
+            `;
             document.head.appendChild(style);
         }
-
-        // Insert before submit button
-        const submitBtn = form.querySelector('input[type="submit"], button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.parentNode.insertBefore(miningSection, submitBtn);
-        } else {
-            form.appendChild(miningSection);
-        }
-
-        this.setupFormMiningButton(form, miningSection);
     }
 
-    setupFormMiningButton(form, miningSection) {
-        const button = miningSection.querySelector('.start-mining-btn');
-        const statusEl = miningSection.querySelector('.mining-status');
-        const progressEl = miningSection.querySelector('.progress-bar');
-        const submitBtn = form.querySelector('input[type="submit"], button[type="submit"]');
+    removeMiningVisual(element) {
+        if (!element) return;
+        element.classList.remove('mining-active');
+    }
 
-        button.addEventListener('click', async () => {
-            button.disabled = true;
-            button.textContent = 'Mining...';
-            statusEl.textContent = 'Mining proof of work...';
+    showProofCelebration(element, points) {
+        if (!element) return;
 
-            try {
-                const proof = await this.mineFormProof(form);
-                
-                if (proof) {
-                    // Set hidden fields
-                    this.setFormField(form, 'pow_nonce', proof.nonce);
-                    this.setFormField(form, 'pow_hash', proof.hash);
-                    this.setFormField(form, 'pow_challenge_id', proof.challengeId);
+        const celebration = document.createElement('div');
+        celebration.textContent = `💎 +${points}!`;
+        celebration.style.cssText = `
+            position: fixed;
+            color: #00ff88;
+            font-weight: bold;
+            font-size: 16px;
+            z-index: 999999;
+            pointer-events: none;
+            animation: floatUp 2s ease-out forwards;
+        `;
 
-                    button.textContent = '✅ Complete';
-                    button.style.background = '#28a745';
-                    statusEl.textContent = `Proof found: ${proof.hash.substring(0, 16)}...`;
-                    progressEl.style.width = '100%';
-                    progressEl.style.background = '#28a745';
+        const rect = element.getBoundingClientRect();
+        celebration.style.left = (rect.left + rect.width/2) + 'px';
+        celebration.style.top = (rect.top + rect.height/2) + 'px';
 
-                    if (submitBtn) {
-                        submitBtn.disabled = false;
-                        submitBtn.style.background = '#28a745';
-                    }
-                } else {
-                    throw new Error('Mining failed');
+        document.body.appendChild(celebration);
+        setTimeout(() => celebration.remove(), 2000);
+
+        if (!document.getElementById('celebration-styles')) {
+            const style = document.createElement('style');
+            style.id = 'celebration-styles';
+            style.textContent = `
+                @keyframes floatUp {
+                    0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                    100% { opacity: 0; transform: translate(-50%, -150px) scale(1.5); }
                 }
-            } catch (error) {
-                button.textContent = '❌ Failed';
-                button.style.background = '#dc3545';
-                statusEl.textContent = 'Mining failed. Try again.';
-                button.disabled = false;
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Setup toolbar controls (mini dashboard)
+    setupToolbarControls() {
+        const miningToggle = document.querySelector('#mining-toggle');
+        if (miningToggle) {
+            console.log('🧠 CANONICAL MINING: Setting up toolbar controls');
+            
+            miningToggle.addEventListener('click', () => {
+                // Toggle between power 0 (off) and saved power level
+                if (this.state.power === 0) {
+                    const savedPower = parseInt(localStorage.getItem('canonical-mining-power')) || 5;
+                    this.setPower(savedPower);
+                    miningToggle.textContent = 'Auto-Mine: ON';
+                    miningToggle.style.background = 'var(--accent-green)';
+                } else {
+                    localStorage.setItem('canonical-mining-power', this.state.power.toString());
+                    this.setPower(0);
+                    miningToggle.textContent = 'Auto-Mine: OFF';
+                    miningToggle.style.background = 'var(--accent-red)';
+                }
+            });
+            
+            // Set initial state
+            if (this.state.power === 0) {
+                miningToggle.textContent = 'Auto-Mine: OFF';
+                miningToggle.style.background = 'var(--accent-red)';
+            } else {
+                miningToggle.textContent = 'Auto-Mine: ON';
+                miningToggle.style.background = 'var(--accent-green)';
+            }
+        }
+    }
+
+    // Form mining integration
+    setupFormMining() {
+        console.log('🧠 CANONICAL MINING: Setting up form mining for 21e8 pattern...');
+        
+        // Integrate with forms that need PoW
+        const forms = document.querySelectorAll('form[id*="thread"], form[id*="post"], form[id*="chat"], form[id*="unified"]');
+        forms.forEach(form => {
+            const powFields = {
+                nonce: form.querySelector('input[name="pow_nonce"]'),
+                hash: form.querySelector('input[name="pow_hash"]'),
+                challengeId: form.querySelector('input[name="pow_challenge_id"]')
+            };
+
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const miningStatus = form.querySelector('#mining-status');
+
+            if (powFields.nonce && powFields.hash && submitBtn) {
+                // Override form submission
+                form.addEventListener('submit', async (e) => {
+                    if (!powFields.hash.value) {
+                        e.preventDefault();
+                        await this.mineForForm(form, powFields, submitBtn, miningStatus);
+                    }
+                });
+
+                // Also add click handler to submit button
+                submitBtn.addEventListener('click', async (e) => {
+                    if (!powFields.hash.value) {
+                        e.preventDefault();
+                        await this.mineForForm(form, powFields, submitBtn, miningStatus);
+                    }
+                });
             }
         });
+    }
 
-        // Disable submit initially if PoW required
-        if (submitBtn && !form.querySelector('input[name="pow_hash"]')?.value) {
+    async mineForForm(form, powFields, submitBtn, miningStatus) {
+        console.log('🧠 CANONICAL MINING: Mining 21e8 proof for form submission...');
+        
+        // Update UI
+        if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.style.background = '#6c757d';
+            submitBtn.textContent = '⚡ Mining 21e8...';
+            submitBtn.style.opacity = '0.7';
+        }
+        
+        if (miningStatus) {
+            miningStatus.innerHTML = '<span style="color: #708B75;">⚡ Mining proof-of-work pattern 21e8...</span>';
+        }
+
+        // Create mining target specifically for 21e8 pattern
+        const formData = new FormData(form);
+        const title = formData.get('title') || 'post';
+        const content = formData.get('content') || 'content';
+        
+        const target = {
+            id: `form-${Date.now()}`,
+            type: 'form',
+            displayName: 'Form Submission (21e8)',
+            data: `${title}-${content}-${Date.now()}`
+        };
+
+        // Mine specifically for 21e8 pattern with higher attempt count
+        const result = await this.mineSpecific21e8(target, 2000000);
+        
+        if (result.found) {
+            console.log(`✅ Found 21e8 hash: ${result.hash}`);
+            
+            powFields.nonce.value = result.nonce;
+            powFields.hash.value = result.hash;
+            if (powFields.challengeId) {
+                powFields.challengeId.value = Date.now();
+            }
+            
+            // Update UI
+            if (submitBtn) {
+                submitBtn.textContent = '✅ Submitting...';
+                submitBtn.style.opacity = '1';
+            }
+            
+            if (miningStatus) {
+                miningStatus.innerHTML = '<span style="color: #28a745;">✅ Mining complete! Submitting...</span>';
+            }
+            
+            // Submit form after brief delay
+            setTimeout(() => {
+                form.submit();
+            }, 500);
+        } else {
+            console.log('❌ Mining failed - no 21e8 pattern found');
+            
+            // Reset UI
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '⚡ Mine & Post';
+                submitBtn.style.opacity = '1';
+            }
+            
+            if (miningStatus) {
+                miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Mining failed - try again</span>';
+            }
         }
     }
 
-    async mineFormProof(form) {
-        const challengeId = this.generateChallengeId();
-        const formData = new FormData(form);
+    async mineSpecific21e8(target, maxAttempts) {
+        console.log(`🧠 CANONICAL MINING: Mining 21e8 pattern, max attempts: ${maxAttempts.toLocaleString()}`);
         
-        // Determine the mining type based on form action or presence of title field
-        const isThreadCreation = form.querySelector('input[name="title"]') !== null;
-        const isReply = form.action.includes('/send') || form.querySelector('textarea[name="content"]') !== null;
+        let attempts = 0;
+        const startTime = performance.now();
         
-        let data;
-        if (isThreadCreation) {
-            // Thread creation: thread:{boardCode}:{title}:{challengeId}
-            const title = formData.get('title') || 'Thread';
-            const boardCode = window.location.pathname.split('/').pop() || 'gen'; // Get board from URL
-            data = `thread:${boardCode}:${title}:${challengeId}`;
-        } else if (isReply) {
-            // Reply: reply:{boardCode}:{threadId}:{challengeId}
-            const boardCode = window.location.pathname.split('/')[1] || 'gen';
-            const threadId = window.location.pathname.split('/')[2] || '1';
-            data = `reply:${boardCode}:${threadId}:${challengeId}`;
-        } else {
-            // Fallback to old format
-            const content = formData.get('content') || formData.get('reply_content') || formData.get('title') || '';
-            data = `form:${content.substring(0, 50)}:${challengeId}`;
-        }
-        
-        let nonce = 0;
-        const maxAttempts = 50000;
-        
-        for (let i = 0; i < maxAttempts; i++) {
-            const input = `${data}:${nonce}`;
-            const hash = await this.sha256(input);
+        while (attempts < maxAttempts) {
+            const nonce = Math.floor(Math.random() * 4294967295);
+            const data = `${target.data}-${nonce}`;
             
+            // Calculate SHA-256 hash
+            const hash = await this.realSha256(data);
+            attempts++;
+            
+            // Check specifically for 21e8 pattern
             if (hash.startsWith('21e8')) {
+                const elapsed = performance.now() - startTime;
+                console.log(`💎 FOUND 21e8! Hash: ${hash} (${attempts.toLocaleString()} attempts in ${Math.floor(elapsed)}ms)`);
+                
                 return {
-                    hash,
-                    nonce,
-                    challengeId,
-                    data: input
+                    found: true,
+                    hash: hash,
+                    nonce: nonce,
+                    data: data,
+                    pattern: '21e8',
+                    points: 100,
+                    attempts: attempts
                 };
             }
             
-            nonce++;
+            // Progress logging
+            if (attempts % 100000 === 0) {
+                const elapsed = performance.now() - startTime;
+                const hashrate = Math.floor(attempts / (elapsed / 1000));
+                console.log(`🧠 Mining progress: ${attempts.toLocaleString()} attempts, ${hashrate.toLocaleString()} H/s`);
+            }
             
-            // Update progress
-            if (i % 1000 === 0) {
-                const progress = (i / maxAttempts) * 100;
-                const progressEl = form.querySelector('.progress-bar');
-                if (progressEl) progressEl.style.width = progress + '%';
-                
-                // Yield control
+            // Yield control periodically
+            if (attempts % 10000 === 0) {
                 await new Promise(resolve => setTimeout(resolve, 1));
             }
         }
         
-        return null;
-    }
-
-    generateChallengeId() {
-        return Array.from(crypto.getRandomValues(new Uint8Array(16)), 
-            b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    setFormField(form, name, value) {
-        let field = form.querySelector(`input[name="${name}"]`);
-        if (!field) {
-            field = document.createElement('input');
-            field.type = 'hidden';
-            field.name = name;
-            form.appendChild(field);
-        }
-        field.value = value;
-    }
-
-    setupFormMiningButtons() {
-        // Setup existing mining buttons
-        document.querySelectorAll('.start-form-mining').forEach(button => {
-            if (button.dataset.unified) return;
-            button.dataset.unified = 'true';
-            
-            button.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const form = button.closest('form');
-                if (form) {
-                    await this.handleFormMining(form, button);
-                }
-            });
-        });
-    }
-
-    async handleFormMining(form, button) {
-        const originalText = button.textContent;
-        button.disabled = true;
-        button.textContent = 'Mining...';
+        const elapsed = performance.now() - startTime;
+        console.log(`❌ Mining failed: ${attempts.toLocaleString()} attempts in ${Math.floor(elapsed)}ms, no 21e8 found`);
         
+        return {
+            found: false,
+            attempts: attempts
+        };
+    }
+
+    // Dashboard integration
+    updateDashboardTarget(text) {
+        const targetDisplay = document.querySelector('#current-target, [data-stat="current-target"]');
+        if (targetDisplay) {
+            targetDisplay.textContent = text;
+        }
+        
+        // Update mining toolbar target (mini dashboard)
+        const toolbarTarget = document.querySelector('#toolbar-target');
+        if (toolbarTarget) {
+            toolbarTarget.textContent = text;
+        }
+        
+        // Update enhanced dashboard target
+        if (window.enhancedMiningDashboard) {
+            window.enhancedMiningDashboard.setTarget(text);
+        }
+    }
+
+    startUIUpdates() {
+        this.intervals.stats = setInterval(() => {
+            this.updateDashboardStats();
+        }, 1000);
+    }
+
+    updateDashboardStats() {
+        const elapsed = (Date.now() - this.state.sessionStats.startTime) / 1000;
+        const hashrate = elapsed > 0 ? Math.floor(this.state.sessionStats.totalHashes / elapsed) : 0;
+
+        // Update dashboard elements (legacy compatibility)
+        const elements = {
+            hashRate: document.querySelector('#hash-rate, [data-stat="hashrate"]'),
+            sessionHashes: document.querySelector('#session-hashes, [data-stat="hashes"]'),
+            sessionProofs: document.querySelector('#session-proofs, [data-stat="proofs"]'),
+            sessionPoints: document.querySelector('#session-points, [data-stat="points"]')
+        };
+
+        if (elements.hashRate) elements.hashRate.textContent = `${hashrate.toLocaleString()} H/s`;
+        if (elements.sessionHashes) elements.sessionHashes.textContent = this.state.sessionStats.totalHashes.toLocaleString();
+        if (elements.sessionProofs) elements.sessionProofs.textContent = this.state.sessionStats.totalProofs.toString();
+        if (elements.sessionPoints) elements.sessionPoints.textContent = this.state.sessionStats.totalPoints.toFixed(1);
+
+        // Update mining toolbar (mini dashboard) elements
+        const toolbarHashRate = document.querySelector('.hash-rate');
+        if (toolbarHashRate) {
+            toolbarHashRate.textContent = `${hashrate.toLocaleString()} H/s`;
+        }
+        
+        // Update mining indicator
+        const miningIndicator = document.querySelector('#mining-indicator');
+        if (miningIndicator) {
+            miningIndicator.textContent = hashrate > 0 ? '⚡' : '💤';
+        }
+
+        // Update enhanced dashboard if available
+        if (window.enhancedMiningDashboard) {
+            window.enhancedMiningDashboard.updateHashrate(hashrate);
+            window.enhancedMiningDashboard.updateHashCount(this.state.sessionStats.totalHashes);
+            window.enhancedMiningDashboard.stats.sessionProofs = this.state.sessionStats.totalProofs;
+            window.enhancedMiningDashboard.stats.sessionPoints = this.state.sessionStats.totalPoints;
+        }
+
+        this.state.sessionStats.currentHashrate = hashrate;
+    }
+
+    startPerformanceMonitoring() {
+        setInterval(() => {
+            if (performance.memory) {
+                this.state.performance.memoryUsage = performance.memory.usedJSHeapSize / 1024 / 1024;
+            }
+        }, 10000);
+    }
+
+    // State management
+    saveState() {
+        const stateToSave = {
+            power: this.state.power,
+            mode: this.state.mode
+        };
+        localStorage.setItem('canonical-mining-state', JSON.stringify(stateToSave));
+    }
+
+    loadState() {
         try {
-            const proof = await this.mineFormProof(form);
-            
-            if (proof) {
-                this.setFormField(form, 'pow_nonce', proof.nonce);
-                this.setFormField(form, 'pow_hash', proof.hash);
-                
-                button.textContent = '✅ Complete';
-                button.style.background = '#28a745';
-                
-                const submitBtn = form.querySelector('input[type="submit"], button[type="submit"]');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.style.background = '#28a745';
-                }
+            const saved = localStorage.getItem('canonical-mining-state');
+            if (saved) {
+                const state = JSON.parse(saved);
+                this.setPower(state.power || 5);
+                this.setMode(state.mode || 'mouseover');
             }
         } catch (error) {
-            button.textContent = '❌ Failed';
-            button.style.background = '#dc3545';
-            setTimeout(() => {
-                button.textContent = originalText;
-                button.style.background = '';
-                button.disabled = false;
-            }, 3000);
+            console.error('🧠 CANONICAL MINING: Error loading state:', error);
         }
     }
 
-    // Auto-mining for content areas
-    startContentMining(element) {
-        if (!this.isMiningEnabled()) return;
+    setPower(level) {
+        this.state.power = Math.max(0, Math.min(10, level));
+        console.log(`🧠 CANONICAL MINING: Power set to ${this.state.power}/10 - ${this.configs.powerLevels[this.state.power].name}`);
         
-        const content = element.value || element.textContent;
-        if (!content || content.length < 10) return;
+        // Update enhanced dashboard power level
+        if (window.enhancedMiningDashboard) {
+            window.enhancedMiningDashboard.powerLevel = this.state.power;
+            const powerDisplay = document.getElementById('power-display');
+            if (powerDisplay) {
+                powerDisplay.textContent = `${this.state.power}/10`;
+            }
+            const powerDescription = document.getElementById('power-description');
+            if (powerDescription) {
+                powerDescription.textContent = this.configs.powerLevels[this.state.power].name;
+            }
+        }
         
-        const miningId = this.generateMiningId();
-        this.activeMiningTargets.set(miningId, {
-            element,
-            type: 'content-auto',
-            startTime: Date.now()
+        this.saveState();
+    }
+
+    setMode(mode) {
+        const oldMode = this.state.mode;
+        this.state.mode = mode;
+        console.log(`🧠 CANONICAL MINING: Mode changed from ${oldMode} to ${mode}`);
+        
+        if (mode === 'mouseover') {
+            this.setupMouseoverMining();
+        }
+        
+        this.saveState();
+    }
+
+    // Public API
+    enable() { this.isActive = true; }
+    disable() { this.isActive = false; }
+    
+    destroy() {
+        console.log('🧠 CANONICAL MINING: Shutting down');
+        
+        // Clear intervals
+        Object.values(this.intervals).forEach(interval => {
+            if (interval) clearInterval(interval);
         });
         
-        this.mineTarget(miningId, element, 'content-auto');
-    }
-    
-    // Helper functions for dashboard integration
-    getMiningDelay() {
-        if (window.enhancedMiningDashboard) {
-            return window.enhancedMiningDashboard.getMiningIntensity();
-        }
-        return 100; // Default delay
-    }
-    
-    calculateHashrate() {
-        const elapsed = (Date.now() - this.sessionStats.startTime) / 1000;
-        return elapsed > 0 ? Math.floor(this.sessionStats.hashes / elapsed) : 0;
-    }
-    
-    getTargetDescription(element, type) {
-        switch (type) {
-            case 'image':
-                return 'Mining image...';
-            case 'content':
-                if (element.classList.contains('post')) {
-                    return 'Mining post...';
-                } else if (element.classList.contains('thread-preview')) {
-                    return 'Mining thread...';
-                }
-                return 'Mining content...';
-            default:
-                return 'Mining active...';
-        }
-    }
-    
-    isMiningEnabled() {
-        if (window.enhancedMiningDashboard) {
-            return window.enhancedMiningDashboard.getPowerLevel() > 0;
-        }
-        return true; // Default enabled
+        // Remove event listeners
+        document.removeEventListener('mouseover', this.handleMouseover);
+        document.removeEventListener('mouseout', this.handleMouseout);
+        
+        // Cleanup workers
+        this.workers.webWorkers.forEach(worker => {
+            worker.worker.terminate();
+            URL.revokeObjectURL(worker.url);
+        });
+        
+        this.isInitialized = false;
     }
 }
 
-// Global initialization
-function initializeHaichanUnified() {
-    // Clean up any existing miners to prevent conflicts
-    if (window.haichanMiner) {
-        console.log('Replacing existing mining system with unified system');
-    }
-    
-    window.haichanUnified = new HaichanUnified();
-    window.haichanMiner = window.haichanUnified; // Backward compatibility
-    
-    // Expose global functions for backward compatibility
-    window.generateFormProof = () => window.haichanUnified.mineFormProof(document.activeElement?.closest('form'));
+// Initialize the canonical mining system
+console.log('🧠 CANONICAL MINING: Loading ultra-high performance mining system...');
+
+// Cleanup any existing instances
+if (window.haichanCanonicalMining) {
+    window.haichanCanonicalMining.destroy();
 }
 
-// Auto-initialize
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeHaichanUnified);
-} else {
-    initializeHaichanUnified();
-}
+// Create new instance
+window.haichanCanonicalMining = new HaichanCanonicalMining();
 
-// Reinitialize when new content is added
-const reinitialize = () => {
-    if (window.haichanUnified) {
-        window.haichanUnified.makeMineable('img:not(.mineable)', 'image');
-        window.haichanUnified.makeMineable('.post:not(.mineable), .catalog-thread:not(.mineable)', 'content');
-        window.haichanUnified.setupTextAreaMining();
-        window.haichanUnified.setupFormMiningButtons();
-    }
-};
+// Set as primary mining system
+window.haichanMiner = window.haichanCanonicalMining;
+window.haichanUnified = window.haichanCanonicalMining; // Backward compatibility
 
-// Listen for dynamic content changes
-const observer = new MutationObserver(reinitialize);
-observer.observe(document.body, { childList: true, subtree: true });
+console.log('🧠 CANONICAL MINING: Ultra-high performance system operational');

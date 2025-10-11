@@ -19,6 +19,7 @@ class BitcoinAuth extends Authenticatable
         'location',
         'website',
         'avatar_hash',
+        'avatar_filename',
         'display_name',
         'tripcode',
         'social_links',
@@ -40,6 +41,11 @@ class BitcoinAuth extends Authenticatable
         'is_banned',
         'ban_reason',
         'banned_until',
+        'personal_21e8_hash',
+        'personal_21e8_nonce',
+        'personal_21e8_total_hashes',
+        'personal_21e8_mining_time',
+        'personal_21e8_found_at',
     ];
 
     protected $hidden = [
@@ -49,10 +55,14 @@ class BitcoinAuth extends Authenticatable
     protected $casts = [
         'last_login' => 'datetime',
         'banned_until' => 'datetime',
+        'personal_21e8_found_at' => 'datetime',
         'mining_power' => 'decimal:2',
         'total_pow_points' => 'integer',
         'mining_streak' => 'integer',
         'level' => 'integer',
+        'personal_21e8_nonce' => 'integer',
+        'personal_21e8_total_hashes' => 'integer',
+        'personal_21e8_mining_time' => 'float',
         'is_banned' => 'boolean',
         'is_admin' => 'boolean',
         'is_moderator' => 'boolean',
@@ -343,5 +353,13 @@ class BitcoinAuth extends Authenticatable
         $this->ban_reason = null;
         $this->banned_until = null;
         $this->save();
+    }
+
+    /**
+     * User attestations relationship
+     */
+    public function attestations()
+    {
+        return $this->hasMany(UserAttestation::class, 'user_id');
     }
 }

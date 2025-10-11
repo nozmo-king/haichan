@@ -50,7 +50,7 @@
         @endif
 
         <!-- Registration Form -->
-        <form method="POST" action="/auth/register" style="margin-bottom: 30px;">
+        <form method="POST" action="/auth/register-advanced" id="advanced-register-form" style="margin-bottom: 30px;">
             @csrf
 
             <div style="margin-bottom: 20px;">
@@ -115,6 +115,13 @@
                 🚀 REGISTER FOR HAICHAN
             </button>
         </form>
+
+        <!-- Simple Registration Link -->
+        <div style="text-align: center; margin-bottom: 15px;">
+            <a href="/auth/register" style="color: var(--text-secondary); text-decoration: none; font-size: 12px;">
+                Want easier registration? Try simple registration →
+            </a>
+        </div>
 
         <!-- Back to Login -->
         <div style="text-align: center;">
@@ -299,14 +306,7 @@ async function sha256(message) {
 // Generate Bitcoin address using proper Bitcoin algorithm (matching backend)
 async function generateAddress(publicKey) {
     try {
-        // Step 1: Convert hex public key to bytes
-        const pubKeyBytes = new Uint8Array(publicKey.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-        
-        // Step 2: SHA256 hash of public key
-        const sha256Hash = await crypto.subtle.digest('SHA-256', pubKeyBytes);
-        
-        // Step 3: RIPEMD160 hash (we'll use a simplified version since RIPEMD160 is not available in Web Crypto)
-        // For compatibility with backend, we'll make API call to generate address
+        // Always use backend API for consistent address generation
         const response = await fetch('/auth/generate-address', {
             method: 'POST',
             headers: {
@@ -322,16 +322,12 @@ async function generateAddress(publicKey) {
             const data = await response.json();
             return data.address;
         } else {
-            throw new Error('Failed to generate address');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to generate address');
         }
     } catch (error) {
         console.error('Address generation error:', error);
-        // Fallback to simple implementation for testing
-        const pubKeyBytes = new Uint8Array(publicKey.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-        const sha256Hash = await crypto.subtle.digest('SHA-256', pubKeyBytes);
-        const hashArray = Array.from(new Uint8Array(sha256Hash));
-        const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        return '1' + hash.substring(0, 25) + hash.substring(25, 33);
+        throw error; // Re-throw to handle in calling code
     }
 }
 </script>

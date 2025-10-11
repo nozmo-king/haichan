@@ -44,7 +44,7 @@ class ChatMessage extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(BitcoinAuth::class, 'user_id');
     }
 
     public function getDisplayNameAttribute(): string
@@ -120,7 +120,7 @@ class ChatMessage extends Model
         return $message;
     }
 
-    public function canUserDelete(User $user): bool
+    public function canUserDelete($user): bool
     {
         // User can delete their own messages
         if ($this->user_id === $user->id) {
@@ -128,7 +128,7 @@ class ChatMessage extends Model
         }
 
         // Moderators can delete any message
-        if ($this->chatRoom->isUserModerator($user)) {
+        if ($this->chatRoom && $this->chatRoom->isUserModerator($user)) {
             return true;
         }
 

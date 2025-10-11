@@ -7,8 +7,75 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     try {
-        $boards = \App\Models\Board::getActiveBoards();
+        // Check if user is authenticated
+        if (session('bitcoin_auth_id')) {
+            // Show full welcome dashboard for authenticated users
+            $userCount = \App\Models\BitcoinAuth::count();
+            $userCap = 256;
+            $boards = \App\Models\Board::getShiftingOrder();
 
+            // Calculate real stats from ProofOfWork table
+            $recentProofs = \App\Models\ProofOfWork::where('verified_at', '>', now()->subMinutes(5))->count();
+            
+            // Count unique active miners
+            $activeSessions = \App\Models\ProofOfWork::where('verified_at', '>', now()->subMinutes(15))
+                ->whereNotNull('user_id')
+                ->distinct('user_id')
+                ->count('user_id');
+            
+            // Add anonymous miners
+            $anonymousEstimate = \App\Models\ProofOfWork::where('verified_at', '>', now()->subMinutes(15))
+                ->whereNull('user_id')
+                ->count();
+            $activeSessions = $activeSessions + max(1, floor($anonymousEstimate / 5));
+
+            // Real computational stats
+            $totalProofs = \App\Models\ProofOfWork::count();
+            
+            // Calculate total hashes
+            $totalHashes = 0;
+            $powRecords = \App\Models\ProofOfWork::selectRaw('
+                COUNT(*) as count,
+                pattern
+            ')->groupBy('pattern')->get();
+            
+            foreach ($powRecords as $record) {
+                $hashesPerProof = match($record->pattern) {
+                    '21' => 256,
+                    '21e' => 4096,
+                    '21e8' => 65536,
+                    '21e80' => 1048576,
+                    '21e800' => 16777216,
+                    default => 1000
+                };
+                $totalHashes += $record->count * $hashesPerProof;
+            }
+            
+            // Calculate hashrate
+            $recentHashCount = \App\Models\ProofOfWork::where('verified_at', '>', now()->subHour())
+                ->selectRaw('COUNT(*) as count, pattern')
+                ->groupBy('pattern')
+                ->get();
+                
+            $hourlyHashes = 0;
+            foreach ($recentHashCount as $recent) {
+                $hashesPerProof = match($recent->pattern) {
+                    '21' => 256,
+                    '21e' => 4096,
+                    '21e8' => 65536,
+                    '21e80' => 1048576,
+                    '21e800' => 16777216,
+                    default => 1000
+                };
+                $hourlyHashes += $recent->count * $hashesPerProof;
+            }
+            $globalHashrate = $hourlyHashes;
+
+            return view('welcome-simple', compact('userCount', 'userCap', 'boards'));
+        }
+        
+        // Show simple boards index for non-authenticated users
+        $boards = \App\Models\Board::getActiveBoards();
         return view('boards.index', compact('boards'));
     } catch (Exception $e) {
         return response()->json(['error' => $e->getMessage()]);
@@ -32,8 +99,8 @@ Route::get('/anon', function () {
 // Public authentication routes - both mobile and web support
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('auth.login');
-Route::get('/auth/register', [AuthController::class, 'showRegister'])->name('register');
-Route::get('/auth/generate-keys', [AuthController::class, 'generateKeys']);
+Route::get('/auth/register', [AuthController::class, 'showSimpleRegister'])->name('register');
+Route::get('/auth/register-advanced', [AuthController::class, 'showRegister'])->name('register.advanced');
 Route::post('/auth/generate-address', [AuthController::class, 'generateAddress']);
 Route::get('/auth/invite-status', function () {
     return response()->json(\App\Models\InviteCode::getInviteStatus());
@@ -46,7 +113,103 @@ Route::post('/challenge', [AuthController::class, 'getChallenge'])->middleware('
 Route::post('/login/cryptographic', [AuthController::class, 'cryptographicLogin'])->middleware('throttle:25,1')->name('auth.cryptographic.login');
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
 Route::post('/auth/login-backup', [AuthController::class, 'backupLogin'])->middleware('throttle:10,1');
-Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:10,1');
+// Simple registration - primary route for quick registration
+Route::post('/auth/register', [AuthController::class, 'simpleRegister'])->middleware('throttle:10,1');
+Route::post('/auth/register-advanced', [AuthController::class, 'register'])->middleware('throttle:10,1');
+
+// Username check API endpoint  
+Route::post('/auth/check-username', [AuthController::class, 'checkUsername'])->middleware('throttle:20,1');
+
+// Debug routes
+Route::get('/test-registration', function() {
+    return 'Registration routes are working. Available invite codes: ' . 
+           \App\Models\InviteCode::where('uses_remaining', '>', 0)->count();
+});
+
+Route::get('/create-genesis-codes', function() {
+    // Create 5 genesis codes for testing
+    $codes = \App\Models\InviteCode::createGenesisCode(5);
+    return 'Created ' . count($codes) . ' genesis codes: ' . implode(', ', array_map(function($code) { return $code->code; }, $codes));
+});
+
+Route::get('/test-simple', function() {
+    \Log::info('Test-simple route accessed');
+    return 'Simple test route works';
+});
+
+Route::get('/test-auth', function() {
+    $userId = session('bitcoin_auth_id');
+    $user = session('bitcoin_auth_user');
+    
+    return response()->json([
+        'logged_in' => $userId ? true : false,
+        'user_id' => $userId,
+        'username' => $user->username ?? 'none',
+        'session_data' => session()->all()
+    ]);
+});
+
+Route::post('/test-simple', function(\Illuminate\Http\Request $request) {
+    \Log::info('Test-simple POST accessed with data: ' . json_encode($request->all()));
+    return response()->json(['success' => true, 'message' => 'POST works']);
+})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
+Route::get('/debug-register', function() {
+    return view('debug-register');
+});
+
+Route::post('/debug-register', function(\Illuminate\Http\Request $request) {
+    try {
+        // Test the actual registration process step by step
+        $inviteCode = \App\Models\InviteCode::where('code', $request->invite_code)
+            ->where('uses_remaining', '>', 0)
+            ->first();
+            
+        $canRegister = \App\Models\InviteCode::canRegister();
+        
+        $entropyData = json_decode($request->mouse_entropy, true);
+        
+        return response()->json([
+            'success' => true,
+            'data' => $request->all(),
+            'has_entropy' => $request->has('mouse_entropy'),
+            'entropy_length' => $request->has('mouse_entropy') ? strlen($request->mouse_entropy) : 0,
+            'invite_code_valid' => $inviteCode ? true : false,
+            'can_register' => $canRegister,
+            'entropy_decoded' => $entropyData ? true : false,
+            'entropy_count' => is_array($entropyData) ? count($entropyData) : 0
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
+
+Route::post('/simple-test-register', function(\Illuminate\Http\Request $request) {
+    try {
+        \Log::info('SimpleTestRegister: Starting');
+        
+        // Create user with minimal data
+        $user = \App\Models\BitcoinAuth::create([
+            'public_key' => 'test_key_' . time(),
+            'address' => 'test_address_' . time(),
+            'username' => 'testuser_' . time(),
+            'password_hash' => hash('sha256', 'testpass'),
+            'password_salt' => 'testsalt',
+            'private_key_hash' => hash('sha256', 'testprivate'),
+            'invite_code' => strtoupper(bin2hex(random_bytes(6))), // Generate unique invite code for this user
+            'mining_power' => 1.0,
+            'total_pow_points' => 0,
+            'level' => 1,
+        ]);
+        
+        \Log::info('SimpleTestRegister: User created with ID: ' . $user->id);
+        return response()->json(['success' => true, 'user_id' => $user->id]);
+        
+    } catch (\Exception $e) {
+        \Log::error('SimpleTestRegister failed: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 // Logout routes - supporting both paths
 Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->middleware('auth');
@@ -67,57 +230,29 @@ Route::get('/mining', function () {
     return view('mining.dashboard');
 })->name('mining.dashboard');
 
-// /d/ - Dummy board routes - auto-authenticated for testing
-Route::middleware('inject.dummy.user')->group(function () {
-    Route::get('/d', function() { return app(App\Http\Controllers\ForumController::class)->showBoard('d'); })->name('board.show');
-    Route::get('/d/catalog', function() { return app(App\Http\Controllers\ForumController::class)->showCatalog('d'); })->name('board.catalog');
-    Route::get('/d/create', function() { return app(App\Http\Controllers\ForumController::class)->createThread('d'); })->name('board.create');
-    Route::post('/d/create', function(Request $request) { return app(App\Http\Controllers\ForumController::class)->storeThread($request, 'd'); })->name('board.store');
-    Route::post('/d', function(Request $request) { return app(App\Http\Controllers\ForumController::class)->storeThread($request, 'd'); })->name('board.thread.store');
-    Route::get('/d/{threadId}', function($threadId) { return app(App\Http\Controllers\ForumController::class)->showThread('d', $threadId); })->name('forum.thread');
-    Route::post('/d/{threadId}/reply', function(Request $request, $threadId) { return app(App\Http\Controllers\ForumController::class)->storeReply($request, 'd', $threadId); })->name('forum.reply')-> where('threadId', '[0-9]+');
-    
-    Route::prefix('chat')->name('dummy.chat.')->group(function () {
-        Route::get('/', [App\Http\Controllers\ChatController::class, 'index'])->name('index');
-        Route::get('/{room}', [App\Http\Controllers\ChatController::class, 'show'])->name('room');
-        Route::post('/{room}/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send');
-        Route::get('/{room}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('messages');
-        Route::post('/{room}/join', [App\Http\Controllers\ChatController::class, 'joinRoom'])->name('join');
-        Route::post('/{room}/leave', [App\Http\Controllers\ChatController::class, 'leaveRoom'])->name('leave');
-        Route::delete('/{room}/messages/{message}', [App\Http\Controllers\ChatController::class, 'deleteMessage'])->name('delete-message');
-        Route::get('/{room}/stats', [App\Http\Controllers\ChatController::class, 'getRoomStats'])->name('stats');
-    });
-    
-    Route::get('/library', [App\Http\Controllers\ImageLibraryController::class, 'index'])->name('dummy.image-library.index');
-    Route::post('/api/image-library/mine', [App\Http\Controllers\ImageLibraryController::class, 'mine']);
-    Route::post('/api/image-library/upload', [App\Http\Controllers\ImageLibraryController::class, 'upload']);
-    Route::get('/api/image-library/{id}/full', [App\Http\Controllers\ImageLibraryController::class, 'fullImage']);
-    Route::get('/api/image-library/{id}/download', [App\Http\Controllers\ImageLibraryController::class, 'download']);
-    Route::get('/api/image-library/hash/{hash}', [App\Http\Controllers\ImageLibraryController::class, 'getByHash']);
-    Route::get('/api/image-library/stats', [App\Http\Controllers\ImageLibraryController::class, 'getStats']);
-    Route::get('/api/image-library/search', [App\Http\Controllers\ImageLibraryController::class, 'search']);
-    Route::get('/api/image-library/shifting', [App\Http\Controllers\ImageLibraryController::class, 'getShiftingArrangement']);
+// Mining test page
+Route::get('/test-mining', function () {
+    return view('test-mining');
 });
+
+// Admin Updates API routes
+Route::prefix('api/updates')->group(function () {
+    Route::get('/global', [App\Http\Controllers\UpdatesController::class, 'getGlobalUpdates']);
+    Route::get('/board/{boardCode}', [App\Http\Controllers\UpdatesController::class, 'getBoardUpdates']);
+    Route::post('/post', [App\Http\Controllers\UpdatesController::class, 'postUpdate']);
+    Route::delete('/{id}', [App\Http\Controllers\UpdatesController::class, 'deleteUpdate']);
+    Route::get('/unread-count', [App\Http\Controllers\UpdatesController::class, 'getUnreadCount']);
+});
+
+// Self Mining API routes
+Route::prefix('api/self-mining')->group(function () {
+    Route::post('/submit', [App\Http\Controllers\SelfMiningController::class, 'submitPersonal21e8']);
+    Route::get('/leaderboard', [App\Http\Controllers\SelfMiningController::class, 'getLeaderboard']);
+});
+
 
 // Protected routes - require authentication
 Route::middleware('bitcoin.auth')->group(function () {
-    Route::get('/', function () {
-        $userCount = \App\Models\User::count();
-        $userCap = 256; // Define the user cap
-        $boards = \App\Models\Board::all();
-
-        // Calculate real stats from actual proof submissions
-        $recentProofs = \App\Models\ProofSubmission::where('created_at', '>', now()->subMinutes(5))->count();
-        $activeSessions = \App\Models\ProofSubmission::where('created_at', '>', now()->subMinutes(5))
-            ->distinct('user_session')->count('user_session');
-
-        // Real computational stats - no dummy multipliers
-        $totalProofs = \App\Models\ProofSubmission::count();
-        $totalHashes = \App\Models\ProofSubmission::getTotalHashes();
-        $globalHashrate = $recentProofs > 0 ? ($recentProofs * 12) : 0; // Proofs per 5min * 12 = proofs per hour
-
-        return view('welcome', compact('userCount', 'userCap', 'boards', 'globalHashrate', 'activeSessions', 'totalHashes', 'totalProofs'));
-    })->name('dashboard');
 
     Route::get('/boards', function () {
         try {
@@ -150,54 +285,54 @@ Route::middleware('bitcoin.auth')->group(function () {
     // Board catalog (specific path, must come before {board})
     Route::get('/{board}/catalog', [App\Http\Controllers\ForumController::class, 'showCatalog'])
         ->name('board.catalog')
-        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Politically');
 
     // Thread creation (specific path, must come before {board})
     Route::get('/{board}/create', [App\Http\Controllers\ForumController::class, 'createThread'])
         ->name('board.create')
-        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
 
     // Thread view (specific path, must come before {board})
     Route::get('/{board}/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])
         ->name('forum.thread')
-        ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
+        ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political', 'threadId' => '[0-9]+']);
 
     // Thread creation POST (specific path)
     Route::post('/{board}/create', [App\Http\Controllers\ForumController::class, 'storeThread'])
         ->name('board.create.store')
-        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
 
     // Thread creation (less specific, comes after specific paths)
     Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])
         ->name('board.store.alt')
-        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|General|Technology|Business|Meta|Film|Random|Literature|Music');
+        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
 
     // Dynamic board routes - supports all boards: gen, tech, biz, film, x, lit, meta, mu
     Route::group([], function () {
         // Reply to thread (MUST come before {board} routes to avoid conflicts)
         Route::post('/{board}/{threadId}/reply', [App\Http\Controllers\ForumController::class, 'storeReply'])
             ->name('forum.reply')
-            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
+            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political', 'threadId' => '[0-9]+']);
 
         // Board catalog (specific path, must come before {board})
         Route::get('/{board}/catalog', [App\Http\Controllers\ForumController::class, 'showCatalog'])
             ->name('board.catalog')
-            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
 
         // Thread view (specific path, must come before {board})
         Route::get('/{board}/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])
             ->name('forum.thread')
-            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music', 'threadId' => '[0-9]+']);
+            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political', 'threadId' => '[0-9]+']);
 
         // Thread creation (less specific, comes after specific paths)
         Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])
             ->name('board.thread.store')
-            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
 
         // Board main page (least specific, comes last)
         Route::get('/{board}', [App\Http\Controllers\ForumController::class, 'showBoard'])
             ->name('board.show')
-            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|ddl|General|Technology|Business|Meta|Film|Random|Literature|Music');
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
     });
 
     // PoW Chat System routes (protected)
@@ -210,7 +345,19 @@ Route::middleware('bitcoin.auth')->group(function () {
         Route::post('/{room}/leave', [App\Http\Controllers\ChatController::class, 'leaveRoom'])->name('leave');
         Route::delete('/{room}/messages/{message}', [App\Http\Controllers\ChatController::class, 'deleteMessage'])->name('delete-message');
         Route::get('/{room}/stats', [App\Http\Controllers\ChatController::class, 'getRoomStats'])->name('stats');
+        Route::post('/{room}/set-nickname', [App\Http\Controllers\ChatController::class, 'setNickname'])->name('set-nickname');
+        Route::get('/{room}/users', [App\Http\Controllers\ChatController::class, 'getOnlineUsers'])->name('users');
+        Route::post('/{room}/command', [App\Http\Controllers\ChatController::class, 'executeCommand'])->name('command');
     });
+
+    // User Profile routes (protected)
+    Route::prefix('profile')->name('profile.')->group(function () {
+        Route::get('/', [App\Http\Controllers\UserProfileController::class, 'show'])->name('show');
+        Route::post('/upload-favicon', [App\Http\Controllers\UserProfileController::class, 'uploadFavicon'])->name('upload-favicon');
+    });
+    
+    // Default avatar generation (public)
+    Route::get('/default-avatar/{hash}.png', [App\Http\Controllers\UserProfileController::class, 'generateIdenticon'])->name('default-avatar');
 
     // Image Library routes (protected)
     Route::get('/library', [App\Http\Controllers\ImageLibraryController::class, 'index'])->name('image-library.index');

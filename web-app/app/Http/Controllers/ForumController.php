@@ -6,6 +6,7 @@ use App\Models\Board;
 use App\Models\Post;
 use App\Models\ProofSubmission;
 use App\Models\Thread;
+use App\Services\ChallengeVerifier;
 use App\Services\ImageIndexingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -49,7 +50,10 @@ class ForumController extends Controller
 
     public function showCatalog($board)
     {
-        $boardModel = Board::where('code', $board)->firstOrFail();
+        // Handle both board codes (gen) and board names (General)
+        $boardModel = Board::where('code', $board)
+            ->orWhere('name', $board)
+            ->firstOrFail();
         $threads = Thread::where('board_id', $boardModel->id)
             ->with(['bitcoinUser', 'proofOfWork'])
             ->withCount('posts')
@@ -135,14 +139,131 @@ class ForumController extends Controller
 
         $posts = $posts->get();
 
+        // Add accumulated points for each post (like we do for threads)
+        $posts->each(function ($post) {
+            $post->accumulated_points = ($post->pow_difficulty ?? 0);
+        });
+
         return view('boards.thread', ['board' => $boardModel, 'thread' => $thread, 'posts' => $posts]);
     }
 
     public function createThread($boardCode)
     {
-        $board = Board::where('code', $boardCode)->firstOrFail();
+        // Handle both board codes (gen) and board names (General)
+        $board = Board::where('code', $boardCode)
+            ->orWhere('name', $boardCode)
+            ->firstOrFail();
 
         return view('forum.create-thread', compact('board'));
+    }
+
+    // Simplified thread creation without POW
+    public function storeThreadNoPOW(Request $request, $board)
+    {
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:200|min:3',
+                'content' => 'required|string|max:5000|min:5',
+                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'post_anonymous' => 'boolean',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        }
+
+        // Require thread image
+        if (!$request->hasFile('image') && !$request->filled('image_hash')) {
+            return back()->withErrors(['image' => 'Thread image is required.'])->withInput();
+        }
+
+        if ($request->hasFile('image') && $request->filled('image_hash')) {
+            return back()->withErrors(['image' => 'Please provide either an image upload OR an image hash, not both.'])->withInput();
+        }
+
+        // Handle both board codes (gen) and board names (General)
+        $boardModel = Board::where('code', $board)
+            ->orWhere('name', $board)
+            ->firstOrFail();
+
+        // Get authenticated user or create anonymous user
+        $userId = session('bitcoin_auth_id');
+        $postAsAnonymous = $validated['post_anonymous'] ?? false;
+
+        if ($userId && !$postAsAnonymous) {
+            $authorName = e(session('bitcoin_auth_user')->username ?? 'User');
+            $finalUserId = $userId;
+        } else {
+            $authorName = 'Anonymous#'.substr(hash('sha256', $request->ip().time()), 0, 8);
+            $finalUserId = null;
+        }
+
+        $threadData = [
+            'board_id' => $boardModel->id,
+            'title' => e($validated['title']),
+            'content' => $request->content,
+            'user_id' => $finalUserId,
+            'author_name' => $authorName,
+            'ip_address' => $request->ip(),
+            'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip()),
+        ];
+
+        // Handle image upload or existing hash
+        if ($request->hasFile('image')) {
+            $imageIndexingService = new ImageIndexingService;
+            $imageResult = $imageIndexingService->processAndIndexImage(
+                $request->file('image'),
+                null,
+                null,
+                $request->ip()
+            );
+
+            if (!$imageResult['success']) {
+                return back()->withErrors(['image' => 'Image processing failed: '.$imageResult['error']])->withInput();
+            }
+
+            $threadData['image_path'] = $imageResult['file_path'];
+            $threadData['image_filename'] = pathinfo($imageResult['file_path'], PATHINFO_BASENAME);
+            $threadData['image_hash'] = $imageResult['hash'];
+            
+        } elseif ($request->filled('image_hash')) {
+            $existingImage = \App\Models\ImageLibrary::where('hash', $request->image_hash)->first();
+            
+            if (!$existingImage) {
+                return back()->withErrors(['image_hash' => 'Image hash not found in library.'])->withInput();
+            }
+
+            $threadData['image_path'] = $existingImage->file_path;
+            $threadData['image_filename'] = $existingImage->filename;
+            $threadData['image_hash'] = $existingImage->hash;
+        }
+
+        try {
+            $thread = Thread::create($threadData);
+
+            // Update board activity
+            $boardModel->touch();
+            $boardModel->updateActivityOrder($thread->id);
+
+            // Update user stats if logged in
+            if ($finalUserId) {
+                $user = session('bitcoin_auth_user');
+                if ($user) {
+                    $user->increment('total_posts');
+                    $user->increment('weekly_posts');
+                }
+            }
+
+            return redirect("/{$boardModel->code}/thread/{$thread->id}")
+                ->with('success', 'Thread created successfully!');
+        } catch (\Exception $e) {
+            Log::error('Thread creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->withErrors(['error' => 'Failed to create thread. Please try again.'])->withInput();
+        }
     }
 
     public function storeThread(Request $request, $board)
@@ -163,7 +284,7 @@ class ForumController extends Controller
                 'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
                 'pow_nonce' => 'required|integer|min:0',
                 'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
-                'pow_challenge_id' => 'required|string|size:32|regex:/^[a-f0-9]{32}$/',
+                'pow_challenge_id' => 'required|string|size:36|regex:/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/',
                 'post_anonymous' => 'boolean',
             ]);
             
@@ -179,11 +300,14 @@ class ForumController extends Controller
 
         // Image validation check
 
-        // Validate that either image file OR image hash is provided
+        // Image is optional - removed mandatory image requirement
+        // Legacy validation commented out to make images optional
+        /*
         if (!$request->hasFile('image') && !$request->filled('image_hash')) {
             Log::error('Image validation failed: no image or hash provided');
             return back()->withErrors(['image' => 'Either upload an image or provide an image hash from the library.'])->withInput();
         }
+        */
 
         // Validate that both are not provided simultaneously
         if ($request->hasFile('image') && $request->filled('image_hash')) {
@@ -191,8 +315,10 @@ class ForumController extends Controller
             return back()->withErrors(['image' => 'Please provide either an image upload OR an image hash, not both.'])->withInput();
         }
 
-        // Find the board by code with validation
-        $boardModel = Board::where('code', $board)->firstOrFail();
+        // Handle both board codes (gen) and board names (General)
+        $boardModel = Board::where('code', $board)
+            ->orWhere('name', $board)
+            ->firstOrFail();
 
         // Get authenticated user or create anonymous user
         $userId = session('bitcoin_auth_id');
@@ -209,48 +335,30 @@ class ForumController extends Controller
         $title = $validated['title']; // Use raw title for PoW verification, escape later for storage
         $content = e($validated['content']);
 
-        // Generate proper challenge data and verify PoW (must match frontend exactly)
-        $challengeData = "thread:{$boardModel->code}:{$title}:{$validated['pow_challenge_id']}";
-        
-        Log::info('About to verify PoW', [
-            'challenge_data' => $challengeData,
-            'nonce' => $validated['pow_nonce'],
-            'nonce_type' => gettype($validated['pow_nonce']),
-            'submitted_hash' => $validated['pow_hash'],
-            'pattern' => '21e8'
-        ]);
-        
-        $verification = Thread::verifyProofOfWork(
-            $challengeData,
+        // Use new challenge-based verification system
+        $verifier = new ChallengeVerifier();
+        $verificationResult = $verifier->verifyChallenge(
+            $validated['pow_challenge_id'],
             $validated['pow_nonce'],
-            $validated['pow_hash'],
-            '21e8' // Required difficulty for threads
+            $validated['pow_hash']
         );
 
-        if (! $verification['valid']) {
-            $calculatedHash = hash('sha256', $challengeData.':'.$validated['pow_nonce']);
-            
-            Log::error('Thread PoW verification failed', [
-                'error' => $verification['error'],
+        if (!$verificationResult['valid']) {
+            Log::error('Thread challenge verification failed', [
+                'error' => $verificationResult['error'],
                 'board' => $board,
                 'title' => $title,
-                'challenge_data' => $challengeData,
-                'data_to_hash' => $challengeData.':'.$validated['pow_nonce'],
-                'nonce' => $validated['pow_nonce'],
-                'nonce_type' => gettype($validated['pow_nonce']),
-                'submitted_hash' => $validated['pow_hash'],
-                'calculated_hash' => $calculatedHash,
-                'hashes_match' => ($calculatedHash === strtolower($validated['pow_hash'])),
-                'expected_pattern' => '21e8',
-                'hash_starts_with_21e8' => str_starts_with(strtolower($validated['pow_hash']), '21e8'),
-                'calc_hash_starts_with_21e8' => str_starts_with(strtolower($calculatedHash), '21e8'),
                 'challenge_id' => $validated['pow_challenge_id'],
-                'raw_title' => $request->title,
-                'escaped_title' => $title,
+                'nonce' => $validated['pow_nonce'],
+                'submitted_hash' => $validated['pow_hash'],
             ]);
 
-            return back()->withErrors(['pow' => 'Proof of work verification failed: '.$verification['error']])->withInput();
+            return back()->withErrors(['pow' => 'Proof of work verification failed: '.$verificationResult['error']])->withInput();
         }
+
+        // Mark challenge as used
+        $challenge = $verificationResult['challenge'];
+        $challenge->markAsUsed();
 
         $threadData = [
             'board_id' => $boardModel->id,
@@ -261,8 +369,8 @@ class ForumController extends Controller
             'pow_nonce' => $request->pow_nonce,
             'pow_hash' => $request->pow_hash,
             'pow_challenge_id' => $request->pow_challenge_id,
-            'pow_pattern' => '21e8',
-            'pow_difficulty' => 1.0,
+            'pow_pattern' => $challenge->difficulty,
+            'pow_difficulty' => $this->calculatePoWPoints($request->pow_hash, $challenge->difficulty),
             'pow_verified_at' => now(),
             'ip_address' => $request->ip(),
             'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip()),
@@ -300,11 +408,12 @@ class ForumController extends Controller
             $threadData['image_hash'] = $existingImage->hash;
         }
 
-        Log::info('PoW verification passed, creating thread', [
-            'challenge_data' => $challengeData,
+        Log::info('Challenge verification passed, creating thread', [
+            'challenge_id' => $challenge->id,
+            'challenge_token' => $challenge->token,
             'submitted_hash' => $validated['pow_hash'],
-            'calculated_hash' => hash('sha256', $challengeData.':'.$validated['pow_nonce']),
-            'pattern_check' => str_starts_with(strtolower($validated['pow_hash']), '21e8')
+            'difficulty' => $challenge->difficulty,
+            'pattern_check' => str_starts_with(strtolower($validated['pow_hash']), strtolower($challenge->difficulty))
         ]);
 
         try {
@@ -312,15 +421,16 @@ class ForumController extends Controller
 
             // Create ProofOfWork record and award points to user
             if ($finalUserId && $request->pow_hash) {
-                $powPoints = $this->calculatePoWPoints($request->pow_hash, '21e8');
+                $powPoints = $this->calculatePoWPoints($request->pow_hash, $challenge->difficulty);
 
                 $proofOfWork = \App\Models\ProofOfWork::create([
+                    'challenge_id' => $challenge->id,
                     'user_id' => $finalUserId,
                     'thread_id' => $thread->id,
                     'hash' => $request->pow_hash,
                     'nonce' => $request->pow_nonce,
-                    'data' => $challengeData,
-                    'pattern' => '21e8',
+                    'data' => json_encode($challenge->canonical_payload),
+                    'pattern' => $challenge->difficulty,
                     'points' => $powPoints,
                     'verified_at' => now(),
                     'ip_address' => $request->ip(),
@@ -367,42 +477,149 @@ class ForumController extends Controller
         }
     }
 
+    // Simplified reply without POW
+    public function storeReplyNoPOW(Request $request, $board, $threadId)
+    {
+        try {
+            $validated = $request->validate([
+                'content' => 'required|string|max:5000|min:5',
+                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'post_anonymous' => 'boolean',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        }
+
+        if ($request->hasFile('image') && $request->filled('image_hash')) {
+            return back()->withErrors(['image' => 'Please provide either an image upload OR an image hash, not both.'])->withInput();
+        }
+
+        // Find thread
+        $thread = Thread::findOrFail($threadId);
+        
+        if ($thread->is_locked) {
+            return back()->withErrors(['thread' => 'This thread is locked and cannot accept new replies.']);
+        }
+
+        // Get authenticated user or create anonymous user
+        $userId = session('bitcoin_auth_id');
+        $postAsAnonymous = $validated['post_anonymous'] ?? false;
+
+        if ($userId && !$postAsAnonymous) {
+            $authorName = e(session('bitcoin_auth_user')->username ?? 'User');
+            $finalUserId = $userId;
+        } else {
+            $authorName = 'Anonymous#'.substr(hash('sha256', $request->ip().time()), 0, 8);
+            $finalUserId = null;
+        }
+
+        $postData = [
+            'thread_id' => $threadId,
+            'content' => $validated['content'],
+            'user_id' => $finalUserId,
+            'author_name' => $authorName,
+            'parent_id' => null,
+            'ip_address' => $request->ip(),
+            'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip()),
+        ];
+
+        // Handle image upload or existing hash
+        if ($request->hasFile('image')) {
+            $imageIndexingService = new ImageIndexingService;
+            $imageResult = $imageIndexingService->processAndIndexImage(
+                $request->file('image'),
+                null,
+                null,
+                $request->ip()
+            );
+
+            if (!$imageResult['success']) {
+                return back()->withErrors(['image' => 'Image processing failed: '.$imageResult['error']])->withInput();
+            }
+
+            $postData['image_path'] = $imageResult['file_path'];
+            $postData['image_filename'] = pathinfo($imageResult['file_path'], PATHINFO_BASENAME);
+            $postData['image_hash'] = $imageResult['hash'];
+            
+        } elseif ($request->filled('image_hash')) {
+            $existingImage = \App\Models\ImageLibrary::where('hash', $request->image_hash)->first();
+            
+            if (!$existingImage) {
+                return back()->withErrors(['image_hash' => 'Image hash not found in library.'])->withInput();
+            }
+
+            $postData['image_path'] = $existingImage->file_path;
+            $postData['image_filename'] = $existingImage->filename;
+            $postData['image_hash'] = $existingImage->hash;
+        }
+
+        try {
+            $post = Post::create($postData);
+
+            // Bump thread
+            $thread->bumped_at = now();
+            $thread->bump_score = min(10, $thread->bump_score + 0.5);
+            $thread->reply_count++;
+            $thread->save();
+
+            // Update user stats if logged in
+            if ($finalUserId) {
+                $user = session('bitcoin_auth_user');
+                if ($user) {
+                    $user->increment('total_posts');
+                    $user->increment('weekly_posts');
+                }
+            }
+
+            return redirect("/{$board}/thread/{$threadId}#post-{$post->id}")
+                ->with('success', 'Reply posted successfully!');
+                
+        } catch (\Exception $e) {
+            Log::error('Reply creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->withErrors(['error' => 'Failed to post reply. Please try again.'])->withInput();
+        }
+    }
+
     public function storeReply(Request $request, $board, $threadId)
     {
-        // Debug logging
-        Log::info('=== REPLY SUBMISSION DEBUG ===', [
-            'method' => $request->method(),
-            'url' => $request->fullUrl(),
+        // Log reply creation attempt
+        Log::info('Reply creation attempt', [
             'board' => $board,
             'thread_id' => $threadId,
-            'content' => $request->input('content'),
-            'pow_nonce' => $request->input('pow_nonce'),
-            'pow_hash' => $request->input('pow_hash'),
-            'pow_challenge_id' => $request->input('pow_challenge_id'),
-            'has_csrf' => $request->hasHeader('X-CSRF-TOKEN') || $request->has('_token'),
-            'all_input' => $request->all(),
+            'has_required_fields' => $request->has(['content', 'pow_hash']),
+            'user_authenticated' => (bool) session('bitcoin_auth_id')
         ]);
 
-        // Log reply submission
-        Log::info('Reply submission received', [
-            'board' => $board,
-            'thread_id' => $threadId,
-            'content_length' => strlen($request->input('content', '')),
-            'has_image' => $request->hasFile('image'),
-            'pow_nonce' => $request->input('pow_nonce'),
-            'pow_hash' => $request->input('pow_hash') ? substr($request->input('pow_hash'), 0, 16).'...' : null,
-            'pow_challenge_id' => $request->input('pow_challenge_id'),
-            'request_method' => $request->method(),
-            'user_agent' => substr($request->userAgent(), 0, 100),
-        ]);
+        // Comprehensive input validation
+        try {
+            $validated = $request->validate([
+                'content' => 'required|string|max:5000|min:5',
+                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'pow_nonce' => 'required|integer|min:0',
+                'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'pow_challenge_id' => 'required|string|size:36|regex:/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/',
+                'post_anonymous' => 'boolean',
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Reply validation failed', [
+                'errors' => $e->errors(),
+                'input_data' => $request->only(['content', 'pow_nonce', 'pow_hash', 'pow_challenge_id'])
+            ]);
+            throw $e;
+        }
 
-        $request->validate([
-            'content' => 'required|max:5000',
-            'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
-            'pow_nonce' => 'required|integer',
-            'pow_hash' => 'required|string|size:64',
-            'pow_challenge_id' => 'required|string',
-        ]);
+        // Validate that both image and hash are not provided simultaneously
+        if ($request->hasFile('image') && $request->filled('image_hash')) {
+            Log::error('Image validation failed: both image and hash provided');
+            return back()->withErrors(['image' => 'Please provide either an image upload OR an image hash, not both.'])->withInput();
+        }
 
         // Handle both board codes (gen) and board names (General)
         $boardModel = Board::where('code', $board)
@@ -410,35 +627,37 @@ class ForumController extends Controller
             ->firstOrFail();
         $thread = Thread::with('bitcoinUser')->findOrFail($threadId);
 
-        // Verify PoW (MANDATORY for all replies)
-        $challengeData = "reply:{$boardModel->code}:{$threadId}:{$request->pow_challenge_id}";
-
-        $verification = Thread::verifyProofOfWork(
-            $challengeData,
-            $request->pow_nonce,
-            $request->pow_hash,
-            '21e8' // Same difficulty as threads for replies
+        // Use new challenge-based verification system for replies
+        $verifier = new ChallengeVerifier();
+        $verificationResult = $verifier->verifyChallenge(
+            $validated['pow_challenge_id'],
+            $validated['pow_nonce'],
+            $validated['pow_hash']
         );
 
-        if (! $verification['valid']) {
-            Log::error('Reply PoW verification failed', [
-                'error' => $verification['error'],
+        if (!$verificationResult['valid']) {
+            Log::error('Reply challenge verification failed', [
+                'error' => $verificationResult['error'],
                 'board' => $board,
                 'thread_id' => $threadId,
-                'challenge_data' => $challengeData,
-                'nonce' => $request->pow_nonce,
-                'submitted_hash' => $request->pow_hash,
+                'challenge_id' => $validated['pow_challenge_id'],
+                'nonce' => $validated['pow_nonce'],
+                'submitted_hash' => $validated['pow_hash'],
             ]);
 
-            return back()->withErrors(['pow' => 'Proof of work verification failed: '.$verification['error']])->withInput();
+            return back()->withErrors(['pow' => 'Proof of work verification failed: '.$verificationResult['error']])->withInput();
         }
+
+        // Mark challenge as used
+        $challenge = $verificationResult['challenge'];
+        $challenge->markAsUsed();
 
         // Get authenticated user or create anonymous user
         $userId = session('bitcoin_auth_id');
-        $postAsAnonymous = $request->boolean('post_anonymous', false);
+        $postAsAnonymous = $validated['post_anonymous'] ?? false;
 
         if ($userId && ! $postAsAnonymous) {
-            $authorName = session('bitcoin_auth_user')->username;
+            $authorName = e(session('bitcoin_auth_user')->username ?? 'User');
             $finalUserId = $userId;
         } else {
             $authorName = 'Anonymous#'.substr(hash('sha256', $request->ip().time()), 0, 8);
@@ -454,15 +673,16 @@ class ForumController extends Controller
             'pow_nonce' => $request->pow_nonce,
             'pow_hash' => $request->pow_hash,
             'pow_challenge_id' => $request->pow_challenge_id,
-            'pow_pattern' => '21e8',
-            'pow_difficulty' => 1.0,
+            'pow_pattern' => $challenge->difficulty,
+            'pow_difficulty' => $this->calculatePoWPoints($request->pow_hash, $challenge->difficulty),
             'pow_verified_at' => now(),
             'ip_address' => $request->ip(),
             'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip()),
         ];
 
-        // Handle image upload using new ImageIndexingService
+        // Handle image upload or existing hash
         if ($request->hasFile('image')) {
+            // New image upload
             $imageIndexingService = new ImageIndexingService;
             $imageResult = $imageIndexingService->processAndIndexImage(
                 $request->file('image'),
@@ -478,6 +698,18 @@ class ForumController extends Controller
             $postData['image_path'] = $imageResult['file_path'];
             $postData['image_filename'] = pathinfo($imageResult['file_path'], PATHINFO_BASENAME);
             $postData['image_hash'] = $imageResult['hash'];
+            
+        } elseif ($request->filled('image_hash')) {
+            // Using existing image hash from library
+            $existingImage = \App\Models\ImageLibrary::where('hash', $request->image_hash)->first();
+            
+            if (!$existingImage) {
+                return back()->withErrors(['image_hash' => 'Image hash not found in library.'])->withInput();
+            }
+
+            $postData['image_path'] = $existingImage->file_path;
+            $postData['image_filename'] = $existingImage->filename;
+            $postData['image_hash'] = $existingImage->hash;
         }
 
         // Use database transaction to ensure data is committed before redirect
@@ -490,18 +722,27 @@ class ForumController extends Controller
             return $post;
         });
 
+        Log::info('Challenge verification passed, creating reply', [
+            'challenge_id' => $challenge->id,
+            'challenge_token' => $challenge->token,
+            'submitted_hash' => $validated['pow_hash'],
+            'difficulty' => $challenge->difficulty,
+            'pattern_check' => str_starts_with(strtolower($validated['pow_hash']), strtolower($challenge->difficulty))
+        ]);
+
         // Create ProofOfWork record and award points to user for replies
         if ($finalUserId && $request->pow_hash) {
-            $powPoints = $this->calculatePoWPoints($request->pow_hash, '21e');
-            $challengeData = "reply:{$boardModel->code}:{$threadId}:{$request->pow_challenge_id}";
+            $powPoints = $this->calculatePoWPoints($request->pow_hash, $challenge->difficulty);
 
             $proofOfWork = \App\Models\ProofOfWork::create([
+                'challenge_id' => $challenge->id,
                 'user_id' => $finalUserId,
                 'thread_id' => $threadId,
+                'post_id' => $post->id,
                 'hash' => $request->pow_hash,
                 'nonce' => $request->pow_nonce,
-                'data' => $challengeData,
-                'pattern' => '21e',
+                'data' => json_encode($challenge->canonical_payload),
+                'pattern' => $challenge->difficulty,
                 'points' => $powPoints,
                 'verified_at' => now(),
                 'ip_address' => $request->ip(),
@@ -514,10 +755,11 @@ class ForumController extends Controller
             }
         }
 
-        // Update the library image with post reference if image was uploaded
-        if ($request->hasFile('image') && isset($imageResult)) {
-            $imageLibraryRecord = \App\Models\ImageLibrary::where('hash', $imageResult['hash'])->first();
-            if ($imageLibraryRecord && ! $imageLibraryRecord->first_post_id) {
+        // Update the library image with post reference
+        $imageHash = $postData['image_hash'] ?? null;
+        if ($imageHash) {
+            $imageLibraryRecord = \App\Models\ImageLibrary::where('hash', $imageHash)->first();
+            if ($imageLibraryRecord && !$imageLibraryRecord->first_post_id) {
                 $imageLibraryRecord->update([
                     'first_post_id' => $post->id,
                 ]);
@@ -618,6 +860,11 @@ class ForumController extends Controller
     {
         $hash = strtolower($hash);
         $expectedPattern = strtolower($expectedPattern);
+
+        // Detect fallback/dummy values and give zero points
+        if ($hash === '21e8000000000000000000000000000000000000000000000000000000000000') {
+            return 0; // No points for fallback values
+        }
 
         // Base points for different patterns
         $pointMap = [

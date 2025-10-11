@@ -26,6 +26,9 @@ class BitcoinAuth
             return redirect('/auth/login')->withErrors(['auth' => 'Account access denied.']);
         }
 
+        // Keep session user data fresh
+        session(['bitcoin_auth_user' => $user]);
+
         // Regenerate session ID periodically for security
         if (! session('last_regeneration') || session('last_regeneration') < now()->subMinutes(30)) {
             session()->regenerate();

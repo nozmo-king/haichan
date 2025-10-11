@@ -1,4 +1,4 @@
-@extends('layout')
+@extends('layout', ['boardCode' => $board->code])
 
 @section('title', '/'.$board->code.'/ - '.$board->name)
 
@@ -16,15 +16,25 @@
 </div>
 
 <!-- Original Post -->
-<div class="post" style="margin: 20px 0;" data-mine-type="thread-op" data-thread-id="{{ $thread->id }}" data-board-code="{{ $board->code }}">
+<div class="post" style="margin: 20px 0;" 
+     data-mineable="true"
+     data-mine-id="{{ $thread->id }}" 
+     data-mine-type="thread" 
+     data-mine-difficulty="21e8"
+     data-mine-content="thread_{{ $thread->id }}_{{ $thread->title }}"
+     data-thread-id="{{ $thread->id }}" 
+     data-board-code="{{ $board->code }}">
     <div class="post-header">
         <span class="post-name">
             @if($thread->user_id && $thread->bitcoinUser)
-                {{ $thread->bitcoinUser->getDisplayName() }}
+                <a href="{{ route('user.profile', $thread->user_id) }}" style="color: inherit; text-decoration: none; font-weight: bold;">{{ $thread->bitcoinUser->getDisplayName() }}</a>
             @else
                 Anonymous
             @endif
         </span>
+        @if($board->code === 'pol' && $thread->ip_address)
+            {!! \App\Helpers\GeoIP::formatIPWithFlag($thread->ip_address, $board->code) !!}
+        @endif
         {{ $thread->created_at->format('m/d/y(D) H:i:s') }}
         <span class="post-no">No.{{ $thread->id }}</span>
         @if($thread->accumulated_points > 0)
@@ -59,16 +69,27 @@
 </div>
 
 <!-- Replies -->
-@foreach($thread->posts as $post)
-<div class="post" data-mine-type="post" data-post-id="{{ $post->id }}" data-thread-id="{{ $thread->id }}" data-board-code="{{ $board->code }}">
+@foreach($posts as $post)
+<div class="post" 
+     data-mineable="true"
+     data-mine-id="{{ $post->id }}" 
+     data-mine-type="post" 
+     data-mine-difficulty="21e8"
+     data-mine-content="post_{{ $post->id }}_{{ $thread->id }}"
+     data-post-id="{{ $post->id }}" 
+     data-thread-id="{{ $thread->id }}" 
+     data-board-code="{{ $board->code }}">
     <div class="post-header">
         <span class="post-name">
             @if($post->user_id && $post->bitcoinUser)
-                {{ $post->bitcoinUser->getDisplayName() }}
+                <a href="{{ route('user.profile', $post->user_id) }}" style="color: inherit; text-decoration: none; font-weight: bold;">{{ $post->bitcoinUser->getDisplayName() }}</a>
             @else
                 Anonymous
             @endif
         </span>
+        @if($board->code === 'pol' && $post->ip_address)
+            {!! \App\Helpers\GeoIP::formatIPWithFlag($post->ip_address, $board->code) !!}
+        @endif
         {{ $post->created_at->format('m/d/y(D) H:i:s') }}
         <span class="post-no clickable-hash" onclick="quotePost('{{ $post->id }}')">No.{{ $post->id }}</span>
         @if($post->accumulated_points > 0)
@@ -96,10 +117,10 @@
 @endforeach
 
 <!-- Unified Reply Form -->
-<div id="reply-form" class="tui-reply-form" style="display: none; margin: 20px 0;">
-    <div class="tui-reply-header">
-        <div class="tui-reply-title">💬 Quick Reply</div>
-        <button type="button" class="tui-btn-close" onclick="toggleQuickReply()">×</button>
+<div id="reply-form" class="tui-reply-form" style="display: none; margin: 20px 0; background: linear-gradient(135deg, #F5F5DC, #FFFACD); border: 2px solid #708B75; border-radius: 12px; box-shadow: 0 4px 20px rgba(112, 139, 117, 0.2); overflow: hidden;">
+    <div class="tui-reply-header" style="background: linear-gradient(135deg, #708B75, #5a7860); color: #F5F5DC; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div class="tui-reply-title" style="font-size: 18px; font-weight: 600;">💬 Quick Reply</div>
+        <button type="button" class="tui-btn-close" onclick="toggleQuickReply()" style="background: none; border: none; color: #F5F5DC; font-size: 20px; cursor: pointer; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.2)'" onmouseout="this.style.backgroundColor='transparent'">×</button>
     </div>
     
     <div class="tui-reply-container">
@@ -140,18 +161,34 @@
                 <div class="tui-hint">Copy hash from Image Library instead of uploading.</div>
             </div>
             
-            <!-- Hidden PoW fields (managed by unified system) -->
+            <!-- Anonymous posting option -->
+            <div class="tui-field">
+                <label class="tui-checkbox-label">
+                    <input type="checkbox" name="post_anonymous" value="1" id="post-anonymous">
+                    <span class="tui-checkmark"></span>
+                    Post anonymously (even if logged in)
+                </label>
+            </div>
+            
+            <!-- Hidden PoW fields (must be filled by mining system) -->
             <input type="hidden" name="pow_nonce" required>
             <input type="hidden" name="pow_hash" required>
             <input type="hidden" name="pow_challenge_id" required>
             
             <div class="tui-actions">
-                <button type="submit" class="tui-btn tui-btn-primary">
-                    📤 Post Reply
-                </button>
-                <button type="button" class="tui-btn tui-btn-outline" onclick="toggleQuickReply()">
-                    Cancel
-                </button>
+                <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+                    <div style="display: flex; gap: 10px;">
+                        <button type="submit" class="tui-btn tui-btn-primary" id="reply-submit-btn">
+                            📤 Post Reply
+                        </button>
+                        <button type="button" class="tui-btn tui-btn-outline" onclick="toggleQuickReply()">
+                            Cancel
+                        </button>
+                    </div>
+                    <div id="reply-mining-status" style="font-size: 12px; color: #6B7A6B;">
+                        Fill content to begin mining
+                    </div>
+                </div>
             </div>
         </form>
     </div>
@@ -294,35 +331,284 @@ style.textContent = `
         color: var(--ib-accent) !important;
         text-decoration: underline;
     }
+    
+    /* Reply button styling */
+    #reply-submit-btn:disabled {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+        background: #ccc !important;
+        color: #666 !important;
+    }
+    
+    #reply-submit-btn:enabled {
+        opacity: 1 !important;
+        cursor: pointer !important;
+    }
+    
+    /* IP flags styling */
+    .ip-flag {
+        margin: 0 5px;
+        font-size: 16px;
+        cursor: help;
+        transition: transform 0.2s ease;
+    }
+    
+    .ip-flag:hover {
+        transform: scale(1.2);
+    }
 `;
 document.head.appendChild(style);
 
-document.querySelector('.unified-post-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
+// Simple Reply Form Handler (POW disabled)
+document.addEventListener('DOMContentLoaded', function() {
+    const replyForm = document.querySelector('.unified-post-form');
+    const contentInput = document.getElementById('post-content');
+    const submitBtn = document.getElementById('reply-submit-btn');
+    const miningStatus = document.getElementById('reply-mining-status');
     
-    const btn = this.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    btn.textContent = '⏳ Mining proof...';
-    
-    try {
-        const proof = await window.haichanMiningBrain.acquireProofFor({
-            board_code: '{{ $board->code }}',
-            target_type: 'reply',
-            target_id: '{{ $thread->id }}',
-            action: 'create',
-            difficulty: '21e8'
-        });
-        
-        this.querySelector('[name="pow_nonce"]').value = proof.nonce;
-        this.querySelector('[name="pow_hash"]').value = proof.hash;
-        this.querySelector('[name="pow_challenge_id"]').value = proof.challenge_id;
-        
-        this.submit();
-    } catch (error) {
-        alert('Mining failed: ' + error.message);
-        btn.disabled = false;
-        btn.textContent = '📤 Post Reply';
+    if (!replyForm || !contentInput || !submitBtn) {
+        console.log('Reply form elements not found');
+        return;
     }
+    
+    console.log('Reply form initialized with POW support');
+    
+    // Simple inline mining function
+    async function mineProof(challengeData, targetPattern) {
+        const encoder = new TextEncoder();
+        let nonce = 0;
+        
+        while (true) {
+            const data = challengeData + ':' + nonce;
+            const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
+            const hashArray = new Uint8Array(hashBuffer);
+            const hash = Array.from(hashArray).map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            if (hash.startsWith(targetPattern.toLowerCase())) {
+                return { nonce, hash };
+            }
+            nonce++;
+            
+            // Update UI every 1000 hashes
+            if (nonce % 1000 === 0) {
+                miningStatus.innerHTML = `<span style="color: #ffc107;">⛏️ Mining... ${nonce} hashes</span>`;
+                await new Promise(resolve => setTimeout(resolve, 1));
+            }
+        }
+    }
+    
+    // Wait for mining brain to be available
+    async function waitForMiningBrain(maxRetries = 20) {
+        for (let i = 0; i < maxRetries; i++) {
+            // First check if HaichanMiningBrain class exists and create instance if needed
+            if (window.HaichanMiningBrain && !window.haichanMiningBrain) {
+                try {
+                    console.log('Creating mining brain instance in reply form...');
+                    window.haichanMiningBrain = new HaichanMiningBrain();
+                } catch (e) {
+                    console.error('Failed to create mining brain:', e);
+                }
+            }
+            
+            // Check for any available mining system
+            if (window.haichanMiningBrain || window.simplePoW || window.haichanMiner) {
+                console.log('Mining system ready after', i, 'retries');
+                return true;
+            }
+            await new Promise(resolve => setTimeout(resolve, 250));
+        }
+        console.error('Mining system not available after', maxRetries, 'retries');
+        return false;
+    }
+    
+    // Auto-start mining when content is filled
+    async function startReplyMining() {
+        const content = contentInput.value.trim();
+        
+        if (content.length >= 5) {
+            try {
+                console.log('Starting reply mining...');
+                miningStatus.innerHTML = '<span style="color: #ffc107;">⛏️ Initializing mining...</span>';
+                
+                // Wait for mining brain if needed
+                await waitForMiningBrain();
+                
+                // Find any available mining system
+                let miner = null;
+                const availableMiners = ['haichanMiningBrain', 'simplePoW', 'fallbackMining', 'haichanMiner'];
+                
+                console.log('Available mining systems:', {
+                    HaichanMiningBrain: !!window.HaichanMiningBrain,
+                    haichanMiningBrain: !!window.haichanMiningBrain,
+                    simplePoW: !!window.simplePoW,
+                    fallbackMining: !!window.fallbackMining,
+                    haichanMiner: !!window.haichanMiner
+                });
+                
+                // Try to find a working miner
+                for (const minerName of availableMiners) {
+                    if (window[minerName]) {
+                        // Check if it has the required method
+                        if (typeof window[minerName].acquireProofFor === 'function') {
+                            miner = window[minerName];
+                            console.log(`✅ Using ${minerName} for reply mining`);
+                            break;
+                        } else if (typeof window[minerName].mine === 'function') {
+                            // Adapter for miners with different API
+                            console.log(`✅ Adapting ${minerName} for reply mining`);
+                            miner = {
+                                acquireProofFor: async (payload) => {
+                                    return await window[minerName].mine(payload);
+                                }
+                            };
+                            break;
+                        }
+                    }
+                }
+                
+                if (!miner) {
+                    // Emergency: create inline miner
+                    console.warn('⚠️ No miners available, creating emergency miner');
+                    miner = {
+                        acquireProofFor: async (payload) => {
+                            // Direct challenge request
+                            const challengeResp = await fetch('/api/mining/challenges', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                                },
+                                body: JSON.stringify(payload)
+                            });
+                            
+                            const challenge = await challengeResp.json();
+                            if (!challenge.success) throw new Error('Challenge failed');
+                            
+                            // Mine with inline function
+                            const result = await mineProof(
+                                JSON.stringify(challenge.canonical_payload),
+                                payload.difficulty
+                            );
+                            
+                            return {
+                                nonce: result.nonce.toString(),
+                                hash: result.hash,
+                                challenge_id: challenge.token
+                            };
+                        }
+                    };
+                }
+                
+                console.log('Mining for proof...');
+                miningStatus.innerHTML = '<span style="color: #ffc107;">⛏️ Mining proof-of-work...</span>';
+                
+                // Mine with selected system
+                const proof = await miner.acquireProofFor({
+                    board_code: '{{ $board->code }}',
+                    target_type: 'reply',
+                    target_id: '{{ $thread->id }}',
+                    action: 'create',
+                    difficulty: '21e8'
+                });
+                
+                console.log('✅ Proof acquired:', proof);
+                
+                // Fill form fields
+                replyForm.querySelector('input[name="pow_nonce"]').value = proof.nonce || '0';
+                replyForm.querySelector('input[name="pow_hash"]').value = proof.hash || '';
+                replyForm.querySelector('input[name="pow_challenge_id"]').value = proof.challenge_id || '';
+                
+                // Enable submit button
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+                submitBtn.style.background = 'linear-gradient(135deg, #708B75, #5a7860)';
+                submitBtn.textContent = '⚡ Post Reply';
+                
+                miningStatus.innerHTML = '<span style="color: #28a745;">✅ Mining complete! Ready to post.</span>';
+                
+                // Extra validation
+                if (proof.hash && proof.hash.toLowerCase().startsWith('21e8')) {
+                    miningStatus.innerHTML += '<br><small style="color: #28a745;">Valid 21e8 hash found!</small>';
+                }
+                
+            } catch (error) {
+                console.error('Mining failed:', error);
+                miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Mining error - retrying...</span>';
+                
+                // Retry with simpler approach
+                setTimeout(() => {
+                    if (content.length >= 5) {
+                        startReplyMining(); // Recursive retry
+                    }
+                }, 2000);
+            }
+        } else {
+            // Reset if content is too short
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '0.8';
+            submitBtn.style.background = '';
+            miningStatus.innerHTML = 'Fill content to begin mining';
+        }
+    }
+    
+    // Start mining when user fills content (debounced)
+    let miningTimeout;
+    contentInput.addEventListener('input', () => {
+        clearTimeout(miningTimeout);
+        const hasProof = replyForm.querySelector('input[name="pow_hash"]').value;
+        
+        if (!hasProof && contentInput.value.trim().length >= 5) {
+            miningTimeout = setTimeout(startReplyMining, 1000);
+        }
+    });
+    
+    // Form submission validation
+    replyForm.addEventListener('submit', async (e) => {
+        const hasProof = replyForm.querySelector('input[name="pow_hash"]').value;
+        const contentText = contentInput.value.trim();
+        
+        if (!hasProof && contentText.length >= 5) {
+            e.preventDefault();
+            miningStatus.innerHTML = '<span style="color: #ffc107;">⛏️ Mining proof-of-work before submission...</span>';
+            
+            try {
+                // Mine proof synchronously before submission
+                await startReplyMining();
+                
+                // Check if proof was acquired
+                const newProof = replyForm.querySelector('input[name="pow_hash"]').value;
+                if (newProof) {
+                    // Resubmit form after mining is complete
+                    replyForm.submit();
+                }
+            } catch (error) {
+                console.error('Mining failed during submission:', error);
+                miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Mining failed: ' + error.message + '</span>';
+            }
+            return;
+        }
+        
+        if (!hasProof) {
+            e.preventDefault();
+            miningStatus.innerHTML = '<span style="color: #dc3545;">⚠️ Complete proof-of-work mining first!</span>';
+            return;
+        }
+        
+        console.log('Submitting reply with proof');
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Posting Reply...';
+        miningStatus.innerHTML = '<span style="color: #708B75;">🔄 Submitting your reply...</span>';
+    });
+    
+    // Initial check if form already has content
+    setTimeout(() => {
+        if (contentInput.value.trim().length >= 5) {
+            startReplyMining();
+        }
+    }, 500);
 });
 
 // Auto-focus content area when reply form is opened
@@ -349,5 +635,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-@include('components.mining-dashboard')
 @endsection

@@ -9,7 +9,7 @@ export default defineConfig({
                 'resources/css/grunge-chaos-scoped.css',
                 'resources/css/chaos-effects.css',
                 'resources/js/app.js', 
-                'resources/js/simple-mining.js'
+                'resources/js/haichan-unified.js'
             ],
             refresh: false,
         }),
@@ -30,7 +30,7 @@ export default defineConfig({
                 'resources/css/grunge-chaos-scoped.css',
                 'resources/css/chaos-effects.css',
                 'resources/js/app.js', 
-                'resources/js/simple-mining.js'
+                'resources/js/haichan-unified.js'
             ],
         },
     },

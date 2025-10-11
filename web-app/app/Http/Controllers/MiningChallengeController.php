@@ -22,11 +22,11 @@ class MiningChallengeController extends Controller
     public function issue(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'board_code' => 'nullable|string|exists:boards,name',
+            'board_code' => 'nullable|string',
             'target_type' => 'required|string|in:thread,reply,post,general',
             'target_id' => 'nullable|string',
             'action' => 'required|string|in:bump,create,mine',
-            'difficulty' => 'required|string|in:21,21e,21e8,21e80,21e800,21e8000,000021e8,000,111,222,333,444,555,666,777,888,999,aaa,bbb,ccc,ddd,eee,fff,ace,bad,cab,dad,ded,fab,fed,beef,cafe,face,babe,fade,dead,deed,feed,c0de,b00b,1337,pwnd,rekt,epic,Chad,deadbeef',
+            'difficulty' => 'required|string|in:2,21,21e,21e8,21e80,21e800,21e8000,000021e8,000,111,222,333,444,555,666,777,888,999,aaa,bbb,ccc,ddd,eee,fff,ace,bad,cab,dad,ded,fab,fed,beef,cafe,face,babe,fade,dead,deed,feed,c0de,b00b,1337,pwnd,rekt,epic,Chad,deadbeef',
         ]);
 
         if ($validator->fails()) {
@@ -55,7 +55,7 @@ class MiningChallengeController extends Controller
 
         $boardId = null;
         if ($request->has('board_code')) {
-            $board = Board::where('name', $request->board_code)->first();
+            $board = Board::where('code', $request->board_code)->orWhere('name', $request->board_code)->first();
             if ($board) {
                 $boardId = $board->id;
             }

@@ -21,17 +21,27 @@ class ProofOfWorkController extends Controller
 
         $validator = Validator::make($request->all(), [
             'challenge_token' => 'required|string',
-            'client_nonce' => 'required|string',
+            'client_nonce' => 'required', // Accept number or string
             'hash' => 'required|string|size:64',
         ]);
 
         if ($validator->fails()) {
+            Log::error('PROOF VALIDATION FAILED', [
+                'errors' => $validator->errors(),
+                'request_data' => $request->all()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid proof format: challenge_token, client_nonce, and hash are required',
                 'errors' => $validator->errors(),
             ], 422);
         }
+        
+        Log::info('PROOF VALIDATION PASSED, starting verification', [
+            'challenge_token' => $request->input('challenge_token'),
+            'hash' => $request->input('hash'),
+            'nonce' => $request->input('client_nonce')
+        ]);
 
         $verifier = new \App\Services\ChallengeVerifier();
         $verificationResult = $verifier->verifyChallenge(
@@ -62,6 +72,19 @@ class ProofOfWorkController extends Controller
             ], 400);
         }
 
+        // SECURITY: Block dummy/fallback values
+        $hash = $request->input('hash');
+        if ($hash === '21e8000000000000000000000000000000000000000000000000000000000000') {
+            Log::warning('DUMMY HASH REJECTED', [
+                'hash' => $hash,
+                'ip' => $request->ip()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Dummy values not accepted',
+            ], 400);
+        }
+
         $points = $this->calculatePoints($challenge->difficulty);
 
         $threadId = null;
@@ -73,24 +96,54 @@ class ProofOfWorkController extends Controller
 
         $challenge->markAsUsed();
 
-        ProofOfWork::create([
-            'challenge_id' => $challenge->id,
-            'thread_id' => $threadId,
-            'hash' => $request->input('hash'),
-            'nonce' => 0,
-            'data' => json_encode($challenge->canonical_payload),
-            'pattern' => $challenge->difficulty,
-            'points' => $points,
-            'ip_address' => $request->ip(),
-            'verified_at' => now(),
-            'user_id' => $challenge->user_id,
-        ]);
+        // Use database transaction with retry for concurrent proof submissions
+        $proofOfWork = null;
+        $maxRetries = 3;
+        $retries = 0;
+        
+        while ($retries < $maxRetries) {
+            try {
+                $proofOfWork = \DB::transaction(function () use ($challenge, $threadId, $request, $points) {
+                    return ProofOfWork::create([
+                        'challenge_id' => $challenge->id,
+                        'thread_id' => $threadId,
+                        'hash' => $request->input('hash'),
+                        'nonce' => 0,
+                        'data' => json_encode($challenge->canonical_payload),
+                        'pattern' => $challenge->difficulty,
+                        'points' => $points,
+                        'ip_address' => $request->ip(),
+                        'verified_at' => now(),
+                        'user_id' => $challenge->user_id,
+                    ]);
+                });
+                break; // Success, exit retry loop
+            } catch (\Exception $e) {
+                $retries++;
+                if ($retries >= $maxRetries) {
+                    Log::error('Failed to save proof after retries', [
+                        'error' => $e->getMessage(),
+                        'hash' => $request->input('hash')
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Database busy, try again'
+                    ], 500);
+                }
+                // Wait a bit before retrying
+                usleep(100000); // 100ms
+            }
+        }
 
         if ($threadId) {
             $thread = Thread::find($threadId);
             if ($thread) {
                 $thread->increment('bump_score', $points);
                 $thread->update(['bumped_at' => now()]);
+
+                // Clear board cache so PoW numbers update immediately
+                $cacheKey = "board_threads_{$thread->board_id}";
+                \Cache::forget($cacheKey);
 
                 if ($thread->board && method_exists($thread->board, 'addPowPoints')) {
                     $thread->board->addPowPoints($points);
@@ -291,6 +344,7 @@ class ProofOfWorkController extends Controller
 
         return $points[$pattern] ?? 0.1;
     }
+
 
     public function postBump(Request $request)
     {

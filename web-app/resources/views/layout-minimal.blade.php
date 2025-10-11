@@ -21,7 +21,7 @@
     
     <!-- Mining System -->
     <script src="/js/transparent-pow.js"></script>
-    @vite('resources/js/simple-mining.js')
+    @vite('resources/js/haichan-unified.js')
 </head>
 
 <body>

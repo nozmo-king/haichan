@@ -14,21 +14,46 @@ class ChatController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('bitcoin.auth');
+        // Middleware is handled by route groups in web.php
     }
 
     /**
-     * Display chat rooms list
+     * Display default general chat (auto-redirect)
      */
     public function index()
     {
-        $rooms = ChatRoom::getPublicRooms();
-        $user = auth()->user();
+        // Get or create the default general chat room
+        $generalRoom = ChatRoom::firstOrCreate(
+            ['slug' => 'general'],
+            [
+                'name' => 'General',
+                'description' => 'Default general discussion',
+                'pow_difficulty' => '21e8',
+                'min_pow_points' => 0,
+                'is_active' => true,
+                'is_public' => true,
+                'max_users' => 100,
+                'message_rate_limit' => 60
+            ]
+        );
         
-        // Get user's PoW points for room access checking
-        $userPowPoints = $user->bitcoinUser?->accumulated_points ?? 0;
+        // Create hidden admin room (accessible only via /join #sadmin)
+        ChatRoom::firstOrCreate(
+            ['slug' => 'sadmin'],
+            [
+                'name' => 'Secret Admin',
+                'description' => 'Hidden admin chat',
+                'pow_difficulty' => '21e8',
+                'min_pow_points' => 1000,
+                'is_active' => true,
+                'is_public' => false,
+                'max_users' => 10,
+                'message_rate_limit' => 30
+            ]
+        );
         
-        return view('chat.index', compact('rooms', 'userPowPoints'));
+        // Auto-redirect to general chat
+        return redirect()->route('chat.room', ['room' => $generalRoom]);
     }
 
     /**
@@ -36,135 +61,83 @@ class ChatController extends Controller
      */
     public function show(ChatRoom $room)
     {
-        $user = auth()->user();
+        $user = $this->getBitcoinAuthUser();
         
-        // Check if user can join this room
-        if (!$room->canUserJoin($user)) {
-            $userPowPoints = $user->bitcoinUser?->accumulated_points ?? 0;
-            
-            return redirect()->route('chat.index')
-                           ->with('error', "Cannot join room '{$room->name}'. Required: {$room->min_pow_points} PoW points. You have: {$userPowPoints}");
+        if (!$user) {
+            return redirect('/auth/login')->withErrors(['auth' => 'Please log in to access chat']);
         }
-
+        
         // Join user to room if not already joined
         $this->joinUserToRoom($room, $user);
         
-        // Get recent messages
-        $messages = ChatMessage::getRecentMessages($room, 50);
+        // Get recent messages (simplified)
+        $messages = $room->messages()->with('user')->latest()->take(50)->get()->reverse();
         
-        // Get room stats
-        $stats = $room->getStats();
-        
-        // Get active users
-        $activeUsers = $room->activeUsers()->limit(20)->get();
-        
-        return view('chat.room', compact('room', 'messages', 'stats', 'activeUsers'));
+        return view('chat.room', compact('room', 'messages', 'user'));
     }
 
     /**
-     * Send a message to chat room
+     * Send message with PoW validation
      */
     public function sendMessage(Request $request, ChatRoom $room)
     {
-        $user = auth()->user();
+        $user = $this->getBitcoinAuthUser();
         
-        // Validate input
+        if (!$user) {
+            return response()->json(['success' => false, 'error' => 'Authentication required'], 401);
+        }
+        
+        // Validate input (POW disabled)
         $validated = $request->validate([
-            'message' => 'required|string|max:2000|min:1',
-            'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
-            'pow_nonce' => 'required|integer|min:0',
-            'pow_challenge_id' => 'required|string|size:32|regex:/^[a-f0-9]{32}$/',
-            'username' => 'nullable|string|max:50', // Optional display name
+            'message' => 'required|string|max:500|min:1',
+            // 'nonce' => 'required|string',
+            // 'hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
         ]);
 
-        // Check if user can send message
-        $canSend = $room->canUserSendMessage($user);
-        if (!$canSend['can_send']) {
-            return response()->json([
-                'success' => false,
-                'error' => $canSend['reason']
-            ], 403);
-        }
-
-        // Rate limiting per user
-        $key = "chat_message:{$user->id}:{$room->id}";
-        if (RateLimiter::tooManyAttempts($key, $room->message_rate_limit)) {
-            $seconds = RateLimiter::availableIn($key);
-            return response()->json([
-                'success' => false,
-                'error' => "Rate limited. Try again in {$seconds} seconds."
-            ], 429);
-        }
-
-        // Validate Proof of Work
-        $powValidation = ChatMessage::validateProofOfWork([
-            'message' => $validated['message'],
-            'pow_hash' => $validated['pow_hash'],
-            'pow_nonce' => $validated['pow_nonce'],
-            'pow_challenge_id' => $validated['pow_challenge_id'],
-            'room_difficulty' => $room->pow_difficulty,
-        ]);
-
-        if (!$powValidation['valid']) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Invalid proof of work: ' . $powValidation['reason']
-            ], 400);
+        $message = trim($validated['message']);
+        
+        // Check for commands (skip PoW validation for commands)
+        if (str_starts_with($message, '/')) {
+            return $this->handleCommand($request, $room, $user, $validated);
         }
 
         try {
+            // POW disabled - simplified chat
+            
+            // Get user's display name from room or generate default
+            $roomUser = $room->users()->where('user_id', $user->id)->first();
+            $displayName = $roomUser?->pivot?->display_name ?? 
+                          ($user->username . ' !' . substr(hash('sha256', $user->address), 0, 6));
+
             // Create the message
             $message = ChatMessage::create([
                 'chat_room_id' => $room->id,
                 'user_id' => $user->id,
-                'username' => $validated['username'] ?: null,
+                'username' => $displayName,
                 'message' => $validated['message'],
-                'message_hash' => hash('sha256', $validated['message'] . time()),
-                'pow_hash' => $validated['pow_hash'],
-                'pow_nonce' => $validated['pow_nonce'],
-                'pow_pattern' => $powValidation['pattern'],
-                'pow_points' => $powValidation['points'],
-                'pow_challenge_id' => $validated['pow_challenge_id'],
+                'message_hash' => hash('sha256', $validated['message']),
                 'ip_hash' => hash('sha256', $request->ip()),
+                // POW fields disabled
+                // 'pow_hash' => null,
+                // 'pow_nonce' => null,
+                // 'pow_pattern' => null,
+                // 'pow_points' => 0,
+                // 'pow_challenge_id' => null,
             ]);
-
-            // Update user stats in room
-            $this->updateUserRoomStats($room, $user, $powValidation['points']);
             
-            // Update user's total PoW points if they have a Bitcoin user record
-            if ($user->bitcoinUser) {
-                $user->bitcoinUser->increment('accumulated_points', $powValidation['points']);
-            }
-
-            // Hit rate limiter
-            RateLimiter::hit($key, 60); // 1 minute decay
-
-            // Create system message for rare patterns
-            if ($message->isRarePattern()) {
-                ChatMessage::createSystemMessage($room, 
-                    "🎉 {$message->display_name} found a {$message->rarity_level} pattern: {$message->pow_pattern} (+{$powValidation['points']} points)!"
-                );
-            }
-
-            Log::info('Chat message sent', [
-                'user_id' => $user->id,
-                'room_id' => $room->id,
-                'pow_points' => $powValidation['points'],
-                'pattern' => $powValidation['pattern']
+            // Update user's last seen time
+            $room->users()->updateExistingPivot($user->id, [
+                'last_seen_at' => now(),
             ]);
-
+            
+            // Return the created message with formatted time
             return response()->json([
                 'success' => true,
                 'message' => [
                     'id' => $message->id,
-                    'message' => $message->formatted_message,
-                    'username' => $message->display_name,
-                    'pow_points' => $message->pow_points,
-                    'pow_pattern' => $message->pow_pattern,
-                    'rarity_level' => $message->rarity_level,
-                    'rarity_color' => $message->rarity_color,
-                    'created_at' => $message->created_at->format('H:i:s'),
-                    'hash_preview' => substr($message->pow_hash, 0, 8),
+                    'username' => $displayName,
+                    'message' => $message->message,
+                    'created_at' => $message->created_at->format('H:i:s')
                 ]
             ]);
 
@@ -172,83 +145,67 @@ class ChatController extends Controller
             Log::error('Chat message creation failed', [
                 'user_id' => $user->id,
                 'room_id' => $room->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => 'Failed to send message. Please try again.'
+                'error' => 'Failed to send message: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Get recent messages for a room (AJAX)
+     * Get messages for room
      */
-    public function getMessages(ChatRoom $room, Request $request)
+    public function getMessages(Request $request, ChatRoom $room)
     {
-        $user = auth()->user();
+        $afterId = $request->get('after', 0);
         
-        // Update user's last seen time
-        $this->updateUserLastSeen($room, $user);
+        $query = $room->messages()->with(['user']);
         
-        $limit = $request->get('limit', 50);
-        $since = $request->get('since'); // Optional timestamp for incremental updates
-        
-        $query = ChatMessage::where('chat_room_id', $room->id)
-                           ->where('is_deleted', false)
-                           ->with(['user', 'user.bitcoinUser']);
-        
-        if ($since) {
-            $query->where('created_at', '>', $since);
+        if ($afterId > 0) {
+            $query->where('id', '>', $afterId);
+        } else {
+            $query->latest()->take(50);
         }
         
-        $messages = $query->orderBy('created_at', 'desc')
-                         ->limit($limit)
-                         ->get()
-                         ->reverse()
-                         ->values();
+        $messages = $query->get();
         
+        if ($afterId == 0) {
+            $messages = $messages->reverse()->values();
+        }
+
         return response()->json([
             'success' => true,
             'messages' => $messages->map(function ($message) {
                 return [
                     'id' => $message->id,
-                    'message' => $message->formatted_message,
-                    'username' => $message->display_name,
-                    'pow_points' => $message->pow_points,
-                    'pow_pattern' => $message->pow_pattern,
-                    'rarity_level' => $message->rarity_level,
-                    'rarity_color' => $message->rarity_color,
-                    'is_system' => $message->is_system,
+                    'message' => $message->message,
+                    'username' => $message->username ?? $message->user->username ?? $message->user->address ?? 'Anonymous',
                     'created_at' => $message->created_at->format('H:i:s'),
-                    'hash_preview' => substr($message->pow_hash, 0, 8),
-                    'can_delete' => $message->canUserDelete(auth()->user()),
+                    'hash_preview' => substr($message->pow_hash ?? '', 0, 8),
+                    'points' => $message->pow_points ?? 1,
+                    'pattern' => $message->pow_pattern ?? 'basic',
                 ];
             })
         ]);
     }
 
     /**
-     * Join user to room
+     * Join room
      */
     public function joinRoom(ChatRoom $room)
     {
-        $user = auth()->user();
+        $user = $this->getBitcoinAuthUser();
         
-        if (!$room->canUserJoin($user)) {
-            return response()->json([
-                'success' => false,
-                'error' => 'Cannot join this room'
-            ], 403);
+        if (!$user) {
+            return response()->json(['success' => false, 'error' => 'Authentication required'], 401);
         }
-
+        
         $this->joinUserToRoom($room, $user);
         
-        // Create join system message
-        $displayName = $user->bitcoinUser?->getDisplayName() ?? 'Anonymous';
-        ChatMessage::createSystemMessage($room, "👋 {$displayName} joined the room");
-
         return response()->json(['success' => true]);
     }
 
@@ -257,78 +214,462 @@ class ChatController extends Controller
      */
     public function leaveRoom(ChatRoom $room)
     {
-        $user = auth()->user();
+        $user = $this->getBitcoinAuthUser();
+        
+        if (!$user) {
+            return response()->json(['success' => false, 'error' => 'Authentication required'], 401);
+        }
         
         $room->users()->detach($user->id);
         
-        // Create leave system message
-        $displayName = $user->bitcoinUser?->getDisplayName() ?? 'Anonymous';
-        ChatMessage::createSystemMessage($room, "👋 {$displayName} left the room");
-
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Get room stats
+     */
+    public function getRoomStats(ChatRoom $room)
+    {
+        return response()->json([
+            'users_online' => $room->users()->count(),
+            'messages_today' => $room->messages()->whereDate('created_at', today())->count(),
+        ]);
     }
 
     /**
      * Delete a message
      */
-    public function deleteMessage(ChatRoom $room, ChatMessage $message)
+    public function deleteMessage(Request $request, ChatRoom $room, ChatMessage $message)
     {
-        $user = auth()->user();
+        $user = $this->getBitcoinAuthUser();
+        
+        if (!$user) {
+            return response()->json(['success' => false, 'error' => 'Authentication required'], 401);
+        }
         
         if (!$message->canUserDelete($user)) {
             return response()->json([
                 'success' => false,
-                'error' => 'Permission denied'
+                'error' => 'You do not have permission to delete this message'
             ], 403);
         }
-
+        
         $message->softDelete();
         
         return response()->json(['success' => true]);
     }
 
     /**
-     * Get room statistics
-     */
-    public function getRoomStats(ChatRoom $room)
-    {
-        return response()->json([
-            'success' => true,
-            'stats' => $room->getStats(),
-            'active_users' => $room->activeUsers()->count(),
-        ]);
-    }
-
-    /**
-     * Private helper methods
+     * Private helper to join user to room
      */
     private function joinUserToRoom(ChatRoom $room, $user): void
     {
         if (!$room->users()->where('user_id', $user->id)->exists()) {
             $room->users()->attach($user->id, [
-                'display_name' => $user->bitcoinUser?->getDisplayName(),
+                'display_name' => $user->username ?? $user->address ?? 'Anonymous',
                 'joined_at' => now(),
                 'last_seen_at' => now(),
             ]);
-        } else {
-            // Update last seen
-            $this->updateUserLastSeen($room, $user);
         }
     }
 
-    private function updateUserLastSeen(ChatRoom $room, $user): void
+    /**
+     * Calculate points based on hash pattern
+     */
+    private function calculatePoints(string $hash): int
     {
+        if (str_starts_with($hash, 'deadbeef')) return 5000;
+        if (str_starts_with($hash, '1337')) return 2500;
+        if (str_starts_with($hash, '777')) return 777;
+        if (str_starts_with($hash, '666')) return 666;
+        if (str_starts_with($hash, '000')) return 500;
+        if (str_starts_with($hash, '111')) return 400;
+        if (str_starts_with($hash, '21e')) return 10;
+        if (str_starts_with($hash, '21')) return 5;
+        return 1;
+    }
+
+    /**
+     * Get pattern from hash
+     */
+    private function getPatternFromHash(string $hash): string
+    {
+        if (str_starts_with($hash, 'deadbeef')) return 'deadbeef';
+        if (str_starts_with($hash, '1337')) return '1337';
+        if (str_starts_with($hash, '777')) return '777';
+        if (str_starts_with($hash, '666')) return '666';
+        if (str_starts_with($hash, '000')) return '000';
+        if (str_starts_with($hash, '111')) return '111';
+        if (str_starts_with($hash, '21e')) return '21e';
+        if (str_starts_with($hash, '21')) return '21';
+        return 'basic';
+    }
+
+    /**
+     * Calculate hashrate estimate
+     */
+    private function calculateHashrate(string $nonce): int
+    {
+        $nonceInt = (int)$nonce;
+        return $nonceInt > 0 ? min($nonceInt * 100, 999999) : 1000;
+    }
+
+    /**
+     * Set user's nickname for this room
+     */
+    public function setNickname(Request $request, ChatRoom $room)
+    {
+        $user = $this->getBitcoinAuthUser();
+        
+        if (!$user) {
+            return response()->json(['success' => false, 'error' => 'Authentication required'], 401);
+        }
+        
+        $validated = $request->validate([
+            'nickname' => 'required|string|max:20|min:1',
+        ]);
+        
+        $nickname = $validated['nickname'];
+        
+        // Generate tripcode from user address (first 6 chars)
+        $tripcode = '!' . substr(hash('sha256', $user->address), 0, 6);
+        $displayName = $nickname . ' ' . $tripcode;
+        
+        // Update user's display name in this room
         $room->users()->updateExistingPivot($user->id, [
-            'last_seen_at' => now()
+            'display_name' => $displayName,
+            'last_seen_at' => now(),
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'display_name' => $displayName,
+        ]);
+    }
+    
+    /**
+     * Get online users for room
+     */
+    public function getOnlineUsers(ChatRoom $room)
+    {
+        $users = $room->users()
+                     ->wherePivot('last_seen_at', '>', now()->subMinutes(5))
+                     ->orderByPivot('last_seen_at', 'desc')
+                     ->get()
+                     ->map(function ($user) {
+                         return [
+                             'id' => $user->id,
+                             'display_name' => $user->pivot->display_name ?? ($user->username . ' !' . substr(hash('sha256', $user->address), 0, 6)),
+                             'last_seen' => $user->pivot->last_seen_at ? $user->pivot->last_seen_at->diffForHumans() : 'just now',
+                         ];
+                     });
+        
+        return response()->json([
+            'success' => true,
+            'users' => $users,
         ]);
     }
 
-    private function updateUserRoomStats(ChatRoom $room, $user, int $powPoints): void
+    /**
+     * Handle chat commands
+     */
+    private function handleCommand(Request $request, ChatRoom $room, $user, array $validated)
     {
-        $room->users()->updateExistingPivot($user->id, [
-            'total_messages' => \DB::raw('total_messages + 1'),
-            'total_pow_points' => \DB::raw("total_pow_points + {$powPoints}"),
-            'last_seen_at' => now()
+        $message = trim($validated['message']);
+        $command = strtolower(explode(' ', $message)[0]);
+        
+        switch ($command) {
+            case '/clear':
+                return response()->json([
+                    'success' => false,
+                    'error' => 'The /clear command has been disabled.'
+                ], 400);
+                
+            case '/help':
+                return $this->handleHelpCommand($room, $user);
+                
+            default:
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Unknown command: ' . $command . '. Type /help for available commands.'
+                ], 400);
+        }
+    }
+    
+    /**
+     * Handle /clear command
+     */
+    private function handleClearCommand(ChatRoom $room, $user)
+    {
+        // Check if user is moderator or admin
+        if (!$room->isUserModerator($user)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Only moderators can clear the chat.'
+            ], 403);
+        }
+        
+        try {
+            // Soft delete all messages in the room
+            $deletedCount = $room->messages()->update([
+                'is_deleted' => true,
+                'deleted_at' => now(),
+            ]);
+            
+            // Create a system message about the clear
+            $displayName = $this->getUserDisplayName($room, $user);
+            ChatMessage::createSystemMessage($room, "💨 Chat cleared by {$displayName} ({$deletedCount} messages removed)");
+            
+            return response()->json([
+                'success' => true,
+                'action' => 'clear_chat',
+                'message' => "Chat cleared successfully. {$deletedCount} messages removed.",
+                'deleted_count' => $deletedCount,
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Failed to clear chat', [
+                'room_id' => $room->id,
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to clear chat. Please try again.'
+            ], 500);
+        }
+    }
+    
+    /**
+     * Handle /help command
+     */
+    private function handleHelpCommand(ChatRoom $room, $user)
+    {
+        $commands = [
+            '/help - Show this help message',
+        ];
+        
+        // Add moderator commands if user is moderator
+        if ($room->isUserModerator($user)) {
+            $commands[] = '(No moderator commands available)';
+        }
+        
+        $helpText = "📋 **Available Commands:**\n" . implode("\n", $commands);
+        
+        // Create a temporary system message just for this user
+        return response()->json([
+            'success' => true,
+            'action' => 'help',
+            'message' => $helpText,
         ]);
+    }
+    
+    /**
+     * Get user's display name for this room
+     */
+    private function getUserDisplayName(ChatRoom $room, $user): string
+    {
+        $roomUser = $room->users()->where('user_id', $user->id)->first();
+        return $roomUser?->pivot?->display_name ?? 
+               ($user->username . ' !' . substr(hash('sha256', $user->address), 0, 6));
+    }
+
+    /**
+     * Get the current authenticated BitcoinAuth user
+     */
+    private function getBitcoinAuthUser()
+    {
+        $userId = session('bitcoin_auth_id');
+        
+        if (!$userId || !is_numeric($userId)) {
+            return null;
+        }
+        
+        return \App\Models\BitcoinAuth::find($userId);
+    }
+
+    /**
+     * Handle chat slash commands (/join, etc.)
+     */
+    public function executeCommand(Request $request, ChatRoom $room)
+    {
+        $user = $this->getBitcoinAuthUser();
+        
+        if (!$user) {
+            return response()->json(['success' => false, 'error' => 'Authentication required'], 401);
+        }
+        
+        $validated = $request->validate([
+            'command' => 'required|string|max:100',
+        ]);
+        
+        $command = trim($validated['command']);
+        
+        // Parse /join #roomname command
+        if (preg_match('/^\/join #(\w+)$/', $command, $matches)) {
+            $roomSlug = $matches[1];
+            
+            // Special handling for secret admin room
+            if ($roomSlug === 'sadmin') {
+                $adminRoom = ChatRoom::where('slug', 'sadmin')->first();
+                
+                if ($adminRoom && $user->accumulated_points >= 1000) {
+                    $this->joinUserToRoom($adminRoom, $user);
+                    return response()->json([
+                        'success' => true,
+                        'action' => 'redirect',
+                        'url' => route('chat.room', ['room' => $adminRoom])
+                    ]);
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Access denied. Insufficient privileges.'
+                    ]);
+                }
+            }
+            
+            // Regular room join
+            $targetRoom = ChatRoom::where('slug', $roomSlug)
+                                 ->where('is_public', true)
+                                 ->where('is_active', true)
+                                 ->first();
+                                 
+            if ($targetRoom) {
+                $this->joinUserToRoom($targetRoom, $user);
+                return response()->json([
+                    'success' => true,
+                    'action' => 'redirect',
+                    'url' => route('chat.room', ['room' => $targetRoom])
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Room "' . $roomSlug . '" not found or private'
+                ]);
+            }
+        }
+        
+        // /hp command (show total site hashpower)
+        if (preg_match('/^\/hp$/', $command)) {
+            $totalSitePoints = \App\Models\BitcoinAuth::sum('accumulated_points') ?? 0;
+            $totalUsers = \App\Models\BitcoinAuth::count();
+            $avgPoints = $totalUsers > 0 ? round($totalSitePoints / $totalUsers) : 0;
+            
+            return response()->json([
+                'success' => true,
+                'action' => 'system_message',
+                'message' => "🌐 Total site hashpower: {$totalSitePoints} points<br>" .
+                           "👥 Active miners: {$totalUsers}<br>" .
+                           "📊 Average: {$avgPoints} points per user"
+            ]);
+        }
+        
+        // /hp -u [username] command (show specific user hashpower)
+        if (preg_match('/^\/hp -u (.+)$/', $command, $matches)) {
+            $targetUsername = trim($matches[1]);
+            $targetUser = \App\Models\BitcoinAuth::where('username', $targetUsername)->first();
+            
+            if (!$targetUser) {
+                return response()->json([
+                    'success' => false,
+                    'error' => "User '{$targetUsername}' not found"
+                ]);
+            }
+            
+            $targetPoints = $targetUser->accumulated_points ?? 0;
+            $targetRank = $this->calculateRank($targetPoints);
+            $userPoints = $user->accumulated_points ?? 0;
+            $userRank = $this->calculateRank($userPoints);
+            
+            return response()->json([
+                'success' => true,
+                'action' => 'system_message',
+                'message' => "👤 {$targetUsername}: {$targetPoints} points ({$targetRank})<br>" .
+                           "⚡ Your power: {$userPoints} points ({$userRank})"
+            ]);
+        }
+        
+        // /mine command - mine last post or specific post above
+        if (preg_match('/^\/mine(\^*)$/', $command, $matches)) {
+            $caretsCount = strlen($matches[1] ?? '');
+            $positionsBack = max(1, $caretsCount); // Default to 1 if no carets
+            
+            // Get the target message (N positions back from current)
+            $targetMessage = $room->messages()
+                ->orderBy('id', 'desc')
+                ->skip($positionsBack - 1)
+                ->first();
+                
+            if (!$targetMessage) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No message found at that position'
+                ]);
+            }
+            
+            // Start mining the target message content
+            return response()->json([
+                'success' => true,
+                'action' => 'start_mining',
+                'target' => [
+                    'type' => 'message',
+                    'id' => $targetMessage->id,
+                    'content' => substr($targetMessage->message, 0, 50) . '...',
+                    'author' => $targetMessage->username,
+                    'positions_back' => $positionsBack
+                ],
+                'difficulty' => '21e8'
+            ]);
+        }
+        
+        // /help command
+        if (preg_match('/^\/help$/', $command)) {
+            return response()->json([
+                'success' => true,
+                'action' => 'system_message',
+                'message' => '🤖 Available commands:<br>' .
+                           '/join #roomname - Join a chat room<br>' .
+                           '/hp - Show total site hashpower stats<br>' .
+                           '/hp -u [username] - Show specific user\'s hashpower<br>' .
+                           '/mine - Mine the last posted message<br>' .
+                           '/mine^^ - Mine message 2 positions above<br>' .
+                           '/me [action] - Perform an action<br>' .
+                           '/help - Show this help'
+            ]);
+        }
+        
+        // /me command for actions
+        if (preg_match('/^\/me (.+)$/', $command, $matches)) {
+            $actionText = $matches[1];
+            $displayName = $room->users()->find($user->id)->pivot->display_name ?? $user->username;
+            
+            return response()->json([
+                'success' => true,
+                'action' => 'action_message',
+                'message' => '* ' . $displayName . ' ' . $actionText
+            ]);
+        }
+        
+        return response()->json([
+            'success' => false,
+            'error' => 'Unknown command: ' . $command
+        ]);
+    }
+
+    /**
+     * Calculate user rank based on PoW points
+     */
+    private function calculateRank(int $points): string
+    {
+        if ($points >= 50000) return 'Legend 🏆';
+        if ($points >= 25000) return 'Master ⭐';
+        if ($points >= 10000) return 'Expert 💎';
+        if ($points >= 5000) return 'Advanced ⚡';
+        if ($points >= 2500) return 'Skilled 🔥';
+        if ($points >= 1000) return 'Intermediate 🎯';
+        if ($points >= 500) return 'Novice 🌱';
+        if ($points >= 100) return 'Beginner 🔨';
+        return 'Newcomer 👋';
     }
 }

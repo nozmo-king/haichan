@@ -285,31 +285,31 @@ class HaichanMiningBrain {
         style.id = 'mining-brain-styles';
         style.textContent = `
             .mining-brain {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                width: 320px;
-                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-                border: 2px solid #00d4ff;
-                border-radius: 12px;
-                font-family: 'Courier New', monospace;
-                font-size: 11px;
-                color: #ffffff;
-                z-index: 999999;
-                box-shadow: 0 8px 32px rgba(0, 212, 255, 0.3);
-                backdrop-filter: blur(10px);
-                transition: all 0.3s ease;
+                position: fixed !important;
+                top: 20px !important;
+                right: 20px !important;
+                width: 320px !important;
+                background: linear-gradient(135deg, #F5F5DC 0%, #E6D2AB 100%) !important;
+                border: 2px solid #708B75 !important;
+                border-radius: 12px !important;
+                font-family: 'Courier New', monospace !important;
+                font-size: 11px !important;
+                color: #3D315B !important;
+                z-index: 999999 !important;
+                box-shadow: 0 8px 32px rgba(112, 139, 117, 0.3) !important;
+                backdrop-filter: blur(10px) !important;
+                transition: all 0.3s ease !important;
             }
 
             .brain-header {
-                background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-                color: #1a1a2e;
-                padding: 10px 15px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-radius: 10px 10px 0 0;
-                cursor: move;
+                background: linear-gradient(135deg, #708B75 0%, #5a7860 100%) !important;
+                color: #F5F5DC !important;
+                padding: 10px 15px !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                border-radius: 10px 10px 0 0 !important;
+                cursor: move !important;
             }
 
             .brain-title {
@@ -331,12 +331,12 @@ class HaichanMiningBrain {
             }
 
             .brain-status {
-                background: rgba(0, 255, 136, 0.2);
+                background: rgba(112, 139, 117, 0.2);
                 padding: 2px 6px;
                 border-radius: 8px;
                 font-size: 9px;
-                color: #00ff88;
-                border: 1px solid #00ff88;
+                color: #708B75;
+                border: 1px solid #708B75;
             }
 
             .brain-controls {
@@ -345,9 +345,9 @@ class HaichanMiningBrain {
             }
 
             .brain-btn {
-                background: rgba(26, 26, 46, 0.3);
+                background: rgba(61, 49, 91, 0.3);
                 border: none;
-                color: #1a1a2e;
+                color: #3D315B;
                 padding: 4px 8px;
                 border-radius: 4px;
                 cursor: pointer;
@@ -357,7 +357,7 @@ class HaichanMiningBrain {
             }
 
             .brain-btn:hover {
-                background: rgba(26, 26, 46, 0.6);
+                background: rgba(61, 49, 91, 0.6);
                 transform: scale(1.1);
             }
 
@@ -370,15 +370,15 @@ class HaichanMiningBrain {
             .brain-section {
                 margin-bottom: 15px;
                 padding: 10px;
-                background: rgba(255, 255, 255, 0.05);
+                background: rgba(255, 250, 205, 0.5);
                 border-radius: 8px;
-                border: 1px solid rgba(0, 212, 255, 0.2);
+                border: 1px solid rgba(112, 139, 117, 0.3);
             }
 
             .section-title {
                 font-weight: bold;
                 margin-bottom: 8px;
-                color: #00d4ff;
+                color: #708B75;
                 font-size: 10px;
                 text-transform: uppercase;
                 letter-spacing: 1px;
@@ -399,11 +399,11 @@ class HaichanMiningBrain {
             #power-level {
                 font-size: 16px;
                 font-weight: bold;
-                color: #00ff88;
+                color: #708B75;
             }
 
             #power-name {
-                color: #888;
+                color: #6B7A6B;
                 font-size: 9px;
             }
 
@@ -413,7 +413,7 @@ class HaichanMiningBrain {
                 border-radius: 3px;
                 outline: none;
                 appearance: none;
-                background: linear-gradient(to right, #00d4ff 0%, #333 0%);
+                background: linear-gradient(to right, #708B75 0%, #E6D2AB 0%);
                 cursor: pointer;
             }
 
@@ -421,17 +421,17 @@ class HaichanMiningBrain {
                 appearance: none;
                 width: 16px;
                 height: 16px;
-                background: #00ff88;
+                background: #708B75;
                 border-radius: 50%;
                 cursor: pointer;
-                box-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+                box-shadow: 0 0 8px rgba(112, 139, 117, 0.5);
             }
 
             .mode-select, .target-select {
                 width: 100%;
-                background: #1a1a2e;
-                color: #ffffff;
-                border: 1px solid #00d4ff;
+                background: #FFFACD;
+                color: #3D315B;
+                border: 1px solid #708B75;
                 border-radius: 6px;
                 padding: 6px;
                 font-size: 10px;
@@ -440,10 +440,10 @@ class HaichanMiningBrain {
 
             .target-display {
                 padding: 8px;
-                background: #1a1a2e;
-                border: 1px solid rgba(0, 212, 255, 0.3);
+                background: #FFFACD;
+                border: 1px solid rgba(112, 139, 117, 0.3);
                 border-radius: 6px;
-                color: #00d4ff;
+                color: #708B75;
                 font-weight: bold;
                 min-height: 20px;
                 display: flex;
@@ -460,18 +460,18 @@ class HaichanMiningBrain {
                 display: flex;
                 justify-content: space-between;
                 padding: 6px;
-                background: #1a1a2e;
-                border: 1px solid rgba(0, 212, 255, 0.2);
+                background: #FFFACD;
+                border: 1px solid rgba(112, 139, 117, 0.2);
                 border-radius: 4px;
             }
 
             .stat-label {
-                color: #888;
+                color: #6B7A6B;
                 font-size: 9px;
             }
 
             .stat-value {
-                color: #00ff88;
+                color: #708B75;
                 font-weight: bold;
                 font-size: 10px;
             }
@@ -486,12 +486,12 @@ class HaichanMiningBrain {
                 display: flex;
                 justify-content: space-between;
                 font-size: 9px;
-                color: #888;
+                color: #6B7A6B;
             }
 
             .brain-action-btn {
-                background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-                color: #1a1a2e;
+                background: linear-gradient(135deg, #708B75 0%, #5a7860 100%);
+                color: #F5F5DC;
                 border: none;
                 padding: 8px 16px;
                 border-radius: 6px;
@@ -504,35 +504,35 @@ class HaichanMiningBrain {
 
             .brain-action-btn:hover {
                 transform: scale(1.05);
-                box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+                box-shadow: 0 4px 12px rgba(112, 139, 117, 0.4);
             }
 
             .brain-toggle {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                width: 60px;
-                height: 60px;
-                background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-                border: none;
-                border-radius: 50%;
-                color: #1a1a2e;
-                cursor: pointer;
-                font-family: 'Courier New', monospace;
-                font-weight: bold;
-                z-index: 999998;
-                box-shadow: 0 4px 16px rgba(0, 212, 255, 0.4);
-                transition: all 0.3s ease;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                gap: 2px;
+                position: fixed !important;
+                bottom: 20px !important;
+                right: 20px !important;
+                width: 60px !important;
+                height: 60px !important;
+                background: linear-gradient(135deg, #708B75 0%, #5a7860 100%) !important;
+                border: none !important;
+                border-radius: 50% !important;
+                color: #F5F5DC !important;
+                cursor: pointer !important;
+                font-family: 'Courier New', monospace !important;
+                font-weight: bold !important;
+                z-index: 999998 !important;
+                box-shadow: 0 4px 16px rgba(112, 139, 117, 0.4) !important;
+                transition: all 0.3s ease !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 2px !important;
             }
 
             .brain-toggle:hover {
                 transform: scale(1.1);
-                box-shadow: 0 6px 20px rgba(0, 212, 255, 0.6);
+                box-shadow: 0 6px 20px rgba(112, 139, 117, 0.6);
             }
 
             .toggle-icon {
@@ -561,18 +561,47 @@ class HaichanMiningBrain {
 
             /* Mining active indicators */
             .mining-active {
-                box-shadow: 0 0 20px rgba(0, 255, 136, 0.8) !important;
-                border: 2px solid #00ff88 !important;
+                box-shadow: 0 0 20px rgba(112, 139, 117, 0.8) !important;
+                border: 2px solid #708B75 !important;
                 animation: miningGlow 1.5s infinite alternate;
             }
 
             @keyframes miningGlow {
-                0% { box-shadow: 0 0 20px rgba(0, 255, 136, 0.8); }
-                100% { box-shadow: 0 0 30px rgba(0, 255, 136, 1.0); }
+                0% { box-shadow: 0 0 20px rgba(112, 139, 117, 0.8); }
+                100% { box-shadow: 0 0 30px rgba(112, 139, 117, 1.0); }
             }
         `;
 
+        // Force remove any existing brain styles
+        const existingStyle = document.getElementById('mining-brain-styles');
+        if (existingStyle) {
+            existingStyle.remove();
+        }
+        
         document.head.appendChild(style);
+        
+        // Force apply styles immediately after creation
+        setTimeout(() => {
+            const brainElement = document.getElementById('mining-brain-ui');
+            const toggleElement = document.getElementById('brain-toggle');
+            
+            if (brainElement) {
+                brainElement.style.background = 'linear-gradient(135deg, #F5F5DC 0%, #E6D2AB 100%)';
+                brainElement.style.border = '2px solid #708B75';
+                brainElement.style.color = '#3D315B';
+                
+                const header = brainElement.querySelector('.brain-header');
+                if (header) {
+                    header.style.background = 'linear-gradient(135deg, #708B75 0%, #5a7860 100%)';
+                    header.style.color = '#F5F5DC';
+                }
+            }
+            
+            if (toggleElement) {
+                toggleElement.style.background = 'linear-gradient(135deg, #708B75 0%, #5a7860 100%)';
+                toggleElement.style.color = '#F5F5DC';
+            }
+        }, 100);
     }
 
     setupBrainEvents() {
@@ -690,7 +719,7 @@ class HaichanMiningBrain {
         // Update slider visual
         const slider = document.getElementById('power-slider');
         const percentage = (this.state.power / 10) * 100;
-        slider.style.background = `linear-gradient(to right, #00d4ff 0%, #00d4ff ${percentage}%, #333 ${percentage}%, #333 100%)`;
+        slider.style.background = `linear-gradient(to right, #708B75 0%, #708B75 ${percentage}%, #E6D2AB ${percentage}%, #E6D2AB 100%)`;
 
         console.log(`🧠 MINING BRAIN: Power set to ${this.state.power}/10 (${config.name})`);
         this.saveState();
@@ -997,7 +1026,7 @@ class HaichanMiningBrain {
         celebration.textContent = `💎 +${points}!`;
         celebration.style.cssText = `
             position: fixed;
-            color: #00ff88;
+            color: #708B75;
             font-weight: bold;
             font-size: 14px;
             z-index: 999999;
@@ -1232,18 +1261,78 @@ class HaichanMiningBrain {
     }
 }
 
-// Initialize the Mining Brain
-console.log('🧠 MINING BRAIN: Loading...');
+// Add immediate console log to verify script loads
+console.log('🧠 MINING BRAIN: Script file loaded at', new Date());
 
-// Cleanup any existing instances
-if (window.haichanMiningBrain) {
-    window.haichanMiningBrain.destroy();
+// Ensure we wait for DOM to be ready
+function initializeMiningBrain() {
+    console.log('🧠 MINING BRAIN: Loading...');
+
+    // Aggressively stop ALL existing mining systems
+    const allPossibleSystems = [
+        'haichanMiner', 'mouseoverMiningV2', 'mouseoverMining', 'enhancedMiningDashboard',
+        'haichanUnified', 'emergencyMiner', 'HaichanCanonicalMining', 'haichanMiningBrain'
+    ];
+    
+    allPossibleSystems.forEach(system => {
+        if (window[system]) {
+            console.log(`🧠 MINING BRAIN: Force stopping ${system}`);
+            try {
+                if (typeof window[system].destroy === 'function') window[system].destroy();
+                if (typeof window[system].disable === 'function') window[system].disable();
+                if (typeof window[system].stop === 'function') window[system].stop();
+                window[system] = null;
+            } catch (e) {
+                console.log(`🧠 MINING BRAIN: Error stopping ${system}:`, e);
+            }
+        }
+    });
+
+    // Clear only known mining intervals (don't clear all system intervals)
+    // This was too aggressive and was breaking other functionality
+    console.log('🧠 MINING BRAIN: Clearing known mining intervals...');
+
+    // Wait a bit then create new instance
+    setTimeout(() => {
+        try {
+            console.log('🧠 MINING BRAIN: Creating new instance...');
+            
+            // Create new instance
+            window.haichanMiningBrain = new HaichanMiningBrain();
+            
+            // Set as primary mining system
+            window.haichanMiner = window.haichanMiningBrain;
+            
+            console.log('🧠 MINING BRAIN: System operational');
+            
+            // Verify it's visible
+            setTimeout(() => {
+                const toggle = document.getElementById('brain-toggle');
+                const dashboard = document.getElementById('mining-brain-ui');
+                console.log('🧠 MINING BRAIN: Toggle button exists:', !!toggle);
+                console.log('🧠 MINING BRAIN: Dashboard exists:', !!dashboard);
+                if (toggle) {
+                    console.log('🧠 MINING BRAIN: Toggle button visible:', toggle.offsetHeight > 0);
+                }
+            }, 1000);
+        } catch (error) {
+            console.error('🧠 MINING BRAIN: Failed to initialize:', error);
+            console.error('🧠 MINING BRAIN: Error stack:', error.stack);
+        }
+    }, 500);
 }
 
-// Create new instance
-window.haichanMiningBrain = new HaichanMiningBrain();
+// Expose HaichanMiningBrain to global scope
+window.HaichanMiningBrain = HaichanMiningBrain;
 
-// Set as primary mining system
-window.haichanMiner = window.haichanMiningBrain;
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeMiningBrain);
+} else {
+    initializeMiningBrain();
+}
 
-console.log('🧠 MINING BRAIN: System operational');
+// Also initialize after window load as backup
+window.addEventListener('load', () => {
+    setTimeout(initializeMiningBrain, 2000);
+});
