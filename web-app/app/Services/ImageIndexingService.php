@@ -201,7 +201,7 @@ class ImageIndexingService
             // Check if it's an image MIME type
             $mimeType = $file->getMimeType();
             if (! str_starts_with($mimeType, 'image/')) {
-                return [];
+                return ['width' => null, 'height' => null];
             }
 
             // Try to get dimensions using getimagesize

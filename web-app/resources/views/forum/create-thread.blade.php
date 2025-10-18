@@ -272,8 +272,9 @@ contentInput.addEventListener('input', checkAndMine);
 
 // Form validation on submit
 form.addEventListener('submit', async (e) => {
+    e.preventDefault(); // Always prevent default
+
     if (!currentProof || !currentProof.hash) {
-        e.preventDefault();
         alert('Please wait for mining to complete');
         mineDirectly();
         return;
@@ -281,6 +282,7 @@ form.addEventListener('submit', async (e) => {
     
     submitBtn.disabled = true;
     submitBtn.innerHTML = '📤 Creating Thread...';
+    form.submit(); // Manually submit the form
 });
 </script>
 

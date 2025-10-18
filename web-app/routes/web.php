@@ -432,3 +432,25 @@ Route::fallback(function () {
     return response()->view('errors.404', [], 404);
 });
 Route::get('/test-layout', function() { return view('test-simple'); });
+
+Route::get('/test-thread-creation', function () {
+    try {
+        $board = \App\Models\Board::first();
+        if (!$board) {
+            return "No boards found.";
+        }
+
+        $thread = \App\Models\Thread::create([
+            'board_id' => $board->id,
+            'title' => 'Test Thread',
+            'content' => 'This is a test thread.',
+            'user_id' => 1, // Assuming user with ID 1 exists
+            'author_name' => 'Tester',
+            'ip_address' => '127.0.0.1',
+        ]);
+
+        return "Thread created successfully with ID: " . $thread->id;
+    } catch (\Exception $e) {
+        return "Error creating thread: " . $e->getMessage();
+    }
+});

@@ -159,6 +159,16 @@ class FilenamePatternService
         return self::ALLOWED_EXTENSIONS;
     }
 
+    public function getThemedFilenameWithExtension(string $originalFilename): string
+    {
+        $extension = $this->extractExtension($originalFilename);
+        $theme = ['cosmic', 'mythic', 'neon', 'archaic', 'cyber'];
+        $randomTheme = $theme[array_rand($theme)];
+        $hash = $this->generateHash();
+        
+        return $randomTheme . '_' . $hash . '.' . $extension;
+    }
+
     /**
      * Create a backup filename if original exists
      */

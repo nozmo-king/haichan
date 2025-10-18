@@ -50,7 +50,7 @@ class SimpleProofOfWork {
         console.log('🔨 Simple PoW: Challenge received', challenge);
 
         // 2. Mine proof
-        const challengeData = JSON.stringify(challenge.canonical_payload);
+        const challengeData = JSON.stringify(challenge.canonical_payload).replace(/\\\//g, "/");
         console.log('🔨 Simple PoW: Starting mining with data:', challengeData);
         const proof = await this.mine(challengeData, payload.difficulty);
         
@@ -361,6 +361,7 @@ window.simplePoW = new SimpleProofOfWork();
 window.haichanMiningBrain = window.simplePoW; // Compatibility alias
 
 // Initialize everything when DOM is ready
+/*
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         window.mouseoverMiner = new SimpleMouseoverMiner(window.simplePoW);
@@ -370,5 +371,6 @@ if (document.readyState === 'loading') {
     window.mouseoverMiner = new SimpleMouseoverMiner(window.simplePoW);
     window.miningToolbar = new MiningToolbar(window.mouseoverMiner);
 }
+*/
 
 console.log('🔨 Simple PoW: Ready with mouseover mining and toolbar');

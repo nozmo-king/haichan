@@ -46,6 +46,10 @@ class BitcoinAuth extends Authenticatable
         'personal_21e8_total_hashes',
         'personal_21e8_mining_time',
         'personal_21e8_found_at',
+        'is_admin',
+        'is_moderator',
+        'ssh_key',
+        'avatar_path',
     ];
 
     protected $hidden = [

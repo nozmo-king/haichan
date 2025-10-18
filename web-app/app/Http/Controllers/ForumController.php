@@ -268,6 +268,10 @@ class ForumController extends Controller
 
     public function storeThread(Request $request, $board)
     {
+        Log::info('storeThread: Request received.', ['request' => $request->all()]);
+
+        Log::info('storeThread: Entered method.');
+
         // Log thread creation for monitoring (production-safe)
         Log::info('Thread creation attempt', [
             'board' => $board,
@@ -277,16 +281,18 @@ class ForumController extends Controller
 
         // Comprehensive input validation - image OR image_hash required
         try {
+            Log::info('storeThread: Validating request...');
             $validated = $request->validate([
                 'title' => 'required|string|max:200|min:3',
                 'content' => 'required|string|max:5000|min:5',
-                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                'image' => 'nullable|max:25600',
                 'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
                 'pow_nonce' => 'required|integer|min:0',
                 'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
                 'pow_challenge_id' => 'required|string|size:36|regex:/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/',
                 'post_anonymous' => 'boolean',
             ]);
+            Log::info('storeThread: Validation successful.');
             
             // Validation successful
             
@@ -316,9 +322,11 @@ class ForumController extends Controller
         }
 
         // Handle both board codes (gen) and board names (General)
+        Log::info('storeThread: Finding board model...');
         $boardModel = Board::where('code', $board)
             ->orWhere('name', $board)
             ->firstOrFail();
+        Log::info('storeThread: Board model found.', ['board_id' => $boardModel->id]);
 
         // Get authenticated user or create anonymous user
         $userId = session('bitcoin_auth_id');
@@ -331,11 +339,13 @@ class ForumController extends Controller
             $authorName = 'Anonymous#'.substr(hash('sha256', $request->ip().time()), 0, 8);
             $finalUserId = null;
         }
+        Log::info('storeThread: User identified.', ['user_id' => $finalUserId, 'author_name' => $authorName]);
 
         $title = $validated['title']; // Use raw title for PoW verification, escape later for storage
         $content = e($validated['content']);
 
         // Use new challenge-based verification system
+        Log::info('storeThread: Verifying challenge...');
         $verifier = new ChallengeVerifier();
         $verificationResult = $verifier->verifyChallenge(
             $validated['pow_challenge_id'],
@@ -355,11 +365,13 @@ class ForumController extends Controller
 
             return back()->withErrors(['pow' => 'Proof of work verification failed: '.$verificationResult['error']])->withInput();
         }
+        Log::info('storeThread: Challenge verification successful.');
 
         // Mark challenge as used
         $challenge = $verificationResult['challenge'];
         $challenge->markAsUsed();
 
+        Log::info('storeThread: Preparing thread data...');
         $threadData = [
             'board_id' => $boardModel->id,
             'title' => e($title), // Escape title for database storage
@@ -375,9 +387,11 @@ class ForumController extends Controller
             'ip_address' => $request->ip(),
             'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip()),
         ];
+        Log::info('storeThread: Thread data prepared.', ['thread_data' => $threadData]);
 
         // Handle image upload or existing hash
-        if ($request->hasFile('image')) {
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            Log::info('storeThread: Processing image upload...');
             // New image upload
             $imageIndexingService = new ImageIndexingService;
             $imageResult = $imageIndexingService->processAndIndexImage(
@@ -388,24 +402,29 @@ class ForumController extends Controller
             );
 
             if (! $imageResult['success']) {
+                Log::error('storeThread: Image processing failed.', ['error' => $imageResult['error']]);
                 return back()->withErrors(['image' => 'Image processing failed: '.$imageResult['error']])->withInput();
             }
 
             $threadData['image_path'] = $imageResult['file_path'];
             $threadData['image_filename'] = pathinfo($imageResult['file_path'], PATHINFO_BASENAME);
             $threadData['image_hash'] = $imageResult['hash'];
+            Log::info('storeThread: Image processing successful.');
             
         } elseif ($request->filled('image_hash')) {
+            Log::info('storeThread: Using existing image hash...');
             // Using existing image hash from library
             $existingImage = \App\Models\ImageLibrary::where('hash', $request->image_hash)->first();
             
             if (!$existingImage) {
+                Log::error('storeThread: Image hash not found in library.');
                 return back()->withErrors(['image_hash' => 'Image hash not found in library.'])->withInput();
             }
 
             $threadData['image_path'] = $existingImage->file_path;
             $threadData['image_filename'] = $existingImage->filename;
             $threadData['image_hash'] = $existingImage->hash;
+            Log::info('storeThread: Existing image hash found.');
         }
 
         Log::info('Challenge verification passed, creating thread', [
@@ -417,10 +436,13 @@ class ForumController extends Controller
         ]);
 
         try {
+            Log::info('storeThread: Creating thread in database...');
             $thread = Thread::create($threadData);
+            Log::info('storeThread: Thread created successfully in database.', ['thread_id' => $thread->id]);
 
             // Create ProofOfWork record and award points to user
             if ($finalUserId && $request->pow_hash) {
+                Log::info('storeThread: Creating ProofOfWork record...');
                 $powPoints = $this->calculatePoWPoints($request->pow_hash, $challenge->difficulty);
 
                 $proofOfWork = \App\Models\ProofOfWork::create([
@@ -435,34 +457,41 @@ class ForumController extends Controller
                     'verified_at' => now(),
                     'ip_address' => $request->ip(),
                 ]);
+                Log::info('storeThread: ProofOfWork record created.', ['pow_id' => $proofOfWork->id]);
 
                 // Award points to user
                 $user = \App\Models\BitcoinAuth::find($finalUserId);
                 if ($user) {
                     $user->awardMiningPoints($powPoints);
+                    Log::info('storeThread: Awarded points to user.', ['user_id' => $user->id, 'points' => $powPoints]);
                 }
             }
 
             // Update the library image with thread reference
             $imageHash = $threadData['image_hash'] ?? null;
             if ($imageHash) {
+                Log::info('storeThread: Updating image library with thread reference...');
                 $imageLibraryRecord = \App\Models\ImageLibrary::where('hash', $imageHash)->first();
                 if ($imageLibraryRecord && !$imageLibraryRecord->first_thread_id) {
                     $imageLibraryRecord->update([
                         'first_thread_id' => $thread->id,
                     ]);
+                    Log::info('storeThread: Image library updated.');
                 }
             }
 
             // Clear board cache so new thread appears immediately
             $cacheKey = "board_threads_{$boardModel->id}";
+            Log::info('storeThread: Clearing cache...', ['cache_key' => $cacheKey]);
             \Cache::forget($cacheKey);
+            Log::info('storeThread: Cache cleared.');
             
             Log::info('Thread created successfully, cache cleared', [
                 'thread_id' => $thread->id,
                 'cache_key_cleared' => $cacheKey
             ]);
 
+            Log::info('storeThread: Redirecting to thread page.');
             return redirect("/$board/{$thread->id}");
 
         } catch (\Exception $e) {

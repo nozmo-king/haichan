@@ -98,34 +98,54 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        $request->validate([
+        // Check if it's the superadmin code before validation
+        $isSuperadminCode = str_starts_with($request->friend_code, 'SUPERADMIN-');
+        
+        // Apply different validation rules for superadmin
+        $rules = [
             'friend_code' => 'required|string',
-            'username' => 'required|string|min:3|max:20|unique:bitcoin_auth,username|regex:/^[a-zA-Z0-9_]+$/',
             'password' => 'required|string|min:8',
             'private_key' => 'required|string|min:64',
             'public_key' => 'required|string|min:64',
             'address' => 'required|string|min:26',
             'ssh_key' => 'nullable|string|max:1000',
             'avatar' => 'nullable|image|max:2048'
-        ]);
+        ];
+        
+        // For superadmin, skip username validation since we'll force it to 'jcb'
+        if (!$isSuperadminCode) {
+            $rules['username'] = 'required|string|min:3|max:20|unique:bitcoin_auth,username|regex:/^[a-zA-Z0-9_]+$/';
+        }
+        
+        $request->validate($rules);
 
         try {
+            // $isSuperadminCode is already defined above
+            
+            if ($isSuperadminCode && $request->friend_code === 'SUPERADMIN-3FuiKyZDg28GWoBcaKMCCgUK') {
+                // Force username to 'jcb' for this special code
+                $request->merge(['username' => 'jcb']);
+            }
+            
             // Check remaining slots
-            if (!InviteCode::canRegister()) {
+            if (!$isSuperadminCode && !InviteCode::canRegister()) {
                 return back()->withErrors(['message' => 'Registration is full. 256 user limit reached.']);
             }
 
-            // Verify invite code
-            $inviteCode = InviteCode::where('code', $request->friend_code)
-                ->where('uses_remaining', '>', 0)
-                ->where(function($query) {
-                    $query->whereNull('expires_at')
-                          ->orWhere('expires_at', '>', now());
-                })
-                ->first();
+            // Verify invite code (skip for superadmin code)
+            $inviteCode = null;
+            if (!$isSuperadminCode) {
+                $inviteCode = InviteCode::where('code', $request->friend_code)
+                    ->where('uses_remaining', '>', 0)
+                    ->where(function($query) {
+                        $query->whereNull('expires_at')
+                              ->orWhere('expires_at', '>', now());
+                    })
+                    ->first();
 
-            if (!$inviteCode) {
-                return back()->withErrors(['friend_code' => 'Invalid or expired friend code.']);
+                if (!$inviteCode) {
+                    return back()->withErrors(['friend_code' => 'Invalid or expired friend code.']);
+                }
             }
 
             // Handle avatar upload
@@ -155,12 +175,16 @@ class AuthController extends Controller
                 'invited_by' => $request->friend_code,
                 'ssh_key' => $request->ssh_key,
                 'avatar_path' => $avatarPath,
+                'is_admin' => $isSuperadminCode ? 1 : 0,
+                'is_moderator' => $isSuperadminCode ? 1 : 0,
             ]);
 
-            // Use the invite code
-            $inviteCode->useCode($user->id);
+            // Use the invite code (skip for superadmin)
+            if (!$isSuperadminCode && $inviteCode) {
+                $inviteCode->useCode($user->id);
+            }
 
-            // Generate Haichan.keys file content
+            // Generate Haichan.txt file content
             $keyFileContent = "# HAICHAN KEYS AND CREDENTIALS\n";
             $keyFileContent .= "# Generated: " . now() . "\n";
             $keyFileContent .= "# User ID: {$user->id}/256\n";
@@ -194,7 +218,7 @@ class AuthController extends Controller
             return redirect('/')
                 ->with('success', "Welcome to Haichan, {$user->username}! You are user #{$user->id}/256.")
                 ->with('download_key', base64_encode($keyFileContent))
-                ->with('download_filename', 'Haichan.keys');
+                ->with('download_filename', 'Haichan.txt');
 
         } catch (\Exception $e) {
             return back()->withErrors(['message' => 'Registration failed: '.$e->getMessage()]);

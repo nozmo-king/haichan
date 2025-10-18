@@ -75,6 +75,28 @@
                     0 0 12px #9AB87A;
             }
         }
+
+        /* Admin/Mod glow effects */
+        .admin-glow span, .mod-glow span {
+            animation: admin-glow-pulse 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes admin-glow-pulse {
+            from {
+                text-shadow:
+                    0 0 10px #00ff00,
+                    0 0 20px #00ff00,
+                    0 0 30px #00ff00,
+                    0 0 40px #00ff00;
+            }
+            to {
+                text-shadow:
+                    0 0 5px #00ff00,
+                    0 0 10px #00ff00,
+                    0 0 15px #00ff00,
+                    0 0 20px #00ff00;
+            }
+        }
     </style>
     <script>
         // Unified Mining System Integration
@@ -284,10 +306,24 @@
         <!-- Left Section: User Info -->
         <div style="display: flex; align-items: center; gap: 20px;">
             @if(session('bitcoin_auth_id'))
-                <a href="{{ route('user.profile', session('bitcoin_auth_id')) }}" style="color: #9AB87A; text-decoration: none; display: flex; align-items: center; gap: 8px;"
-                   onmouseover="this.style.color='#b8d99a'" onmouseout="this.style.color='#9AB87A'">
+                @php
+                    $user = session('bitcoin_auth_user');
+                    $isAdmin = $user->is_admin ?? false;
+                    $isMod = $user->is_moderator ?? false;
+                @endphp
+                <a href="{{ route('user.profile', session('bitcoin_auth_id')) }}" 
+                   @if($isAdmin || $isMod)
+                       class="toolbar-link user-link {{ $isAdmin ? 'admin-glow' : 'mod-glow' }}"
+                       style="color: #00ff00; text-decoration: none; display: flex; align-items: center; gap: 8px;"
+                   @else
+                       class="toolbar-link user-link"
+                       style="color: #9AB87A; text-decoration: none; display: flex; align-items: center; gap: 8px;"
+                       onmouseover="this.style.color='#b8d99a'" onmouseout="this.style.color='#9AB87A'"
+                   @endif>
                     <span style="font-size: 16px;">👤</span> 
-                    <span style="font-weight: bold;">{{ session('bitcoin_auth_user')->username }}</span>
+                    <span style="font-weight: bold; @if($isAdmin || $isMod) text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00; @endif">
+                        {{ $user->username }}
+                    </span>
                 </a>
                 <a href="{{ route('user.profile.edit') }}" style="color: #F5F5DC; text-decoration: none; padding: 4px 12px; background: #708B75; border-radius: 4px; font-size: 11px; transition: all 0.2s;"
                    onmouseover="this.style.background='#5a7860'" onmouseout="this.style.background='#708B75'">
