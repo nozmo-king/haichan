@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ProofOfWork extends Model
 {
     protected $fillable = [
-        'user_id', 'thread_id', 'challenge_id', 'hash', 'nonce', 'data',
+        'user_id', 'thread_id', 'post_id', 'challenge_id', 'hash', 'nonce', 'data',
         'pattern', 'points', 'verified_at', 'ip_address',
     ];
 
@@ -20,6 +20,11 @@ class ProofOfWork extends Model
     public function thread()
     {
         return $this->belongsTo(Thread::class);
+    }
+
+    public function post()
+    {
+        return $this->belongsTo(Post::class);
     }
 
     public function user()

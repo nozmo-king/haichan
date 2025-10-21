@@ -497,8 +497,8 @@ class ForumController extends Controller
 
         // Find thread
         $thread = Thread::findOrFail($threadId);
-        
-        if ($thread->is_locked) {
+
+        if ($thread->locked) {
             return back()->withErrors(['thread' => 'This thread is locked and cannot accept new replies.']);
         }
 
@@ -626,6 +626,10 @@ class ForumController extends Controller
             ->orWhere('name', $board)
             ->firstOrFail();
         $thread = Thread::with('bitcoinUser')->findOrFail($threadId);
+
+        if ($thread->locked) {
+            return back()->withErrors(['thread' => 'This thread is locked and cannot accept new replies.']);
+        }
 
         // Use new challenge-based verification system for replies
         $verifier = new ChallengeVerifier();
@@ -755,6 +759,21 @@ class ForumController extends Controller
             }
         }
 
+        // Bump thread
+        $thread->bumped_at = now();
+        $thread->bump_score = min(10, $thread->bump_score + 0.5);
+        $thread->reply_count++;
+        $thread->save();
+
+        // Update user stats if logged in
+        if ($finalUserId) {
+            $user = session('bitcoin_auth_user');
+            if ($user) {
+                $user->increment('total_posts');
+                $user->increment('weekly_posts');
+            }
+        }
+
         // Update the library image with post reference
         $imageHash = $postData['image_hash'] ?? null;
         if ($imageHash) {
@@ -774,7 +793,8 @@ class ForumController extends Controller
             'content' => substr($post->content, 0, 50).'...',
         ]);
 
-        return redirect("/$board/$threadId")->with('reply_created', $post->id);
+        return redirect("/{$boardModel->code}/thread/{$threadId}#post-{$post->id}")
+            ->with('success', 'Reply posted successfully!');
     }
 
     // User post management
