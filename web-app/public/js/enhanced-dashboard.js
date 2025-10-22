@@ -270,7 +270,7 @@ class HaichanMiningDashboard {
             }, 1000);
         }
         
-        console.log(`💎 Proof found: ${hash.substring(0, 12)}... (+${points} pts)`);
+        console.log(`Proof found: ${hash.substring(0, 12)}... (+${points} pts)`);
     }
     
     updateHashCount(count) {

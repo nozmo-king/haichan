@@ -170,10 +170,7 @@
                 </label>
             </div>
             
-            <!-- Hidden PoW fields (must be filled by mining system) -->
-            <input type="hidden" name="pow_nonce" required>
-            <input type="hidden" name="pow_hash" required>
-            <input type="hidden" name="pow_challenge_id" required>
+            <!-- PoW fields temporarily removed - using simplified reply system -->
             
             <div class="tui-actions">
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
@@ -359,7 +356,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Simple Reply Form Handler (POW disabled)
+// Simple Reply Form Handler (PoW temporarily disabled)
 document.addEventListener('DOMContentLoaded', function() {
     const replyForm = document.querySelector('.unified-post-form');
     const contentInput = document.getElementById('post-content');
@@ -371,231 +368,44 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    console.log('Reply form initialized with POW support');
+    console.log('Reply form initialized (PoW temporarily bypassed)');
     
-    // Simple inline mining function
-    async function mineProof(challengeData, targetPattern) {
-        const encoder = new TextEncoder();
-        let nonce = 0;
-        
-        while (true) {
-            const data = challengeData + ':' + nonce;
-            const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
-            const hashArray = new Uint8Array(hashBuffer);
-            const hash = Array.from(hashArray).map(b => b.toString(16).padStart(2, '0')).join('');
-            
-            if (hash.startsWith(targetPattern.toLowerCase())) {
-                return { nonce, hash };
-            }
-            nonce++;
-            
-            // Update UI every 1000 hashes
-            if (nonce % 1000 === 0) {
-                miningStatus.innerHTML = `<span style="color: #ffc107;">⛏️ Mining... ${nonce} hashes</span>`;
-                await new Promise(resolve => setTimeout(resolve, 1));
-            }
-        }
-    }
-    
-    // Wait for mining brain to be available
-    async function waitForMiningBrain(maxRetries = 20) {
-        for (let i = 0; i < maxRetries; i++) {
-            // First check if HaichanMiningBrain class exists and create instance if needed
-            if (window.HaichanMiningBrain && !window.haichanMiningBrain) {
-                try {
-                    console.log('Creating mining brain instance in reply form...');
-                    window.haichanMiningBrain = new HaichanMiningBrain();
-                } catch (e) {
-                    console.error('Failed to create mining brain:', e);
-                }
-            }
-            
-            // Check for any available mining system
-            if (window.haichanMiningBrain || window.simplePoW || window.haichanMiner) {
-                console.log('Mining system ready after', i, 'retries');
-                return true;
-            }
-            await new Promise(resolve => setTimeout(resolve, 250));
-        }
-        console.error('Mining system not available after', maxRetries, 'retries');
-        return false;
-    }
-    
-    // Auto-start mining when content is filled
-    async function startReplyMining() {
+    // Simple content validation
+    function validateReplyContent() {
         const content = contentInput.value.trim();
         
         if (content.length >= 5) {
-            try {
-                console.log('Starting reply mining...');
-                miningStatus.innerHTML = '<span style="color: #ffc107;">⛏️ Initializing mining...</span>';
-                
-                // Wait for mining brain if needed
-                await waitForMiningBrain();
-                
-                // Find any available mining system
-                let miner = null;
-                const availableMiners = ['haichanMiningBrain', 'simplePoW', 'fallbackMining', 'haichanMiner'];
-                
-                console.log('Available mining systems:', {
-                    HaichanMiningBrain: !!window.HaichanMiningBrain,
-                    haichanMiningBrain: !!window.haichanMiningBrain,
-                    simplePoW: !!window.simplePoW,
-                    fallbackMining: !!window.fallbackMining,
-                    haichanMiner: !!window.haichanMiner
-                });
-                
-                // Try to find a working miner
-                for (const minerName of availableMiners) {
-                    if (window[minerName]) {
-                        // Check if it has the required method
-                        if (typeof window[minerName].acquireProofFor === 'function') {
-                            miner = window[minerName];
-                            console.log(`✅ Using ${minerName} for reply mining`);
-                            break;
-                        } else if (typeof window[minerName].mine === 'function') {
-                            // Adapter for miners with different API
-                            console.log(`✅ Adapting ${minerName} for reply mining`);
-                            miner = {
-                                acquireProofFor: async (payload) => {
-                                    return await window[minerName].mine(payload);
-                                }
-                            };
-                            break;
-                        }
-                    }
-                }
-                
-                if (!miner) {
-                    // Emergency: create inline miner
-                    console.warn('⚠️ No miners available, creating emergency miner');
-                    miner = {
-                        acquireProofFor: async (payload) => {
-                            // Direct challenge request
-                            const challengeResp = await fetch('/api/mining/challenges', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                                },
-                                body: JSON.stringify(payload)
-                            });
-                            
-                            const challenge = await challengeResp.json();
-                            if (!challenge.success) throw new Error('Challenge failed');
-                            
-                            // Mine with inline function
-                            const result = await mineProof(
-                                JSON.stringify(challenge.canonical_payload),
-                                payload.difficulty
-                            );
-                            
-                            return {
-                                nonce: result.nonce.toString(),
-                                hash: result.hash,
-                                challenge_id: challenge.token
-                            };
-                        }
-                    };
-                }
-                
-                console.log('Mining for proof...');
-                miningStatus.innerHTML = '<span style="color: #ffc107;">⛏️ Mining proof-of-work...</span>';
-                
-                // Mine with selected system
-                const proof = await miner.acquireProofFor({
-                    board_code: '{{ $board->code }}',
-                    target_type: 'reply',
-                    target_id: '{{ $thread->id }}',
-                    action: 'create',
-                    difficulty: '21e8'
-                });
-                
-                console.log('✅ Proof acquired:', proof);
-                
-                // Fill form fields
-                replyForm.querySelector('input[name="pow_nonce"]').value = proof.nonce || '0';
-                replyForm.querySelector('input[name="pow_hash"]').value = proof.hash || '';
-                replyForm.querySelector('input[name="pow_challenge_id"]').value = proof.challenge_id || '';
-                
-                // Enable submit button
-                submitBtn.disabled = false;
-                submitBtn.style.opacity = '1';
-                submitBtn.style.cursor = 'pointer';
-                submitBtn.style.background = 'linear-gradient(135deg, #708B75, #5a7860)';
-                submitBtn.textContent = '⚡ Post Reply';
-                
-                miningStatus.innerHTML = '<span style="color: #28a745;">✅ Mining complete! Ready to post.</span>';
-                
-                // Extra validation
-                if (proof.hash && proof.hash.toLowerCase().startsWith('21e8')) {
-                    miningStatus.innerHTML += '<br><small style="color: #28a745;">Valid 21e8 hash found!</small>';
-                }
-                
-            } catch (error) {
-                console.error('Mining failed:', error);
-                miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Mining error - retrying...</span>';
-                
-                // Retry with simpler approach
-                setTimeout(() => {
-                    if (content.length >= 5) {
-                        startReplyMining(); // Recursive retry
-                    }
-                }, 2000);
-            }
-        } else {
-            // Reset if content is too short
+            // Enable submit button
             submitBtn.disabled = false;
-            submitBtn.style.opacity = '0.8';
-            submitBtn.style.background = '';
-            miningStatus.innerHTML = 'Fill content to begin mining';
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+            submitBtn.style.background = 'linear-gradient(135deg, #708B75, #5a7860)';
+            submitBtn.textContent = '📤 Post Reply';
+            miningStatus.innerHTML = '<span style="color: #28a745;">✅ Ready to post!</span>';
+        } else {
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+            submitBtn.style.background = '#ccc';
+            submitBtn.textContent = '📤 Post Reply';
+            miningStatus.innerHTML = '<span style="color: #666;">Enter at least 5 characters to post</span>';
         }
     }
     
-    // Start mining when user fills content (debounced)
-    let miningTimeout;
-    contentInput.addEventListener('input', () => {
-        clearTimeout(miningTimeout);
-        const hasProof = replyForm.querySelector('input[name="pow_hash"]').value;
-        
-        if (!hasProof && contentInput.value.trim().length >= 5) {
-            miningTimeout = setTimeout(startReplyMining, 1000);
-        }
-    });
+    // Validate content as user types
+    contentInput.addEventListener('input', validateReplyContent);
     
-    // Form submission validation
-    replyForm.addEventListener('submit', async (e) => {
-        const hasProof = replyForm.querySelector('input[name="pow_hash"]').value;
+    // Form submission handler
+    replyForm.addEventListener('submit', function(e) {
         const contentText = contentInput.value.trim();
         
-        if (!hasProof && contentText.length >= 5) {
+        if (contentText.length < 5) {
             e.preventDefault();
-            miningStatus.innerHTML = '<span style="color: #ffc107;">⛏️ Mining proof-of-work before submission...</span>';
-            
-            try {
-                // Mine proof synchronously before submission
-                await startReplyMining();
-                
-                // Check if proof was acquired
-                const newProof = replyForm.querySelector('input[name="pow_hash"]').value;
-                if (newProof) {
-                    // Resubmit form after mining is complete
-                    replyForm.submit();
-                }
-            } catch (error) {
-                console.error('Mining failed during submission:', error);
-                miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Mining failed: ' + error.message + '</span>';
-            }
+            miningStatus.innerHTML = '<span style="color: #dc3545;">⚠️ Please enter at least 5 characters</span>';
             return;
         }
         
-        if (!hasProof) {
-            e.preventDefault();
-            miningStatus.innerHTML = '<span style="color: #dc3545;">⚠️ Complete proof-of-work mining first!</span>';
-            return;
-        }
-        
-        console.log('Submitting reply with proof');
+        console.log('Submitting reply (no PoW required)');
         
         // Show loading state
         submitBtn.disabled = true;
@@ -603,12 +413,8 @@ document.addEventListener('DOMContentLoaded', function() {
         miningStatus.innerHTML = '<span style="color: #708B75;">🔄 Submitting your reply...</span>';
     });
     
-    // Initial check if form already has content
-    setTimeout(() => {
-        if (contentInput.value.trim().length >= 5) {
-            startReplyMining();
-        }
-    }, 500);
+    // Initial validation
+    validateReplyContent();
 });
 
 // Auto-focus content area when reply form is opened

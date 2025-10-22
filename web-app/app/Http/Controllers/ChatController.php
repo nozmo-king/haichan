@@ -117,12 +117,12 @@ class ChatController extends Controller
                 'message' => $validated['message'],
                 'message_hash' => hash('sha256', $validated['message']),
                 'ip_hash' => hash('sha256', $request->ip()),
-                // POW fields disabled
-                // 'pow_hash' => null,
-                // 'pow_nonce' => null,
-                // 'pow_pattern' => null,
-                // 'pow_points' => 0,
-                // 'pow_challenge_id' => null,
+                // Provide dummy POW values since they're required
+                'pow_hash' => str_repeat('0', 64),
+                'pow_nonce' => 0,
+                'pow_pattern' => 'basic',
+                'pow_points' => 1,
+                'pow_challenge_id' => 'disabled',
             ]);
             
             // Update user's last seen time
@@ -264,11 +264,25 @@ class ChatController extends Controller
      */
     private function joinUserToRoom(ChatRoom $room, $user): void
     {
-        if (!$room->users()->where('user_id', $user->id)->exists()) {
-            $room->users()->attach($user->id, [
-                'display_name' => $user->username ?? $user->address ?? 'Anonymous',
-                'joined_at' => now(),
-                'last_seen_at' => now(),
+        // Ensure user exists before attempting to join
+        if (!$user || !$user->id) {
+            return;
+        }
+
+        try {
+            // Check if user is already in room
+            if (!$room->users()->where('user_id', $user->id)->exists()) {
+                $room->users()->attach($user->id, [
+                    'display_name' => $user->username ?? $user->address ?? 'Anonymous',
+                    'joined_at' => now(),
+                    'last_seen_at' => now(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to join user to chat room', [
+                'user_id' => $user->id,
+                'room_id' => $room->id,
+                'error' => $e->getMessage()
             ]);
         }
     }
@@ -284,8 +298,10 @@ class ChatController extends Controller
         if (str_starts_with($hash, '666')) return 666;
         if (str_starts_with($hash, '000')) return 500;
         if (str_starts_with($hash, '111')) return 400;
-        if (str_starts_with($hash, '21e')) return 10;
-        if (str_starts_with($hash, '21')) return 5;
+        if (str_starts_with($hash, '21e8')) return 10;
+        if (str_starts_with($hash, '21e')) return 5;
+        if (str_starts_with($hash, '21')) return 2.5;
+        if (str_starts_with($hash, '2')) return 1;
         return 1;
     }
 
@@ -486,7 +502,23 @@ class ChatController extends Controller
             return null;
         }
         
-        return \App\Models\BitcoinAuth::find($userId);
+        try {
+            $user = \App\Models\BitcoinAuth::find($userId);
+            
+            // Verify user actually exists
+            if (!$user || !$user->exists) {
+                Log::warning('BitcoinAuth user not found', ['user_id' => $userId]);
+                return null;
+            }
+            
+            return $user;
+        } catch (\Exception $e) {
+            Log::error('Error fetching BitcoinAuth user', [
+                'user_id' => $userId,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 
     /**

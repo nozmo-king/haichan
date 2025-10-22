@@ -38,6 +38,7 @@ return [
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => 30000, // 30 seconds
+            'busy_timeout' => 30000, // 30 seconds
             'journal_mode' => 'WAL', // Write-Ahead Logging for better concurrency
             'synchronous' => 'NORMAL', // Balance between safety and performance
         ],

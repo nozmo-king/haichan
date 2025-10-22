@@ -16,20 +16,17 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     
-    <!-- CSS -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <!-- Single Clean CSS -->
+    <link rel="stylesheet" href="/css/haichan.css">
     
     <!-- Mining System -->
     <script src="/js/transparent-pow.js"></script>
-    @vite('resources/js/haichan-unified.js')
+
 </head>
 
 <body>
     <!-- Mining Canvas Background -->
     <canvas id="neural-mining-canvas" class="mining-canvas"></canvas>
-    
-    <!-- Mining Status Toolbar -->
-    @include('components.mining-toolbar')
     
     <!-- Main Content -->
     <main id="main-content">

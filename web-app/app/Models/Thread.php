@@ -11,6 +11,7 @@ class Thread extends Model
         'image_path', 'image_filename', 'image_original_name', 'image_size',
         'reply_count', 'image_count', 'ip_address', 'poster_hash',
         'pow_nonce', 'pow_hash', 'pow_challenge_id', 'pow_pattern', 'pow_difficulty', 'pow_verified_at',
+        'sha256_digest', 'is_pinned', 'is_highlighted', 'pinned_until', 'highlighted_until',
     ];
 
     protected $guarded = [
@@ -28,6 +29,10 @@ class Thread extends Model
         'pow_nonce' => 'integer',
         'pow_difficulty' => 'decimal:2',
         'pow_verified_at' => 'datetime',
+        'is_pinned' => 'boolean',
+        'is_highlighted' => 'boolean',
+        'pinned_until' => 'datetime',
+        'highlighted_until' => 'datetime',
     ];
 
     public function board()
@@ -206,5 +211,37 @@ class Thread extends Model
         ];
 
         return $difficulties[$pattern] ?? 1.0;
+    }
+
+    /**
+     * Generate SHA256 digest for thread (pointer to OP)
+     */
+    public function generateSHA256Digest()
+    {
+        $content = $this->board->name . ':' . $this->title . ':' . $this->content . ':' . $this->created_at->timestamp;
+        return hash('sha256', $content);
+    }
+
+    /**
+     * Get short hash for display (first 8 characters)
+     */
+    public function getShortHashAttribute()
+    {
+        return $this->sha256_digest ? substr($this->sha256_digest, 0, 8) : null;
+    }
+
+    /**
+     * Boot method to auto-generate SHA256 digest
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($thread) {
+            if (!$thread->sha256_digest) {
+                $thread->sha256_digest = $thread->generateSHA256Digest();
+                $thread->save();
+            }
+        });
     }
 }

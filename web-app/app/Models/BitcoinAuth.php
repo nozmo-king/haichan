@@ -366,4 +366,12 @@ class BitcoinAuth extends Authenticatable
     {
         return $this->hasMany(UserAttestation::class, 'user_id');
     }
+
+    /**
+     * User proof of work submissions
+     */
+    public function proofOfWork()
+    {
+        return $this->hasMany(ProofOfWork::class, 'user_id');
+    }
 }

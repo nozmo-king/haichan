@@ -194,8 +194,10 @@ class ChatMessage extends Model
         if (str_starts_with($hash, '666')) return 666;
         if (str_starts_with($hash, '000')) return 500;
         if (str_starts_with($hash, '111')) return 400;
-        if (str_starts_with($hash, '21e')) return 10;
-        if (str_starts_with($hash, '21e8')) return 1;
+        if (str_starts_with($hash, '21e8')) return 10;
+        if (str_starts_with($hash, '21e')) return 5;
+        if (str_starts_with($hash, '21')) return 2.5;
+        if (str_starts_with($hash, '2')) return 1;
 
         return 1; // Default points
     }

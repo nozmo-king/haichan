@@ -8,10 +8,7 @@ export default defineConfig({
                 'resources/css/app.css', 
                 'resources/css/grunge-chaos-scoped.css',
                 'resources/css/chaos-effects.css',
-                'resources/js/app.js', 
-                'resources/js/haichan-unified.js'
-            ],
-            refresh: false,
+                'resources/js/app.js'
         }),
     ],
     server: {
@@ -29,9 +26,6 @@ export default defineConfig({
                 'resources/css/app.css', 
                 'resources/css/grunge-chaos-scoped.css',
                 'resources/css/chaos-effects.css',
-                'resources/js/app.js', 
-                'resources/js/haichan-unified.js'
-            ],
-        },
+                'resources/js/app.js'
     },
 });

@@ -73,7 +73,18 @@ class MiningChallengeController extends Controller
                     ], 422);
                 }
                 $validatedTargetId = $thread->id;
-            } elseif ($request->target_type === 'post' || $request->target_type === 'reply') {
+            } elseif ($request->target_type === 'reply') {
+                // For replies, target_id should be the thread ID (since we're replying to a thread)
+                $thread = \App\Models\Thread::find($request->target_id);
+                if (!$thread) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid target thread for reply',
+                        'errors' => ['target_id' => ['Thread not found']],
+                    ], 422);
+                }
+                $validatedTargetId = $thread->id;
+            } elseif ($request->target_type === 'post') {
                 $post = \App\Models\Post::find($request->target_id);
                 if (!$post) {
                     return response()->json([

@@ -25,11 +25,11 @@ class SecurityHeaders
         if (!$request->is('api/*')) {
             $response->headers->set('Content-Security-Policy', 
                 "default-src 'self'; " .
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " .
-                "style-src 'self' 'unsafe-inline'; " .
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173; " .
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
+                "font-src 'self' https://fonts.gstatic.com; " .
                 "img-src 'self' data: blob:; " .
-                "font-src 'self'; " .
-                "connect-src 'self'; " .
+                "connect-src 'self' http://localhost:5173 ws://localhost:5173; " .
                 "media-src 'self'; " .
                 "object-src 'none'; " .
                 "base-uri 'self'; " .

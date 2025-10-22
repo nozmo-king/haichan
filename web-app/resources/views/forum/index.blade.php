@@ -5,13 +5,13 @@
 @section('content')
 <div class="board-grid">
     @forelse($boards as $board)
-        <div class="board-item">
-            <div class="board-code">
+        <div class="board-item" data-mine-type="board" data-board-code="{{ $board->code }}" data-thread-id="home-{{ $board->id }}">
+            <div class="board-code" data-mine-type="board-link" data-board-code="{{ $board->code }}">
                 <a href="{{ route('forum.board', $board->code) }}">{{ $board->code }}</a>
             </div>
             <div class="board-name">{{ $board->name }}</div>
             <div class="board-desc">{{ $board->description }}</div>
-            <div class="board-stats">
+            <div class="board-stats" data-mine-type="board-stats" data-board-code="{{ $board->code }}">
                 {{ $board->threads_count }} threads
             </div>
         </div>

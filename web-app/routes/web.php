@@ -71,7 +71,7 @@ Route::get('/', function () {
             }
             $globalHashrate = $hourlyHashes;
 
-            return view('welcome-simple', compact('userCount', 'userCap', 'boards'));
+            return view('mining-market-dashboard', compact('userCount', 'userCap', 'boards', 'recentProofs', 'activeSessions'));
         }
         
         // Show simple boards index for non-authenticated users
@@ -120,120 +120,34 @@ Route::post('/auth/register-advanced', [AuthController::class, 'register'])->mid
 // Username check API endpoint  
 Route::post('/auth/check-username', [AuthController::class, 'checkUsername'])->middleware('throttle:20,1');
 
-// Debug routes
-Route::get('/test-registration', function() {
-    return 'Registration routes are working. Available invite codes: ' . 
-           \App\Models\InviteCode::where('uses_remaining', '>', 0)->count();
-});
-
-Route::get('/create-genesis-codes', function() {
-    // Create 5 genesis codes for testing
-    $codes = \App\Models\InviteCode::createGenesisCode(5);
-    return 'Created ' . count($codes) . ' genesis codes: ' . implode(', ', array_map(function($code) { return $code->code; }, $codes));
-});
-
-Route::get('/test-simple', function() {
-    \Log::info('Test-simple route accessed');
-    return 'Simple test route works';
-});
-
-Route::get('/test-auth', function() {
-    $userId = session('bitcoin_auth_id');
-    $user = session('bitcoin_auth_user');
-    
-    return response()->json([
-        'logged_in' => $userId ? true : false,
-        'user_id' => $userId,
-        'username' => $user->username ?? 'none',
-        'session_data' => session()->all()
-    ]);
-});
-
-Route::post('/test-simple', function(\Illuminate\Http\Request $request) {
-    \Log::info('Test-simple POST accessed with data: ' . json_encode($request->all()));
-    return response()->json(['success' => true, 'message' => 'POST works']);
-})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
-
-Route::get('/debug-register', function() {
-    return view('debug-register');
-});
-
-Route::post('/debug-register', function(\Illuminate\Http\Request $request) {
-    try {
-        // Test the actual registration process step by step
-        $inviteCode = \App\Models\InviteCode::where('code', $request->invite_code)
-            ->where('uses_remaining', '>', 0)
-            ->first();
-            
-        $canRegister = \App\Models\InviteCode::canRegister();
-        
-        $entropyData = json_decode($request->mouse_entropy, true);
-        
-        return response()->json([
-            'success' => true,
-            'data' => $request->all(),
-            'has_entropy' => $request->has('mouse_entropy'),
-            'entropy_length' => $request->has('mouse_entropy') ? strlen($request->mouse_entropy) : 0,
-            'invite_code_valid' => $inviteCode ? true : false,
-            'can_register' => $canRegister,
-            'entropy_decoded' => $entropyData ? true : false,
-            'entropy_count' => is_array($entropyData) ? count($entropyData) : 0
-        ]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});
-
-Route::post('/simple-test-register', function(\Illuminate\Http\Request $request) {
-    try {
-        \Log::info('SimpleTestRegister: Starting');
-        
-        // Create user with minimal data
-        $user = \App\Models\BitcoinAuth::create([
-            'public_key' => 'test_key_' . time(),
-            'address' => 'test_address_' . time(),
-            'username' => 'testuser_' . time(),
-            'password_hash' => hash('sha256', 'testpass'),
-            'password_salt' => 'testsalt',
-            'private_key_hash' => hash('sha256', 'testprivate'),
-            'invite_code' => strtoupper(bin2hex(random_bytes(6))), // Generate unique invite code for this user
-            'mining_power' => 1.0,
-            'total_pow_points' => 0,
-            'level' => 1,
-        ]);
-        
-        \Log::info('SimpleTestRegister: User created with ID: ' . $user->id);
-        return response()->json(['success' => true, 'user_id' => $user->id]);
-        
-    } catch (\Exception $e) {
-        \Log::error('SimpleTestRegister failed: ' . $e->getMessage());
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
 
 // Logout routes - supporting both paths
 Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->middleware('auth');
 Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout.alt');
 
 // Registration routes (public)
-Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('auth.register.form');
+Route::get('/register', function() {
+    return view('auth.register-with-keys');
+})->name('auth.register.form');
 Route::post('/register/validate-friend-code', [AuthController::class, 'validateFriendCode'])->name('auth.validate.friend.code');
 Route::get('/register/{friendCode}', [AuthController::class, 'showRegister'])->name('auth.register')->middleware('validate.friend.code');
 Route::post('/register', [AuthController::class, 'register'])->name('auth.register.store');
+Route::post('/register/simple', [AuthController::class, 'simpleRegister'])->name('auth.register.simple');
 
 // Image serving routes - public access
 Route::get('/image/thread/{id}', [App\Http\Controllers\ForumController::class, 'serveThreadImage'])->name('thread.image');
 Route::get('/image/post/{id}', [App\Http\Controllers\ForumController::class, 'servePostImage'])->name('post.image');
 
-// Mining dashboard - public access
-Route::get('/mining', function () {
-    return view('mining.dashboard');
-})->name('mining.dashboard');
+// Mining dashboard - public access  
+Route::get('/mining', [App\Http\Controllers\MiningController::class, 'index'])->name('mining.dashboard');
+Route::post('/api/mining/submit-proof', [App\Http\Controllers\MiningController::class, 'submitMiningProof'])->name('mining.submit');
+Route::get('/api/mining/stats', [App\Http\Controllers\MiningController::class, 'getStats'])->name('mining.stats');
 
-// Mining test page
-Route::get('/test-mining', function () {
-    return view('test-mining');
-});
+// Bug bounty page
+Route::get('/bounty', function () {
+    return view('bounty');
+})->name('bounty');
+
 
 // Admin Updates API routes
 Route::prefix('api/updates')->group(function () {
@@ -249,6 +163,29 @@ Route::prefix('api/self-mining')->group(function () {
     Route::post('/submit', [App\Http\Controllers\SelfMiningController::class, 'submitPersonal21e8']);
     Route::get('/leaderboard', [App\Http\Controllers\SelfMiningController::class, 'getLeaderboard']);
 });
+
+// Doodle board routes - PUBLIC ACCESS (no authentication required)
+Route::get('/ddl', function() {
+    $board = \App\Models\Board::where('code', 'ddl')->firstOrFail();
+    $controller = new \App\Http\Controllers\ForumController();
+    return $controller->showBoard('ddl');
+})->name('forum.board.ddl');
+Route::get('/ddl/create', function() {
+    $controller = new \App\Http\Controllers\ForumController();
+    return $controller->createThread('ddl');
+})->name('board.create.ddl');
+Route::post('/ddl/create', function(\Illuminate\Http\Request $request) {
+    $controller = new \App\Http\Controllers\ForumController();
+    return $controller->storeThread($request, 'ddl');
+})->name('board.create.store.ddl');
+Route::get('/ddl/{threadId}', function($threadId) {
+    $controller = new \App\Http\Controllers\ForumController();
+    return $controller->showThread('ddl', $threadId);
+})->name('forum.thread.ddl')->where('threadId', '[0-9]+');
+Route::post('/ddl/{threadId}/reply', function(\Illuminate\Http\Request $request, $threadId) {
+    $controller = new \App\Http\Controllers\ForumController();
+    return $controller->storeReply($request, 'ddl', $threadId);
+})->name('forum.reply.ddl')->where('threadId', '[0-9]+');
 
 
 // Protected routes - require authentication
@@ -282,37 +219,23 @@ Route::middleware('bitcoin.auth')->group(function () {
         ->name('threads.delete.user')
         ->where('threadId', '[0-9]+');
 
-    // Board catalog (specific path, must come before {board})
-    Route::get('/{board}/catalog', [App\Http\Controllers\ForumController::class, 'showCatalog'])
-        ->name('board.catalog')
-        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Politically');
 
-    // Thread creation (specific path, must come before {board})
-    Route::get('/{board}/create', [App\Http\Controllers\ForumController::class, 'createThread'])
-        ->name('board.create')
-        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
-
-    // Thread view (specific path, must come before {board})
-    Route::get('/{board}/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])
-        ->name('forum.thread')
-        ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political', 'threadId' => '[0-9]+']);
-
-    // Thread creation POST (specific path)
-    Route::post('/{board}/create', [App\Http\Controllers\ForumController::class, 'storeThread'])
-        ->name('board.create.store')
-        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
-
-    // Thread creation (less specific, comes after specific paths)
-    Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])
-        ->name('board.store.alt')
-        ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
-
-    // Dynamic board routes - supports all boards: gen, tech, biz, film, x, lit, meta, mu
+    // Dynamic board routes - supports all boards: gen, tech, biz, film, x, lit, meta, mu, pol
     Route::group([], function () {
         // Reply to thread (MUST come before {board} routes to avoid conflicts)
         Route::post('/{board}/{threadId}/reply', [App\Http\Controllers\ForumController::class, 'storeReply'])
             ->name('forum.reply')
             ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political', 'threadId' => '[0-9]+']);
+
+        // Thread creation (specific path, must come before {board})
+        Route::get('/{board}/create', [App\Http\Controllers\ForumController::class, 'createThread'])
+            ->name('board.create')
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
+
+        // Thread creation POST (specific path)
+        Route::post('/{board}/create', [App\Http\Controllers\ForumController::class, 'storeThread'])
+            ->name('board.create.store')
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
 
         // Board catalog (specific path, must come before {board})
         Route::get('/{board}/catalog', [App\Http\Controllers\ForumController::class, 'showCatalog'])
@@ -324,7 +247,7 @@ Route::middleware('bitcoin.auth')->group(function () {
             ->name('forum.thread')
             ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political', 'threadId' => '[0-9]+']);
 
-        // Thread creation (less specific, comes after specific paths)
+        // Thread creation fallback POST (less specific, comes after specific paths)
         Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])
             ->name('board.thread.store')
             ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
@@ -333,6 +256,12 @@ Route::middleware('bitcoin.auth')->group(function () {
         Route::get('/{board}', [App\Http\Controllers\ForumController::class, 'showBoard'])
             ->name('board.show')
             ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
+    });
+
+    // Point Shop routes (protected)
+    Route::prefix('shop')->name('shop.')->group(function () {
+        Route::get('/', [App\Http\Controllers\PointShopController::class, 'index'])->name('index');
+        Route::post('/purchase', [App\Http\Controllers\PointShopController::class, 'purchase'])->name('purchase');
     });
 
     // PoW Chat System routes (protected)
@@ -371,10 +300,10 @@ Route::middleware('bitcoin.auth')->group(function () {
     Route::get('/api/image-library/shifting', [App\Http\Controllers\ImageLibraryController::class, 'getShiftingArrangement']);
 
     // User profile routes
-    Route::get('/user/dashboard', [AuthController::class, 'showDashboard'])->name('user.dashboard');
-    Route::get('/user/profile/edit', [AuthController::class, 'showEditProfile'])->name('user.profile.edit');
-    Route::post('/user/profile/update', [AuthController::class, 'updateProfile'])->name('user.profile.update');
-    Route::get('/user/{userId}', [AuthController::class, 'showUserProfile'])->name('user.profile');
+    Route::get('/user/dashboard', [App\Http\Controllers\UserController::class, 'showDashboard'])->name('user.dashboard');
+    Route::get('/user/profile/edit', [App\Http\Controllers\UserController::class, 'showEditProfile'])->name('user.profile.edit');
+    Route::post('/user/profile/update', [App\Http\Controllers\UserController::class, 'updateProfile'])->name('user.profile.update');
+    Route::get('/user/{userId}', [App\Http\Controllers\UserController::class, 'showUserProfile'])->name('user.profile');
 
     // Static pages
     Route::get('/rules', function () {
@@ -430,27 +359,4 @@ Route::middleware('bitcoin.auth')->group(function () {
 
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
-});
-Route::get('/test-layout', function() { return view('test-simple'); });
-
-Route::get('/test-thread-creation', function () {
-    try {
-        $board = \App\Models\Board::first();
-        if (!$board) {
-            return "No boards found.";
-        }
-
-        $thread = \App\Models\Thread::create([
-            'board_id' => $board->id,
-            'title' => 'Test Thread',
-            'content' => 'This is a test thread.',
-            'user_id' => 1, // Assuming user with ID 1 exists
-            'author_name' => 'Tester',
-            'ip_address' => '127.0.0.1',
-        ]);
-
-        return "Thread created successfully with ID: " . $thread->id;
-    } catch (\Exception $e) {
-        return "Error creating thread: " . $e->getMessage();
-    }
 });

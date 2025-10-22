@@ -1,0 +1,111 @@
+[
+  {
+    "inputs": {
+      "user_pubkey_hex": "testpubkey1",
+      "scope": "t",
+      "thread_id": null,
+      "parent_id": null,
+      "timestamp_i64": 1700000000,
+      "post_draft": {
+        "title": "First Post",
+        "body": "This is the first test post.",
+        "attachments": [],
+        "refs": []
+      },
+      "post_bytes_hash_hex": "6e3740a9dabe1f950ed983394c7d5d70ebd5ccaeb1bfc2a6a209cf96557c595e"
+    },
+    "expected_nonce": 16740,
+    "expected_hash_hex": "21e88f34c05b7c3f5b92bf218007052c62c8a6c6c02fce6293f5826a61990f67",
+    "required_prefix_hex": "21e8",
+    "description": "Solvable case with prefix \"21e8\"",
+    "reject_reason": null
+  },
+  {
+    "inputs": {
+      "user_pubkey_hex": "testpubkey2",
+      "scope": "r",
+      "thread_id": 4980593856217629336,
+      "parent_id": 10341375158308641094,
+      "timestamp_i64": 1700000001,
+      "post_draft": {
+        "title": "Second Post",
+        "body": "Another test post for a harder prefix.",
+        "attachments": [
+          "image.jpg"
+        ],
+        "refs": [
+          "ref_doc"
+        ]
+      },
+      "post_bytes_hash_hex": "1c65c51b9841fd1ba2bb5bb698f26df870f8bfce14f2018cd9d8e8552704faf9"
+    },
+    "expected_nonce": 2809138,
+    "expected_hash_hex": "0021e8e98dfd965ce84961e8b974dcfd72f9a3bc053c67e5cc52cae8f20cd122",
+    "required_prefix_hex": "0021e8",
+    "description": "Solvable case with prefix \"0021e8\"",
+    "reject_reason": null
+  },
+  {
+    "inputs": {
+      "user_pubkey_hex": "testpubkey3",
+      "scope": "t",
+      "thread_id": null,
+      "parent_id": null,
+      "timestamp_i64": 1700000002,
+      "post_draft": {
+        "title": "Negative Test 1",
+        "body": "This post will have a wrong prefix.",
+        "attachments": [],
+        "refs": []
+      },
+      "post_bytes_hash_hex": "d12fb241ac7c2218bf1ed8fc635f17abde9210e7f5f498217281e25fd47830a1"
+    },
+    "expected_nonce": null,
+    "expected_hash_hex": null,
+    "required_prefix_hex": "ffffffff",
+    "description": "Negative: Wrong prefix (unsolvable within reasonable iterations)",
+    "reject_reason": "Invalid PoW solution"
+  },
+  {
+    "inputs": {
+      "user_pubkey_hex": "testpubkey4",
+      "scope": "t",
+      "thread_id": null,
+      "parent_id": null,
+      "timestamp_i64": 1700000003,
+      "post_draft": {
+        "title": "Negative Test 2 Mutated",
+        "body": "This is the original draft.",
+        "attachments": [],
+        "refs": []
+      },
+      "post_bytes_hash_hex": "3507c96540f92172fadbafe93b16bca26d8c1664e46427bf574e46636e73fd73"
+    },
+    "expected_nonce": null,
+    "expected_hash_hex": null,
+    "required_prefix_hex": "21e8",
+    "description": "Negative: Mutated draft (post_bytes_hash mismatch)",
+    "reject_reason": "Post draft mutated"
+  },
+  {
+    "inputs": {
+      "user_pubkey_hex": "testpubkey5",
+      "scope": "t",
+      "thread_id": null,
+      "parent_id": null,
+      "timestamp_i64": 1700000004,
+      "post_draft": {
+        "title": "Negative Test 3",
+        "body": "This challenge will be expired.",
+        "attachments": [],
+        "refs": []
+      },
+      "post_bytes_hash_hex": "ce956bddf4907458178b4e50448a931c33cc306e84ae95d43175fd24f841e8f8"
+    },
+    "expected_nonce": null,
+    "expected_hash_hex": null,
+    "required_prefix_hex": "21e8",
+    "description": "Negative: Expired challenge",
+    "reject_reason": "Challenge expired"
+  }
+]

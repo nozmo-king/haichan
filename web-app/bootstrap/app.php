@@ -15,10 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'require.auth' => \App\Http\Middleware\RequireAuth::class,
             'validate.friend.code' => \App\Http\Middleware\ValidateFriendCode::class,
-            'require.subscription' => \App\Http\Middleware\RequireActiveSubscription::class,
             'bitcoin.auth' => \App\Http\Middleware\BitcoinAuth::class,
             'security.headers' => \App\Http\Middleware\SecurityHeaders::class,
-            'inject.dummy.user' => \App\Http\Middleware\InjectDummyUser::class,
         ]);
         
         // Apply security headers globally

@@ -21,7 +21,7 @@
             <div style="display: grid; grid-template-columns: auto 1fr; gap: 10px 20px; align-items: center;">
                 <strong>Username:</strong> <span>{{ $user->username }}</span>
                 <strong>Address:</strong> <span style="font-family: monospace; font-size: 12px;">{{ substr($user->address, 0, 20) }}...</span>
-                <strong>Points:</strong> <span>{{ $user->accumulated_points ?? 0 }} ⚡</span>
+                <strong>Points:</strong> <span>{{ $user->total_pow_points ?? 0 }} ⚡</span>
                 <strong>Member Since:</strong> <span>{{ $user->created_at->format('M j, Y') }}</span>
             </div>
         </div>

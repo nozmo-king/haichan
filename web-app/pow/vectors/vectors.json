@@ -1,0 +1,107 @@
+[
+  {
+    "inputs": {
+      "user_pubkey_hex": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+      "scope": "thread",
+      "thread_id": 0,
+      "parent_id": 0,
+      "timestamp_i64": 1672531200,
+      "post_draft": {
+        "title": "Hello, world!",
+        "body": "This is a test post.",
+        "attachments": [],
+        "refs": []
+      },
+      "miner_version": 1
+    },
+    "expected_nonce": 123456,
+    "expected_hash_hex": "21e8000000000000000000000000000000000000000000000000000000000000",
+    "required_prefix_hex": "21e8",
+    "description": "Solvable case with prefix '21e8'",
+    "should_pass": true
+  },
+  {
+    "inputs": {
+      "user_pubkey_hex": "038657ca40c142c86c185c4b8af9154c6f4cb0386e3532e42a7a879d3a4e5d5d5d",
+      "scope": "reply",
+      "thread_id": 123,
+      "parent_id": 456,
+      "timestamp_i64": 1672534800,
+      "post_draft": {
+        "title": "",
+        "body": "This is a reply.",
+        "attachments": [],
+        "refs": []
+      },
+      "miner_version": 1
+    },
+    "expected_nonce": 789012,
+    "expected_hash_hex": "0021e8000000000000000000000000000000000000000000000000000000000",
+    "required_prefix_hex": "0021e8",
+    "description": "Solvable case with prefix '0021e8'",
+    "should_pass": true
+  },
+  {
+    "inputs": {
+      "user_pubkey_hex": "02c6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5",
+      "scope": "thread",
+      "thread_id": 0,
+      "parent_id": 0,
+      "timestamp_i64": 1672538400,
+      "post_draft": {
+        "title": "Another post",
+        "body": "Body",
+        "attachments": [],
+        "refs": []
+      },
+      "miner_version": 1
+    },
+    "expected_nonce": 345678,
+    "expected_hash_hex": "21e8abcdef0123456789abcdef0123456789abcdef0123456789abcdef012345",
+    "required_prefix_hex": "ffff",
+    "description": "Negative case: wrong prefix",
+    "should_pass": false
+  },
+  {
+    "inputs": {
+      "user_pubkey_hex": "0318a0a4a89446578b435a9b7d8cf8a9d0a9a8a7a6a5a4a3a2a1a0a9a8a7a6a5",
+      "scope": "thread",
+      "thread_id": 0,
+      "parent_id": 0,
+      "timestamp_i64": 1672542000,
+      "post_draft": {
+        "title": "Original title",
+        "body": "Original body",
+        "attachments": [],
+        "refs": []
+      },
+      "miner_version": 1
+    },
+    "expected_nonce": 901234,
+    "expected_hash_hex": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+    "required_prefix_hex": "21e8",
+    "description": "Negative case: mutated post draft",
+    "should_pass": false
+  },
+  {
+    "inputs": {
+      "user_pubkey_hex": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+      "scope": "thread",
+      "thread_id": 0,
+      "parent_id": 0,
+      "timestamp_i64": 1672531100,
+      "post_draft": {
+        "title": "Expired",
+        "body": "This challenge has expired.",
+        "attachments": [],
+        "refs": []
+      },
+      "miner_version": 1
+    },
+    "expected_nonce": 567890,
+    "expected_hash_hex": "21e8fedcba9876543210fedcba9876543210fedcba9876543210fedcba987654",
+    "required_prefix_hex": "21e8",
+    "description": "Negative case: expired challenge (server-side check)",
+    "should_pass": false
+  }
+]

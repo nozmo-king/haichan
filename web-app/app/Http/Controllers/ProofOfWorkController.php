@@ -19,6 +19,11 @@ class ProofOfWorkController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
+        // Check if this is mouseover mining format
+        if ($request->has('type') && $request->has('target_id') && $request->has('nonce')) {
+            return $this->handleMouseoverMining($request);
+        }
+
         $validator = Validator::make($request->all(), [
             'challenge_token' => 'required|string',
             'client_nonce' => 'required', // Accept number or string
@@ -282,14 +287,15 @@ class ProofOfWorkController extends Controller
     private function calculatePoints($pattern)
     {
         $points = [
-            // Standard patterns - FIXED SCORING
-            '21' => 0.1, // Idle pattern - very low points
-            '21e' => 0.5, // Easy pattern for replies
-            '21e8' => 100, // MAIN MINING PATTERN - 100 POINTS
-            '21e80' => 500, // 5x harder
-            '21e800' => 2500, // 25x harder
-            '21e8000' => 10000, // 100x harder
-            '000021e8' => 50000, // Ultra rare
+            // Standard patterns - UPDATED SCORING
+            '2' => 1,      // Basic pattern - 1 point
+            '21' => 2.5,   // Standard pattern - 2.5 points  
+            '21e' => 5,    // Extended pattern - 5 points
+            '21e8' => 10,  // MAIN MINING PATTERN - 10 POINTS
+            '21e80' => 50, // 5x harder
+            '21e800' => 250, // 25x harder
+            '21e8000' => 1000, // 100x harder
+            '000021e8' => 5000, // Ultra rare
 
             // Legendary patterns
             '000' => 500,  // Triple zero
@@ -455,10 +461,44 @@ class ProofOfWorkController extends Controller
 
     public function getStats()
     {
+        // Get current user stats
+        $userId = session('bitcoin_auth_id');
+        $user = null;
+        $userStats = [
+            'total_points' => 0,
+            'level' => 1,
+            'session_proofs' => 0,
+            'session_points' => 0,
+        ];
+
+        if ($userId) {
+            $user = \App\Models\BitcoinAuth::find($userId);
+            if ($user) {
+                $sessionProofs = ProofOfWork::where('user_id', $userId)
+                    ->where('created_at', '>', now()->subHour())
+                    ->count();
+                    
+                $sessionPoints = ProofOfWork::where('user_id', $userId)
+                    ->where('created_at', '>', now()->subHour())
+                    ->sum('points');
+
+                $userStats = [
+                    'total_points' => $user->total_pow_points,
+                    'level' => $user->level,
+                    'session_proofs' => $sessionProofs,
+                    'session_points' => $sessionPoints,
+                ];
+            }
+        }
+
         // Get real network statistics
         $totalProofs = ProofOfWork::count();
         $recentProofs = ProofOfWork::where('created_at', '>', now()->subHours(24))->count();
-        $activeSessions = \App\Models\MiningSession::where('updated_at', '>', now()->subMinutes(10))->count();
+        
+        // Count unique IP addresses for active sessions estimate
+        $activeSessions = ProofOfWork::where('created_at', '>', now()->subMinutes(10))
+            ->distinct('ip_address')
+            ->count('ip_address');
 
         // Top patterns found recently
         $topPatterns = ProofOfWork::select('pattern', \DB::raw('count(*) as count'), \DB::raw('sum(points) as total_points'))
@@ -469,15 +509,15 @@ class ProofOfWorkController extends Controller
             ->get();
 
         return response()->json([
+            'success' => true,
+            'user' => $userStats,
             'total_proofs' => $totalProofs,
             'recent_proofs_24h' => $recentProofs,
-            'active_miners' => max(1, $activeSessions), // At least show 1 (the current user)
-            'session_proofs' => ProofOfWork::where('ip_address', request()->ip())
-                ->where('created_at', '>', now()->subHours(1))
-                ->count(),
+            'active_miners' => max(1, $activeSessions),
             'top_patterns' => $topPatterns,
             'network_hashrate' => $this->estimateNetworkHashrate(),
             'total_points_awarded' => ProofOfWork::sum('points'),
+            'timestamp' => now()->toISOString(),
         ]);
     }
 
@@ -512,6 +552,84 @@ class ProofOfWorkController extends Controller
             'status' => 'success',
             'message' => 'Mining session ended',
             'timestamp' => time(),
+        ]);
+    }
+
+    private function handleMouseoverMining(Request $request)
+    {
+        Log::info('=== MOUSEOVER MINING SUBMISSION ===', [
+            'request_data' => $request->all(),
+        ]);
+
+        $validator = Validator::make($request->all(), [
+            'type' => 'required|string',
+            'target_id' => 'required|string',
+            'hash' => 'required|string|size:64',
+            'nonce' => 'required',
+            'points' => 'required|numeric',
+            'source' => 'required|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid mouseover proof format',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // Block dummy values
+        $hash = $request->input('hash');
+        if ($hash === '21e8000000000000000000000000000000000000000000000000000000000000') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dummy values not accepted',
+            ], 400);
+        }
+
+        // Get authenticated user (allow anonymous mining)
+        $userId = session('bitcoin_auth_id');
+        $user = null;
+        if ($userId) {
+            $user = \App\Models\BitcoinAuth::find($userId);
+        }
+
+        // Award points to user if authenticated
+        $points = $request->input('points', 1);
+        if ($user) {
+            $user->awardMiningPoints($points);
+        }
+
+        // Create proof of work record
+        $proof = ProofOfWork::create([
+            'user_id' => $user ? $user->id : null,
+            'target_type' => $request->input('type', 'mouseover'),
+            'target_id' => $request->input('target_id'),
+            'hash' => $hash,
+            'nonce' => $request->input('nonce'),
+            'pattern' => $this->detectPattern($hash),
+            'points' => $points,
+            'verified' => true,
+            'source' => $request->input('source', 'mouseover'),
+        ]);
+
+        Log::info('MOUSEOVER PROOF ACCEPTED & POINTS AWARDED', [
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'type' => $request->input('type'),
+            'target_id' => $request->input('target_id'),
+            'points_awarded' => $points,
+            'total_points' => $user->total_pow_points,
+            'hash' => $hash,
+            'proof_id' => $proof->id
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mouseover proof accepted! Points awarded.',
+            'points' => $points,
+            'total_points' => $user ? $user->fresh()->total_pow_points : $points,
+            'user_level' => $user ? $user->fresh()->level : 1,
         ]);
     }
 }

@@ -26,7 +26,7 @@
                 <input type="text" id="nickname-input" placeholder="Your nickname..." maxlength="20"
                        style="width: 100%; padding: 5px; font-size: 11px; border: 1px solid #708B75; border-radius: 3px; box-sizing: border-box;">
                 <button id="save-nickname" style="width: 100%; margin-top: 5px; padding: 5px; font-size: 10px; background: #708B75; color: white; border: none; border-radius: 3px; cursor: pointer;">
-                    Save
+                    <span id="save-nickname-emoji">✏️</span> Save
                 </button>
             </div>
         </div>
@@ -61,7 +61,7 @@
                    style="flex: 1; padding: 10px; border: 1px solid #708B75; border-radius: 4px; font-family: inherit;">
             <button type="submit" id="send-button"
                     style="padding: 10px 20px; background: #708B75; color: #F5F5DC; border: none; border-radius: 4px; cursor: pointer;">
-                Send
+                <span id="send-emoji">💬</span> Send
             </button>
         </form>
         <div id="status" style="margin-top: 10px; font-size: 12px; color: #6B7A6B;"></div>
@@ -86,7 +86,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!message) return;
         
         sendButton.disabled = true;
-        statusDiv.textContent = 'Sending...';
+        
+        // Animate send button
+        setTimeout(() => {
+            if (window.emojiAnimator) {
+                window.emojiAnimator.startAnimation('send-emoji', ['💬', '📨', '✉️', '💬'], 180);
+            }
+        }, 50);
+        statusDiv.innerHTML = '<span id="status-emoji">📤</span> Sending...';
+        
+        // Animate sending status
+        setTimeout(() => {
+            if (window.emojiAnimator) {
+                window.emojiAnimator.startAnimation('status-emoji', ['📤', '✈️', '🎯', '📤'], 150);
+            }
+        }, 50);
         
         try {
             // Send message without POW
@@ -105,20 +119,47 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (result.success) {
                 messageInput.value = '';
-                statusDiv.textContent = 'Message sent!';
+                statusDiv.innerHTML = '<span id="status-emoji">✅</span> Message sent!';
+                
+                // Success animation
+                setTimeout(() => {
+                    if (window.emojiAnimator) {
+                        window.emojiAnimator.startAnimation('status-emoji', ['✅', '🎉', '⭐', '✅'], 200);
+                    }
+                }, 50);
+                
                 setTimeout(() => statusDiv.textContent = '', 2000);
                 
-                // Add message to chat
+                // Add message to chat immediately and update lastMessageId
                 addMessageToChat(result.message);
+                if (result.message.id) {
+                    lastMessageId = Math.max(lastMessageId, result.message.id);
+                }
                 scrollToBottom();
             } else {
-                statusDiv.textContent = 'Error: ' + result.error;
+                statusDiv.innerHTML = '<span id="status-emoji">❌</span> Error: ' + result.error;
+                
+                // Error animation
+                setTimeout(() => {
+                    if (window.emojiAnimator) {
+                        window.emojiAnimator.startAnimation('status-emoji', ['❌', '💥', '⚠️', '❌'], 300);
+                    }
+                }, 50);
+                
                 setTimeout(() => statusDiv.textContent = '', 3000);
             }
             
         } catch (error) {
             console.error('Error sending message:', error);
-            statusDiv.textContent = 'Error: ' + error.message;
+            statusDiv.innerHTML = '<span id="status-emoji">❌</span> Error: ' + error.message;
+            
+            // Error animation
+            setTimeout(() => {
+                if (window.emojiAnimator) {
+                    window.emojiAnimator.startAnimation('status-emoji', ['❌', '💥', '⚠️', '❌'], 300);
+                }
+            }, 50);
+            
             setTimeout(() => statusDiv.textContent = '', 3000);
         } finally {
             sendButton.disabled = false;
@@ -206,7 +247,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const result = await response.json();
             if (result.success) {
-                statusDiv.textContent = 'Nickname saved!';
+                statusDiv.innerHTML = '<span id="status-emoji">✅</span> Nickname saved!';
+                
+                // Success animation
+                setTimeout(() => {
+                    if (window.emojiAnimator) {
+                        window.emojiAnimator.startAnimation('status-emoji', ['✅', '🎉', '⭐', '✅'], 200);
+                        window.emojiAnimator.startAnimation('save-nickname-emoji', ['✏️', '💾', '✅', '✏️'], 250);
+                    }
+                }, 50);
+                
                 setTimeout(() => statusDiv.textContent = '', 2000);
             }
         } catch (error) {

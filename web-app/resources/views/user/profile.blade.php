@@ -21,7 +21,7 @@
                 <!-- User Info -->
                 <div style="flex: 1;">
                     <h1 style="margin: 0 0 10px 0; color: #F5F5DC; font-family: 'Nova Cut', serif; font-size: 32px; display: flex; align-items: center; gap: 10px;">
-                        @{{ $user->username }}
+                        {{ $user->username }}
                         @if($user->is_admin)
                             <span style="background: #FFD700; color: #333; padding: 2px 8px; font-size: 12px; border-radius: 4px; font-weight: bold;">ADMIN</span>
                         @elseif($user->is_moderator)
@@ -100,14 +100,6 @@
             <div style="text-align: center; padding: 40px; color: #6B7A6B;">
                 <div style="font-size: 48px; margin-bottom: 20px;">🔒</div>
                 <p style="margin: 0; font-size: 16px;">No verified identities yet</p>
-                @if(session('bitcoin_auth_id') && session('bitcoin_auth_id') == $user->id)
-                    <a href="{{ route('profile.attestations') }}" 
-                       style="display: inline-block; margin-top: 20px; color: #708B75; text-decoration: none; font-weight: 600; padding: 10px 20px; border: 2px solid #708B75; border-radius: 6px; transition: all 0.3s ease;"
-                       onmouseover="this.style.background='#708B75'; this.style.color='#F5F5DC';"
-                       onmouseout="this.style.background='transparent'; this.style.color='#708B75';">
-                        Add Attestations
-                    </a>
-                @endif
             </div>
         @endif
     </div>
@@ -164,48 +156,8 @@
         @endif
     </div>
 
-    <!-- Recent Activity -->
-    <div style="margin-top: 30px; background: #F5F5DC; border: 2px solid #708B75; border-radius: 12px; padding: 30px; box-shadow: 0 4px 16px rgba(112, 139, 117, 0.1);">
-        <h2 style="margin: 0 0 25px 0; color: #3D315B; font-family: 'Nova Cut', serif; font-size: 24px; text-align: center;">
-            ⚡ Recent Mining Activity
-        </h2>
-        
-        @if($recentProofs->count() > 0)
-            <div style="max-height: 300px; overflow-y: auto;">
-                @foreach($recentProofs as $proof)
-                <div style="padding: 15px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="color: #3D315B; font-weight: 600; margin-bottom: 4px;">
-                            @if($proof->thread_id)
-                                Thread: {{ Str::limit($proof->thread->title ?? 'Thread #'.$proof->thread_id, 40) }}
-                            @elseif($proof->post_id)
-                                Reply in Thread #{{ $proof->post->thread_id ?? 'Unknown' }}
-                            @else
-                                General Mining
-                            @endif
-                        </div>
-                        <div style="font-family: monospace; font-size: 12px; color: #6B7A6B;">
-                            {{ substr($proof->hash, 0, 16) }}...{{ substr($proof->hash, -8) }}
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="color: #708B75; font-weight: bold; font-size: 14px;">
-                            +{{ $proof->points }} pts
-                        </div>
-                        <div style="color: #6B7A6B; font-size: 12px;">
-                            {{ $proof->created_at->diffForHumans() }}
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        @else
-            <div style="text-align: center; padding: 40px; color: #6B7A6B;">
-                <div style="font-size: 48px; margin-bottom: 20px;">💤</div>
-                <p style="margin: 0; font-size: 16px;">No recent mining activity</p>
-            </div>
-        @endif
-    </div>
+    <!-- Recent Activity section disabled -->
+    <div style="display: none;"></div>
 
     <!-- Navigation -->
     <div style="text-align: center; margin-top: 30px;">

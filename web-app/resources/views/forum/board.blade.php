@@ -11,8 +11,13 @@
 <p>{{ $board->description }}</p>
 
 <div style="margin: 15px 0;">
-    <a href="{{ route('forum.create', $board->code) }}" style="background: #333; color: white; padding: 8px 16px; text-decoration: none; border-radius: 3px;">
-        [Create New Thread]
+    <a href="{{ route('forum.create', $board->code) }}" 
+       id="create-thread-btn"
+       class="emoji-animated-btn"
+       style="background: linear-gradient(135deg, #708B75, #5a7860); color: #F5F5DC; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(112, 139, 117, 0.3);"
+       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(112, 139, 117, 0.4)'; if(window.emojiAnimator) window.emojiAnimator.startElementAnimation(this.querySelector('#create-thread-emoji'), ['🌱', '✨', '📝', '🌟'], 120);"
+       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(112, 139, 117, 0.3)'; if(window.emojiAnimator) window.emojiAnimator.stopElementAnimation(this.querySelector('#create-thread-emoji')); this.querySelector('#create-thread-emoji').textContent='🌱';">
+        <span id="create-thread-emoji">🌱</span> Create New Thread
     </a>
 </div>
 
@@ -28,10 +33,12 @@
         @forelse($threads as $thread)
             <tr>
                 <td colspan="3">
-                    <div class="thread-preview" data-thread-id="{{ $thread->id }}">
+                    <div class="thread-preview" data-mine-type="thread" data-thread-id="{{ $thread->id }}" data-board-code="{{ $board->code }}">
                         <div class="thread-header" style="cursor: pointer;" onclick="toggleThread({{ $thread->id }})">
                             <div class="thread-title">
-                                <span class="expand-icon" id="icon-{{ $thread->id }}">▶</span>
+                                <span class="expand-icon emoji-animated" id="icon-{{ $thread->id }}" style="display: inline-block; transition: transform 0.2s ease; cursor: pointer; margin-right: 6px; font-size: 14px;" 
+                                      onmouseover="this.style.transform='scale(1.2)'; if(this.textContent === '📁') { if(window.emojiAnimator) window.emojiAnimator.startElementAnimation(this, ['📁', '📂', '✨', '📁'], 150); } else { if(window.emojiAnimator) window.emojiAnimator.startElementAnimation(this, ['📂', '📁', '⭐', '📂'], 150); }"
+                                      onmouseout="this.style.transform='scale(1)'; if(window.emojiAnimator) window.emojiAnimator.stopElementAnimation(this);">📁</span>
                                 <a href="{{ route('forum.thread', [$board->code, $thread->id]) }}">{{ $thread->title }}</a>
                             </div>
                             <div class="thread-meta">
@@ -54,7 +61,7 @@
                             @if($thread->posts->count() > 0)
                                 <div class="replies-preview">
                                     @foreach($thread->posts->take(7) as $post)
-                                        <div class="reply-preview">
+                                        <div class="reply-preview" data-mine-type="post" data-post-id="{{ $post->id }}" data-thread-id="{{ $thread->id }}" data-board-code="{{ $board->code }}">
                                             @if($post->image_path)
                                                 <div class="post-preview-image" style="float: left; margin: 0 15px 15px 0;">
                                                     <img src="{{ route('post.image', $post->id) }}" alt="{{ $post->image_filename }}" 
@@ -67,7 +74,7 @@
                                             
                                             @if($post->replies->count() > 0)
                                                 @foreach($post->replies->take(3) as $reply)
-                                                    <div class="nested-reply">
+                                                    <div class="nested-reply" data-mine-type="post" data-post-id="{{ $reply->id }}" data-thread-id="{{ $thread->id }}" data-board-code="{{ $board->code }}">
                                                         @if($reply->image_path)
                                                             <div class="reply-preview-image" style="float: left; margin: 0 12px 12px 0;">
                                                                 <img src="{{ route('post.image', $reply->id) }}" alt="{{ $reply->image_filename }}" 
@@ -80,7 +87,7 @@
                                                         
                                                         @if($reply->replies->count() > 0)
                                                             @foreach($reply->replies->take(2) as $nestedReply)
-                                                                <div class="deeply-nested-reply" style="margin-left: 30px; margin-top: 3px; font-size: 12px; color: #777;">
+                                                                <div class="deeply-nested-reply" data-mine-type="post" data-post-id="{{ $nestedReply->id }}" data-thread-id="{{ $thread->id }}" data-board-code="{{ $board->code }}" style="margin-left: 30px; margin-top: 3px; font-size: 12px; color: #777;">
                                                                     @if($nestedReply->image_path)
                                                                         <div style="float: left; margin: 0 10px 10px 0;">
                                                                             <img src="{{ route('post.image', $nestedReply->id) }}" alt="{{ $nestedReply->image_filename }}" 
@@ -135,10 +142,26 @@ function toggleThread(threadId) {
     
     if (content.style.display === 'none') {
         content.style.display = 'block';
-        icon.textContent = '▼';
+        icon.textContent = '📂';
+        // Celebration animation for opening
+        if (window.emojiAnimator) {
+            window.emojiAnimator.startElementAnimation(icon, ['📂', '✨', '🌟', '📂'], 200);
+            setTimeout(() => {
+                if (window.emojiAnimator) window.emojiAnimator.stopElementAnimation(icon);
+                icon.textContent = '📂';
+            }, 800);
+        }
     } else {
         content.style.display = 'none';
-        icon.textContent = '▶';
+        icon.textContent = '📁';
+        // Closing animation
+        if (window.emojiAnimator) {
+            window.emojiAnimator.startElementAnimation(icon, ['📁', '💨', '📁'], 150);
+            setTimeout(() => {
+                if (window.emojiAnimator) window.emojiAnimator.stopElementAnimation(icon);
+                icon.textContent = '📁';
+            }, 450);
+        }
     }
 }
 
