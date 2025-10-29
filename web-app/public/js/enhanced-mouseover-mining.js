@@ -469,37 +469,18 @@ class EnhancedMouseoverMiner {
         );
     }
     
-    // Global dashboard integration
+    // Minimal toolbar integration
     updateGlobalDashboard() {
-        if (window.MiningDashboard) {
-            window.MiningDashboard.updateStats(this.stats);
+        // Update minimal hashrate toolbar
+        if (window.MinimalHashrateToolbar) {
+            window.MinimalHashrateToolbar.updateHashrate(this.stats.hashrate);
         }
         
-        if (window.miningToolbar) {
-            window.miningToolbar.updateStats(
-                this.stats.proofs, 
-                this.stats.points, 
-                this.stats.hashes
-            );
-        }
-        
-        // Update persistent toolbar
-        this.updatePersistentToolbar();
-    }
-    
-    updatePersistentToolbar() {
-        const toolbar = document.querySelector('#haichan-persistent-toolbar');
-        if (!toolbar) return;
-        
-        const hashrateEl = toolbar.querySelector('.mining-hashrate');
-        const totalEl = toolbar.querySelector('.mining-total');
-        
-        if (hashrateEl) {
-            hashrateEl.textContent = `${this.stats.hashrate.toLocaleString()} H/s`;
-        }
-        
-        if (totalEl) {
-            totalEl.textContent = `${this.stats.proofs} total PoW`;
+        // Update global state for other systems
+        if (window.HaichanState) {
+            window.HaichanState.setState('mining.hashrate', this.stats.hashrate);
+            window.HaichanState.setState('mining.isActive', this.stats.hashrate > 0);
+            window.HaichanState.setState('mining.totalHashes', this.stats.hashes);
         }
     }
     

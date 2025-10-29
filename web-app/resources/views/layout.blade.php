@@ -86,17 +86,48 @@
     <link rel="stylesheet" href="/css/haichan.css">
 
     <style>
-        /* AESTHETIC EXTREMIST OVERRIDES - ELIMINATE CHAOS */
-        .glow-text { 
-            color: var(--accent-6) !important; 
-            text-shadow: none !important; 
-            animation: none !important; 
+        /* AESTHETIC EXTREMIST OVERRIDES - TOTAL UI SILENCE */
+        * {
+            animation: none !important;
+            transition: all 0.15s ease-out !important;
         }
-        .admin-glow span, 
-        .mod-glow span { 
-            color: var(--accent-7) !important; 
+        
+        .glow-text, 
+        .admin-glow, 
+        .mod-glow, 
+        .username-glow,
+        [class*="glow"] { 
+            color: var(--neutral-8) !important; 
             text-shadow: none !important; 
-            animation: none !important; 
+            animation: none !important;
+            font-weight: var(--font-weight-medium) !important;
+        }
+        
+        /* Remove all emoji and noise */
+        .emoji, [class*="emoji"] { display: none !important; }
+        
+        /* Consistent backgrounds - no gradients */
+        body, html {
+            background: var(--neutral-1) !important;
+            background-image: none !important;
+            background-attachment: unset !important;
+        }
+        
+        /* Remove all shadows and effects */
+        * {
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+        
+        /* Minimal borders only */
+        .post, .thread, .nav-links, 
+        .tui-reply-form, .unified-post-form,
+        .mining-dashboard, .chat-overlay {
+            background: var(--neutral-0) !important;
+            border: var(--border-width) solid var(--neutral-4) !important;
+            border-radius: var(--border-radius) !important;
+            margin: var(--space-3) !important;
+            padding: var(--space-4) !important;
         }
     </style>
     
@@ -175,34 +206,19 @@
     }
     </style>
 
-    <!-- Elite Mining Dashboard Component -->
-    @include('components.mining-dashboard')
+    <!-- Minimal Dashboard Removed - Using Clean Hashrate Toolbar -->
 
     @yield('scripts')
     
-    <!-- CRITICAL: Complete Site Fix - Load FIRST -->
-    <script src="/js/site-fix.js?v={{ time() }}"></script>
-    
-    <!-- Emergency Fixes -->
-    <script src="/js/toolbar-fix.js?v={{ time() }}"></script>
-    
-    <!-- Global State Management System -->
+    <!-- Core Systems - Essential Only -->
     <script src="/js/global-state.js?v={{ time() }}"></script>
     
-    <!-- Persistent Toolbar System -->
-    <script src="/js/persistent-toolbar.js?v={{ time() }}"></script>
+    <!-- Minimal Hashrate Toolbar - Clean & Fast -->
+    <script src="/js/minimal-hashrate-toolbar.js?v={{ time() }}"></script>
     
-    <!-- Persistent Chat Overlay -->
-    <script src="/js/persistent-chat.js?v={{ time() }}"></script>
-    
-    <!-- WASM PoW Integration -->
+    <!-- PoW Mining - Essential Only -->
     <script src="/js/wasm-pow-integration.js" defer></script>
-    
-    <!-- ELITE MINING SYSTEM - Premium experience for 256 elite users -->
     <script src="/js/enhanced-mouseover-mining.js" defer></script>
-    <script src="/js/premium-mini-dashboard.js" defer></script>
-    <script src="/js/visual-mining-effects.js" defer></script>
-    <script src="/js/elite-mining-integration.js" defer></script>
     
 </body>
 </html>

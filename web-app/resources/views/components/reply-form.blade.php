@@ -1,66 +1,268 @@
-<!-- Unified Reply Form -->
-<div class="tui-reply-form">
-    <div class="tui-reply-header">
-        <div class="tui-reply-title">💬 Reply to Thread</div>
-        <button type="button" class="tui-btn-close" onclick="this.closest('.tui-reply-form').style.display='none'">×</button>
+<!-- Clean Minimal Reply Form -->
+<div class="clean-reply-form">
+    <div class="reply-header">
+        <span class="reply-title">Reply</span>
+        <button type="button" class="close-btn" onclick="this.closest('.clean-reply-form').style.display='none'">×</button>
     </div>
     
-    <div class="tui-reply-container">
-        <form action="{{ route('forum.reply', [$board->code, $thread->id]) }}" method="POST" enctype="multipart/form-data" class="unified-post-form unified-reply-form">
-            @csrf
+    <form action="{{ route('forum.reply', [$board->code, $thread->id]) }}" method="POST" enctype="multipart/form-data" class="reply-form">
+        @csrf
+        
+        <div class="form-field">
+            <textarea name="reply_content" id="post-content" class="reply-textarea" rows="4" 
+                      required maxlength="3000" 
+                      placeholder="Write your reply..."></textarea>
+            <div class="char-count">0/3000</div>
+        </div>
+        
+        <div class="form-field compact">
+            <input type="file" name="image" id="reply_image" class="file-input" 
+                   accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif"
+                   onchange="previewReplyImage(this)">
+            <label for="reply_image" class="file-label">Attach Image</label>
             
-            <div class="tui-field">
-                <label class="tui-label" for="reply_content">Reply Content</label>
-                <textarea name="reply_content" id="post-content" class="tui-textarea" rows="6" 
-                          required maxlength="3000" 
-                          placeholder="Enter your reply... Use >>hash to quote posts"></textarea>
-                <div class="tui-hint">Max 3000 characters. Use >>hash to quote posts.</div>
+            <div id="reply-image-preview" class="image-preview" style="display: none;">
+                <img id="reply-preview-img" alt="Preview">
+                <div id="reply-file-info" class="file-info"></div>
             </div>
-            
-            <div class="tui-field">
-                <label class="tui-label" for="reply_image">Image Upload (optional)</label>
-                <input type="file" name="image" id="reply_image" class="tui-file" 
-                       accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif"
-                       onchange="previewReplyImage(this)">
-                <div class="tui-hint">Optional. Max 25MB. Supports: JPEG, PNG, GIF, WebP, WebM, MP4, SVG, etc.</div>
-                
-                <!-- Preview -->
-                <div id="reply-image-preview" class="tui-preview" style="display: none;">
-                    <img id="reply-preview-img" alt="Reply Preview">
-                    <div id="reply-file-info" class="tui-preview-info"></div>
-                </div>
-            </div>
-            
-            <!-- Image Hash Alternative -->
-            <x-image-picker 
-                name="image_hash" 
-                label="OR Choose from Image Library"
-                placeholder="Browse library or enter image hash manually..."
-                pattern="[a-fA-F0-9]{64}"
-                style="font-family: 'Courier New', monospace;"
-            />
-            
-            <!-- Hidden PoW fields (managed by unified system) -->
-            <input type="hidden" name="pow_nonce">
-            <input type="hidden" name="pow_hash">
-            <input type="hidden" name="pow_challenge_id">
-            
-            <!-- Mining Status Display -->
-            <div id="reply-mining-status" class="tui-mining-status" style="margin-bottom: var(--space-md); min-height: 1.5rem;">
-                <span style="color: var(--text-muted);">🦀 Start typing to begin WASM mining...</span>
-            </div>
-            
-            <div class="tui-actions">
-                <button type="submit" id="reply-submit-btn" class="tui-btn tui-btn-primary tui-btn-disabled" disabled>
-                    🦀 Mine Proof First
-                </button>
-                <button type="button" class="tui-btn tui-btn-outline" onclick="this.closest('.tui-reply-form').style.display='none'">
-                    Cancel
-                </button>
-            </div>
-        </form>
-    </div>
+        </div>
+        
+        <!-- Hidden PoW fields -->
+        <input type="hidden" name="pow_nonce">
+        <input type="hidden" name="pow_hash">
+        <input type="hidden" name="pow_challenge_id">
+        
+        <!-- Minimal Mining Status -->
+        <div id="reply-mining-status" class="mining-status">
+            Start typing to mine...
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" id="reply-submit-btn" class="submit-btn" disabled>
+                Mine First
+            </button>
+            <button type="button" class="cancel-btn" onclick="this.closest('.clean-reply-form').style.display='none'">
+                Cancel
+            </button>
+        </div>
+    </form>
 </div>
+
+<style>
+/* Clean Reply Form - Minimal & Functional */
+.clean-reply-form {
+    background: var(--neutral-0);
+    border: var(--border-width) solid var(--neutral-4);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-2);
+    margin: var(--space-4) 0;
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+}
+
+.reply-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: var(--border-width) solid var(--neutral-3);
+    background: var(--neutral-2);
+}
+
+.reply-title {
+    font-weight: var(--font-weight-medium);
+    color: var(--neutral-8);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: var(--font-size-lg);
+    color: var(--neutral-6);
+    cursor: pointer;
+    padding: 0;
+    width: var(--space-6);
+    height: var(--space-6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius);
+    transition: all var(--transition);
+}
+
+.close-btn:hover {
+    background: var(--neutral-3);
+    color: var(--neutral-8);
+}
+
+.reply-form {
+    padding: var(--space-4);
+}
+
+.form-field {
+    margin-bottom: var(--space-4);
+}
+
+.form-field.compact {
+    margin-bottom: var(--space-3);
+}
+
+.reply-textarea {
+    width: 100%;
+    border: var(--border-width) solid var(--neutral-4);
+    border-radius: var(--border-radius);
+    padding: var(--space-3);
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-normal);
+    resize: vertical;
+    background: var(--neutral-1);
+    color: var(--neutral-8);
+    transition: border-color var(--transition);
+}
+
+.reply-textarea:focus {
+    outline: none;
+    border-color: var(--accent-6);
+}
+
+.char-count {
+    text-align: right;
+    font-size: var(--font-size-xs);
+    color: var(--neutral-6);
+    margin-top: var(--space-1);
+}
+
+.file-input {
+    display: none;
+}
+
+.file-label {
+    display: inline-block;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--neutral-4);
+    border-radius: var(--border-radius);
+    background: var(--neutral-1);
+    color: var(--neutral-7);
+    cursor: pointer;
+    font-size: var(--font-size-sm);
+    transition: all var(--transition);
+}
+
+.file-label:hover {
+    background: var(--neutral-2);
+    border-color: var(--neutral-5);
+}
+
+.image-preview {
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    background: var(--neutral-2);
+    border-radius: var(--border-radius);
+}
+
+.image-preview img {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: var(--border-radius);
+}
+
+.file-info {
+    font-size: var(--font-size-xs);
+    color: var(--neutral-6);
+    margin-top: var(--space-2);
+}
+
+.mining-status {
+    padding: var(--space-2) var(--space-3);
+    background: var(--neutral-2);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    color: var(--neutral-6);
+    margin-bottom: var(--space-3);
+    text-align: center;
+}
+
+.mining-status.active {
+    background: var(--accent-1);
+    color: var(--accent-7);
+}
+
+.mining-status.complete {
+    background: var(--accent-2);
+    color: var(--accent-8);
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
+}
+
+.submit-btn, .cancel-btn {
+    padding: var(--space-2) var(--space-4);
+    border: var(--border-width) solid var(--neutral-4);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.submit-btn {
+    background: var(--accent-6);
+    color: white;
+    border-color: var(--accent-6);
+}
+
+.submit-btn:hover:not(:disabled) {
+    background: var(--accent-7);
+    border-color: var(--accent-7);
+}
+
+.submit-btn:disabled {
+    background: var(--neutral-4);
+    color: var(--neutral-6);
+    border-color: var(--neutral-4);
+    cursor: not-allowed;
+}
+
+.cancel-btn {
+    background: var(--neutral-1);
+    color: var(--neutral-7);
+}
+
+.cancel-btn:hover {
+    background: var(--neutral-2);
+    border-color: var(--neutral-5);
+}
+
+/* Dark theme support */
+[data-theme="dark"] .clean-reply-form {
+    background: var(--neutral-1);
+    border-color: var(--neutral-3);
+}
+
+[data-theme="dark"] .reply-header {
+    background: var(--neutral-2);
+    border-bottom-color: var(--neutral-3);
+}
+
+[data-theme="dark"] .reply-textarea {
+    background: var(--neutral-0);
+    color: var(--neutral-9);
+}
+
+[data-theme="dark"] .file-label {
+    background: var(--neutral-0);
+    color: var(--neutral-8);
+}
+
+[data-theme="dark"] .mining-status {
+    background: var(--neutral-2);
+    color: var(--neutral-7);
+}
+</style>
 
 <script>
 function previewReplyImage(input) {
@@ -87,19 +289,30 @@ function previewReplyImage(input) {
 }
 
 
-// WASM PoW mining for reply form
+// Clean Reply Form - Minimal Mining Integration
 document.addEventListener('DOMContentLoaded', function() {
     const replyContent = document.getElementById('post-content');
     const replySubmitBtn = document.getElementById('reply-submit-btn');
     const replyMiningStatus = document.getElementById('reply-mining-status');
+    const charCount = document.querySelector('.char-count');
     
     let isReplyMining = false;
     let replyMiningTimeout;
     
-    // Auto-mine when content is filled
+    // Character counter
+    function updateCharCount() {
+        if (charCount && replyContent) {
+            const count = replyContent.value.length;
+            charCount.textContent = `${count}/3000`;
+            charCount.style.color = count > 2500 ? 'var(--accent-6)' : 'var(--neutral-6)';
+        }
+    }
+    
+    // Mining logic
     function checkAndMineReply() {
         if (isReplyMining) return;
         
+        updateCharCount();
         clearTimeout(replyMiningTimeout);
         const content = replyContent?.value?.trim() || '';
         
@@ -109,11 +322,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 1000);
         } else {
             if (replyMiningStatus) {
-                replyMiningStatus.innerHTML = '<span style="color: var(--text-muted);">🦀 Start typing to begin WASM mining...</span>';
+                replyMiningStatus.textContent = 'Start typing to mine...';
+                replyMiningStatus.className = 'mining-status';
             }
             if (replySubmitBtn) {
                 replySubmitBtn.disabled = true;
-                replySubmitBtn.textContent = '🦀 Mine Proof First';
+                replySubmitBtn.textContent = 'Mine First';
             }
         }
     }
@@ -128,11 +342,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             if (replyMiningStatus) {
-                replyMiningStatus.innerHTML = '<span style="color: var(--color-amber-500);">🦀 WASM mining reply...</span>';
+                replyMiningStatus.textContent = 'Mining proof...';
+                replyMiningStatus.className = 'mining-status active';
             }
             if (replySubmitBtn) {
                 replySubmitBtn.disabled = true;
-                replySubmitBtn.textContent = '⛏️ Mining...';
+                replySubmitBtn.textContent = 'Mining...';
             }
             
             const formData = {
@@ -142,7 +357,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 refs: []
             };
             
-            // Get thread and parent IDs from form or URL
             const threadId = getThreadIdFromPage();
             const parentId = getParentIdFromForm();
             
@@ -152,8 +366,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 parentId: parentId,
                 useWasm: true
             });
-            
-            console.log('✅ Reply WASM mining complete:', proof);
             
             // Fill hidden fields
             const form = replyContent.closest('form');
@@ -168,22 +380,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             if (replyMiningStatus) {
-                replyMiningStatus.innerHTML = '<span style="color: var(--color-green-600);">✅ WASM mining complete!</span>';
+                replyMiningStatus.textContent = 'Mining complete!';
+                replyMiningStatus.className = 'mining-status complete';
             }
             if (replySubmitBtn) {
                 replySubmitBtn.disabled = false;
-                replySubmitBtn.textContent = '🦀 Post Reply';
+                replySubmitBtn.textContent = 'Post Reply';
+            }
+            
+            // Update minimal toolbar if it exists
+            if (window.MinimalHashrateToolbar) {
+                window.MinimalHashrateToolbar.updateHashrate(proof.hashrate || 0);
             }
             
         } catch (error) {
-            console.error('Reply WASM mining failed:', error);
+            console.error('Reply mining failed:', error);
             
             if (replyMiningStatus) {
-                replyMiningStatus.innerHTML = '<span style="color: var(--color-red-500);">❌ Mining failed</span>';
+                replyMiningStatus.textContent = 'Mining failed';
+                replyMiningStatus.className = 'mining-status';
             }
             if (replySubmitBtn) {
                 replySubmitBtn.disabled = true;
-                replySubmitBtn.textContent = '❌ Mining Error';
+                replySubmitBtn.textContent = 'Mining Error';
             }
         }
         
@@ -191,31 +410,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function getThreadIdFromPage() {
-        // Try to extract thread ID from URL or page data
         const urlMatch = window.location.pathname.match(/\/thread\/(\d+)/);
         if (urlMatch) return parseInt(urlMatch[1]);
         
-        // Fallback to finding it in the DOM
         const threadElement = document.querySelector('[data-thread-id]');
         if (threadElement) return parseInt(threadElement.dataset.threadId);
         
-        return 1; // Fallback
+        return 1;
     }
     
     function getParentIdFromForm() {
-        // Try to get parent ID from form data or page context
         const replyTo = document.querySelector('[data-reply-to]');
         if (replyTo) return parseInt(replyTo.dataset.replyTo);
-        
-        return null; // Top-level reply
+        return null;
     }
     
-    // Bind to content input
+    // Event listeners
     if (replyContent) {
         replyContent.addEventListener('input', checkAndMineReply);
         replyContent.addEventListener('paste', () => {
             setTimeout(checkAndMineReply, 100);
         });
+        
+        // Initial char count
+        updateCharCount();
     }
 });
 </script>
