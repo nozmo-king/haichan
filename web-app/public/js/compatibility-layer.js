@@ -109,12 +109,8 @@
                 return await response.json();
             } catch (error) {
                 console.error('🔧 Challenge request failed:', error);
-                // Return a mock challenge for development/testing
-                return {
-                    success: true,
-                    token: 'mock_' + Date.now(),
-                    canonical_payload: JSON.stringify(payload)
-                };
+                // No fallback - mining must be real and functional
+                throw new Error('Challenge request failed - mining cannot proceed without valid challenge');
             }
         }
         
@@ -160,17 +156,10 @@
         }
         
         async emergencyFallback(payload) {
-            console.log('🔧 Emergency fallback activated');
+            console.error('🔧 Emergency fallback requested - NO FALLBACK ALLOWED');
             
-            // Return a valid-looking proof for emergency cases
-            const mockNonce = Math.floor(Math.random() * 1000000);
-            const mockHash = await this.computeHash(`emergency_${payload.board_code}_${Date.now()}_${mockNonce}`);
-            
-            return {
-                nonce: mockNonce,
-                hash: mockHash,
-                challenge_id: 'emergency_' + Date.now()
-            };
+            // No emergency fallback - all proof-of-work must be genuine
+            throw new Error('Emergency fallback disabled - genuine proof-of-work required');
         }
     }
     

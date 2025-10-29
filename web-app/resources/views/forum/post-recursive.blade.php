@@ -1,4 +1,4 @@
-<div class="post {{ $level > 0 ? 'nested-post' : 'reply-post' }} {{ (!$post->user_id || !$post->bitcoinUser) ? 'anonymous-post' : '' }}" id="post{{ $post->id }}"
+<div class="post {{ $level > 0 ? 'nested-post' : 'reply-post' }} {{ (!$post->user_id || !$post->bitcoinUser) ? 'anonymous-post' : '' }} {{ ($post->user_id && $post->bitcoinUser && $post->bitcoinUser->is_admin) ? 'admin-post' : '' }}" id="post{{ $post->id }}"
      data-mine-type="reply"
      data-mine-target="reply-{{ $post->id }}"
      data-mine-weight="40"

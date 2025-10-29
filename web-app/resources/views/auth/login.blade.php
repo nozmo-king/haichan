@@ -68,14 +68,14 @@
         @endif
 
         <!-- Login Form -->
-        <form method="POST" action="/auth/login" style="margin-bottom: 30px;">
+        <form method="POST" action="/auth/login" id="loginForm" style="margin-bottom: 30px;">
             @csrf
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
                     👤 Username or Bitcoin Address
                 </label>
-                <input type="text" name="login_identifier" required
+                <input type="text" name="login_identifier" id="login_identifier" required
                        placeholder="Enter your username or Bitcoin address..."
                        style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
             </div>
@@ -84,14 +84,18 @@
                 <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
                     🔑 Password
                 </label>
-                <input type="password" name="password" required minlength="6"
+                <input type="password" name="password" id="password" required minlength="6"
                        placeholder="Enter your password..."
                        style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
             </div>
 
-            <button type="submit" style="width: 100%; background: linear-gradient(135deg, var(--border-color), var(--accent-color)); color: var(--text-primary); border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
+            <button type="submit" id="loginButton" style="width: 100%; background: linear-gradient(135deg, var(--border-color), var(--accent-color)); color: var(--text-primary); border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
                 🚀 LOGIN TO HAICHAN
             </button>
+            
+            <div id="loginStatus" style="margin-top: 10px; padding: 10px; background: var(--secondary-bg); border-radius: 6px; font-size: 12px; color: var(--text-secondary); display: none;">
+                Processing login...
+            </div>
         </form>
 
         <!-- Anonymous Access -->
@@ -138,20 +142,12 @@
             </div>
         </form>
 
-        <!-- Registration & Friend Codes -->
-        <div style="text-align: center; padding-top: 20px; border-top: 2px solid var(--border-color);">
-            <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 15px;">
-                Need access? Get a <strong>Friend Code</strong>!
-            </p>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-                <a href="/auth/register" style="background: var(--content-bg); color: var(--text-primary); text-decoration: none; padding: 12px; border-radius: 6px; border: 2px solid var(--accent-color); font-size: 13px; font-weight: bold; transition: all 0.3s ease; text-align: center;">
+        <!-- Registration -->
+        <div style="text-align: center; padding: 20px; border: 1px solid black; background: #808080; border-radius: 8px; margin-top: 20px;">
+            <div style="margin-bottom: 20px;">
+                <a href="/auth/register" style="background: var(--content-bg); color: var(--text-primary); text-decoration: none; padding: 12px; border-radius: 6px; border: 1px solid black; font-size: 13px; font-weight: bold; transition: all 0.3s ease; text-align: center; display: block;">
                     📝 REGISTER
                 </a>
-
-                <button onclick="generateNewKeys()" style="background: var(--highlight-color); color: white; border: none; padding: 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
-                    🔧 GEN KEYS
-                </button>
             </div>
             
             <!-- Anonymous Login Option -->
@@ -169,24 +165,6 @@
                 </div>
             </div>
 
-            <!-- Friend Code Section -->
-            <div style="background: var(--content-bg); padding: 20px; border-radius: 8px; border: 2px solid var(--accent-color);">
-                <div style="color: var(--text-primary); font-weight: bold; margin-bottom: 10px; font-size: 14px;">
-                    🤝 FRIEND CODE SYSTEM
-                </div>
-                <div style="color: var(--text-secondary); font-size: 12px; line-height: 1.4; margin-bottom: 15px;">
-                    • Each user gets 5 friend codes to share<br>
-                    • Friend codes are required for registration<br>
-                    • Invite friends and earn mining bonuses<br>
-                    • Build your network, increase your power
-                </div>
-                <div id="friend-code-demo" style="background: var(--secondary-bg); padding: 10px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 11px; color: var(--text-primary); text-align: center; cursor: pointer;" onclick="generateDemoCode()">
-                    DEMO12345678
-                </div>
-                <div style="color: var(--text-secondary); font-size: 10px; margin-top: 5px;">
-                    ↑ Click for a new demo code
-                </div>
-            </div>
         </div>
 
         <!-- User Status -->
@@ -197,93 +175,12 @@
     </div>
 </div>
 
-<!-- Key Generation Modal -->
-<div id="key-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
-    <div style="background: var(--primary-bg); padding: 30px; border-radius: 12px; border: 3px solid var(--border-color); max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
-        <div style="text-align: center; margin-bottom: 20px;">
-            <h2 style="color: var(--text-primary); margin: 0 0 10px 0;">🔧 KEY GENERATION</h2>
-            <p style="color: var(--text-secondary); font-size: 13px;">Your cryptographic credentials for Haichan</p>
-        </div>
-
-        <div id="generated-keys">
-            <!-- Keys will be displayed here -->
-        </div>
-
-        <div style="text-align: center; margin-top: 20px;">
-            <button onclick="closeKeyModal()" style="background: var(--border-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
-                Close
-            </button>
-        </div>
-    </div>
-</div>
 
 <script>
-async function generateNewKeys() {
-    document.getElementById('key-modal').style.display = 'flex';
-    document.getElementById('generated-keys').innerHTML = '<div style="text-align: center; color: var(--text-secondary);">🔄 Generating keys...</div>';
-
-    try {
-        const response = await fetch('/auth/generate-keys');
-        const keys = await response.json();
-
-        document.getElementById('generated-keys').innerHTML = `
-            <div style="background: var(--content-bg); padding: 20px; border-radius: 8px;">
-                <div style="color: #FF6B35; font-weight: bold; margin-bottom: 15px; text-align: center;">
-                    ⚠️ SAVE THESE CREDENTIALS IMMEDIATELY ⚠️
-                </div>
-
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 5px;">Private Key (Keep Secret):</label>
-                    <input type="text" value="${keys.private_key}" readonly onclick="this.select()"
-                           style="width: 100%; padding: 10px; background: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; box-sizing: border-box;">
-                </div>
-
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 5px;">Public Key:</label>
-                    <input type="text" value="${keys.public_key}" readonly onclick="this.select()"
-                           style="width: 100%; padding: 10px; background: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; box-sizing: border-box;">
-                </div>
-
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 5px;">Address (Your Login ID):</label>
-                    <input type="text" value="${keys.address}" readonly onclick="this.select()"
-                           style="width: 100%; padding: 10px; background: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; box-sizing: border-box;">
-                </div>
-
-                <div style="background: #FFF3CD; border: 2px solid #FFC107; padding: 15px; border-radius: 8px; margin-top: 15px;">
-                    <div style="color: #856404; font-size: 13px;">
-                        🔒 <strong>Login with Address + Password</strong><br>
-                        • Use your ADDRESS to login normally<br>
-                        • Create a PASSWORD during registration<br>
-                        • PRIVATE KEY is your backup login method<br>
-                        • Keep all credentials safe - we cannot recover lost accounts
-                    </div>
-                </div>
-            </div>
-        `;
-
-    } catch (error) {
-        document.getElementById('generated-keys').innerHTML = `<div style="color: #FF6B35; text-align: center;">❌ Error: ${error.message}</div>`;
-    }
-}
-
-function closeKeyModal() {
-    document.getElementById('key-modal').style.display = 'none';
-}
-
 function toggleBackupLogin() {
     const backupForm = document.getElementById('backup-login-form');
     const isVisible = backupForm.style.display === 'block';
     backupForm.style.display = isVisible ? 'none' : 'block';
-}
-
-function generateDemoCode() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let code = 'DEMO';
-    for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    document.getElementById('friend-code-demo').textContent = code;
 }
 
 // Load user status
@@ -321,15 +218,39 @@ async function loadUserStatus() {
 
 // Anonymous login function
 function loginAnonymously() {
-    // Set anonymous session flag and redirect
+    // Set anonymous session flag
     sessionStorage.setItem('anonymous_mode', 'true');
+    
+    // Activate anonymous mode immediately if global state is available
+    if (window.haichanGlobalState) {
+        window.haichanGlobalState.setState('ui.anonymousMode', true);
+        window.haichanGlobalState.applyAnonymousMode();
+        console.log('👻 Anonymous mode activated from login');
+    }
+    
+    // Redirect to home page
     window.location.href = '/';
 }
 
-// Initialize
+// Login form submission handler
 document.addEventListener('DOMContentLoaded', function() {
     loadUserStatus();
     setInterval(loadUserStatus, 30000); // Update every 30 seconds
+    
+    // Add form submission handler for debugging
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButton');
+    const loginStatus = document.getElementById('loginStatus');
+    
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            console.log('Login form submitted');
+            loginStatus.style.display = 'block';
+            loginStatus.textContent = 'Processing login...';
+            loginButton.textContent = '⏳ Logging in...';
+            loginButton.disabled = true;
+        });
+    }
 });
 </script>
 

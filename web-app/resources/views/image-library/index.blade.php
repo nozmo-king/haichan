@@ -3,13 +3,12 @@
 @section('title', 'Image Library - Haichan')
 
 @section('content')
-<div style="margin: 60px auto; max-width: 1200px; background: var(--primary-bg); border: 2px solid var(--border-color); box-shadow: 0 4px 16px rgba(68, 75, 110, 0.3);">
-    <!-- Header -->
-    <div style="background: var(--secondary-bg); padding: 20px 30px; border-bottom: 2px solid var(--border-color); text-align: center;">
-        <h1 style="font-size: 24px; color: var(--text-primary); margin: 0 0 8px 0; font-weight: 300; letter-spacing: 1.5px; font-family: 'Nova Cut', serif;">
+<div class="card shadow-lg" style="max-width: 1200px; margin: 0 auto;">
+    <div class="card-header text-center">
+        <h1 class="card-title mb-xs">
             🖼️ Image Library ⛏️
         </h1>
-        <p style="color: var(--text-secondary); font-size: 12px; margin: 8px 0 0 0;">Proof-of-work powered image collection</p>
+        <p class="card-subtitle">Proof-of-work powered image collection</p>
     </div>
 
     <!-- Controls -->

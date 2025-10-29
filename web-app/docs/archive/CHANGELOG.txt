@@ -1,0 +1,42 @@
+# Haichan Changelog
+
+## [2025-10-27] - Comprehensive Codebase Cleanup
+
+### Removed
+- Obsolete test files (15+ files including debug HTML, test scripts)
+- Duplicate signing scripts (ios-mimic.cjs, sign-challenge.cjs, simple-sign.cjs, working-sign.cjs)
+- Old POW documentation (README_OLD.md, duplicate test vectors)
+- Rust build artifacts (pow/target/ - 785MB)
+- Trimmed laravel.log from 140MB to 154KB
+
+### Changed
+- Reorganized documentation into docs/ and docs/archive/
+- Moved active scripts to scripts/, archived old scripts
+- Consolidated POW documentation
+- Cleaned test vectors (removed duplicates)
+
+### Added
+- .gitignore with comprehensive patterns
+- cleanup_audit.sh (reusable cleanup script)
+- CLEANUP_REPORT.md (detailed audit report)
+- Organized directory structure
+
+### Space Saved
+- Total: ~925MB (1.14GB → 232MB)
+- Log files: ~140MB
+- Build artifacts: ~785MB
+
+### Verification
+- ✅ Laravel 12.35.1 running correctly
+- ✅ All caches cleared
+- ✅ Application functional
+
+---
+
+## Previous Changes (from CHANGES.txt)
+
+2024-10-20: Enhanced POW mining system
+2024-10-17: Added Bitcoin authentication
+2024-10-11: Initial emoji animation system
+2024-09-26: Project setup and basic structure
+

@@ -64,7 +64,8 @@ class ImageIndexingService
             $useThemedGenerator = rand(0, 1); // 50% chance to use themed vs standard randomizer
             
             if ($useThemedGenerator) {
-                $filename = FilenamePatternService::getThemedFilenameWithExtension($file->getClientOriginalName());
+                $filenameService = new FilenamePatternService();
+                $filename = $filenameService->getThemedFilenameWithExtension($file->getClientOriginalName());
             } else {
                 $randomStyle = ['aesthetic', 'technical', 'mystical', 'minimal'][array_rand(['aesthetic', 'technical', 'mystical', 'minimal'])];
                 $filename = FilenameHelper::randomizeFilename($file->getClientOriginalName(), $randomStyle);

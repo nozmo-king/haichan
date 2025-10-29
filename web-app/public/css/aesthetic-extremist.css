@@ -1,0 +1,480 @@
+/* HAICHAN AESTHETIC EXTREMIST - SURGICAL PRECISION DESIGN SYSTEM */
+/* Zero tolerance for visual inconsistency - every pixel has purpose */
+
+/* === MATHEMATICAL SPACING GRID === */
+/* Based on 4px baseline - surgical precision */
+:root {
+    --space-0: 0;
+    --space-1: 4px;      /* Hairline precision */
+    --space-2: 8px;      /* Fine details */
+    --space-3: 12px;     /* Standard spacing */
+    --space-4: 16px;     /* Section breaks */
+    --space-5: 20px;     /* Component gaps */
+    --space-6: 24px;     /* Layout blocks */
+    --space-7: 28px;     /* Major sections */
+    --space-8: 32px;     /* Page divisions */
+    
+    /* === UNIFIED COLOR SYSTEM === */
+    /* Single cohesive palette - no exceptions */
+    --neutral-0: #FFFFFF;           /* Pure white backgrounds */
+    --neutral-1: #FEFEFE;           /* Surface backgrounds */
+    --neutral-2: #F8F8F8;           /* Subtle backgrounds */
+    --neutral-3: #F0F0F0;           /* Border subtle */
+    --neutral-4: #E0E0E0;           /* Border default */
+    --neutral-5: #C0C0C0;           /* Border strong */
+    --neutral-6: #999999;           /* Text muted */
+    --neutral-7: #666666;           /* Text secondary */
+    --neutral-8: #333333;           /* Text primary */
+    --neutral-9: #1A1A1A;           /* Text strong */
+    --neutral-10: #000000;          /* Absolute black */
+    
+    /* Accent system - single focus color */
+    --accent-1: #E8F5E8;            /* Accent background */
+    --accent-2: #C8E6C9;            /* Accent subtle */
+    --accent-3: #A5D6A7;            /* Accent soft */
+    --accent-4: #81C784;            /* Accent medium */
+    --accent-5: #66BB6A;            /* Accent main */
+    --accent-6: #4CAF50;            /* Accent strong */
+    --accent-7: #43A047;            /* Accent dark */
+    --accent-8: #388E3C;            /* Accent darker */
+    --accent-9: #2E7D32;            /* Accent darkest */
+    
+    /* === TYPOGRAPHY HIERARCHY === */
+    /* Single font family - absolute consistency */
+    --font-family: 'SF Mono', 'Monaco', 'Cascadia Code', 'JetBrains Mono', 'Consolas', monospace;
+    
+    /* Weight system - only two weights */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    
+    /* Size scale - mathematical progression */
+    --font-size-xs: 10px;           /* Micro text */
+    --font-size-sm: 11px;           /* Small text */
+    --font-size-md: 12px;           /* Body text */
+    --font-size-lg: 14px;           /* Emphasis */
+    --font-size-xl: 16px;           /* Headings */
+    --font-size-xxl: 20px;          /* Major headings */
+    --font-size-huge: 24px;         /* Page titles */
+    
+    /* Line heights - perfect readability */
+    --line-height-tight: 1.2;
+    --line-height-normal: 1.4;
+    --line-height-loose: 1.6;
+    
+    /* === BORDER SYSTEM === */
+    /* Single radius - no exceptions */
+    --border-radius: 3px;
+    --border-width: 1px;
+    
+    /* === SHADOW SYSTEM === */
+    /* Minimal depth - no drama */
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --shadow-3: 0 4px 8px rgba(0, 0, 0, 0.12);
+    
+    /* === TRANSITION SYSTEM === */
+    /* Single timing - consistency */
+    --transition: 0.15s ease-out;
+}
+
+/* === DARK THEME - MATHEMATICAL INVERSION === */
+[data-theme="dark"] {
+    --neutral-0: #000000;
+    --neutral-1: #0A0A0A;
+    --neutral-2: #141414;
+    --neutral-3: #1E1E1E;
+    --neutral-4: #282828;
+    --neutral-5: #3C3C3C;
+    --neutral-6: #666666;
+    --neutral-7: #999999;
+    --neutral-8: #CCCCCC;
+    --neutral-9: #E6E6E6;
+    --neutral-10: #FFFFFF;
+    
+    /* Accent colors remain consistent */
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.4);
+    --shadow-3: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* === GLOBAL RESET - SURGICAL PRECISION === */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-normal);
+    color: var(--neutral-8);
+    background: var(--neutral-1);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* === LAYOUT SYSTEM === */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+.container-narrow {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+.container-wide {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-5);
+}
+
+/* === GRID SYSTEM - MATHEMATICAL PRECISION === */
+.grid {
+    display: grid;
+    gap: var(--space-4);
+}
+
+.grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+/* === FLEX SYSTEM === */
+.flex {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+/* === TYPOGRAPHY SYSTEM === */
+h1, .text-huge {
+    font-size: var(--font-size-huge);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-tight);
+    color: var(--neutral-9);
+    margin: 0 0 var(--space-4) 0;
+}
+
+h2, .text-xxl {
+    font-size: var(--font-size-xxl);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-tight);
+    color: var(--neutral-9);
+    margin: 0 0 var(--space-3) 0;
+}
+
+h3, .text-xl {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-normal);
+    color: var(--neutral-8);
+    margin: 0 0 var(--space-3) 0;
+}
+
+h4, .text-lg {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-normal);
+    color: var(--neutral-8);
+    margin: 0 0 var(--space-2) 0;
+}
+
+p, .text-md {
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-normal);
+    color: var(--neutral-8);
+    margin: 0 0 var(--space-3) 0;
+}
+
+.text-sm {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-normal);
+    color: var(--neutral-7);
+}
+
+.text-xs {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-normal);
+    color: var(--neutral-6);
+}
+
+/* === CARD SYSTEM === */
+.card {
+    background: var(--neutral-0);
+    border: var(--border-width) solid var(--neutral-4);
+    border-radius: var(--border-radius);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-1);
+}
+
+.card-elevated {
+    box-shadow: var(--shadow-2);
+}
+
+.card-floating {
+    box-shadow: var(--shadow-3);
+}
+
+/* === BUTTON SYSTEM - SURGICAL PRECISION === */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-tight);
+    border: var(--border-width) solid var(--neutral-4);
+    border-radius: var(--border-radius);
+    background: var(--neutral-0);
+    color: var(--neutral-8);
+    cursor: pointer;
+    transition: all var(--transition);
+    text-decoration: none;
+}
+
+.btn:hover {
+    background: var(--neutral-2);
+    border-color: var(--neutral-5);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-2);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-1);
+}
+
+.btn-primary {
+    background: var(--accent-5);
+    border-color: var(--accent-5);
+    color: var(--neutral-0);
+}
+
+.btn-primary:hover {
+    background: var(--accent-6);
+    border-color: var(--accent-6);
+}
+
+.btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--accent-6);
+}
+
+.btn-ghost:hover {
+    background: var(--accent-1);
+    border-color: var(--accent-3);
+}
+
+.btn-small {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-sm);
+}
+
+.btn-large {
+    padding: var(--space-3) var(--space-4);
+    font-size: var(--font-size-lg);
+}
+
+/* === INPUT SYSTEM === */
+.input {
+    width: 100%;
+    padding: var(--space-3);
+    font-family: var(--font-family);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-normal);
+    line-height: var(--line-height-normal);
+    border: var(--border-width) solid var(--neutral-4);
+    border-radius: var(--border-radius);
+    background: var(--neutral-0);
+    color: var(--neutral-8);
+    transition: all var(--transition);
+}
+
+.input:focus {
+    outline: none;
+    border-color: var(--accent-5);
+    box-shadow: 0 0 0 2px var(--accent-2);
+}
+
+.input::placeholder {
+    color: var(--neutral-6);
+}
+
+/* === TOOLBAR SYSTEM - SEAMLESS INTEGRATION === */
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    background: var(--neutral-0);
+    border-bottom: var(--border-width) solid var(--neutral-4);
+    gap: var(--space-3);
+}
+
+.toolbar-brand {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--neutral-9);
+    text-decoration: none;
+}
+
+.toolbar-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.toolbar-link {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+    color: var(--neutral-7);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    transition: all var(--transition);
+}
+
+.toolbar-link:hover {
+    background: var(--neutral-2);
+    color: var(--neutral-8);
+}
+
+.toolbar-link.active {
+    background: var(--accent-1);
+    color: var(--accent-7);
+    font-weight: var(--font-weight-medium);
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* === STATUS SYSTEM === */
+.status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    border-radius: var(--border-radius);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-active {
+    background: var(--accent-1);
+    color: var(--accent-7);
+}
+
+.status-inactive {
+    background: var(--neutral-3);
+    color: var(--neutral-6);
+}
+
+/* === UTILITY CLASSES === */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* Remove all chaotic animations */
+@keyframes none { to { opacity: 1; } }
+.chaos-sparkle,
+.neon-pulse,
+.glitch-container,
+.floating-element,
+.hologram,
+.data-stream,
+.circuit-bg { animation: none !important; }
+
+/* === RESPONSIVE SYSTEM === */
+@media (max-width: 768px) {
+    .container,
+    .container-narrow,
+    .container-wide {
+        padding: var(--space-4);
+    }
+    
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+        grid-template-columns: 1fr;
+    }
+    
+    .flex-between {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .toolbar {
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+    
+    .toolbar-nav {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+}
+
+/* === FOCUS SYSTEM === */
+:focus-visible {
+    outline: 2px solid var(--accent-5);
+    outline-offset: 2px;
+}
+
+/* === SELECTION SYSTEM === */
+::selection {
+    background: var(--accent-2);
+    color: var(--accent-8);
+}

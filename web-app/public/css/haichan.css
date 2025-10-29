@@ -2,46 +2,48 @@
 /* Revolutionary proof-of-work imageboard with sophisticated financial aesthetics */
 
 :root {
-    /* === RETRO IMAGEBOARD PALETTE === */
-    /* Classic Chan Colors - Nostalgic Application */
-    --retro-purple: #2E1065;        /* Deep purple background - classic imageboard feel */
-    --retro-tan: #F5DEB3;           /* Warm tan text - readable and nostalgic */  
-    --retro-lime: #32FF32;          /* Bright lime links - classic web green */
-    --retro-pink: #FFB6C1;          /* Light pink for quoted posts - soft highlight */
+    /* === NEW COLOR PALETTE === */
+    /* Updated Green & Pink Scheme */
+    --color-dark-green: #3A6F43;    /* Dark green - primary dark */
+    --color-medium-green: #59AC77;  /* Medium green - secondary accent */
+    --color-light-pink: #FDAAAA;    /* Light pink - tertiary */
+    --color-very-light-pink: #FFD5D5; /* Very light pink - backgrounds */
+    --color-coral: #F7717D;         /* Coral - highlights/errors (kept for compatibility) */
+    --color-neon: #F2FF49;          /* Neon yellow - accents (kept for compatibility) */
     
-    /* === STRATEGIC SEMANTIC COLOR SYSTEM === */
-    /* Background Architecture - Retro Imageboard Design */
-    --bg-primary: #2E1065;                     /* Deep purple canvas - classic chan feel */
-    --bg-secondary: rgba(46, 16, 101, 0.85);  /* Darker purple panels - stable containers */
-    --bg-tertiary: rgba(245, 222, 179, 0.05); /* Faint tan whisper - subtle energy */
-    --bg-mining: linear-gradient(135deg, rgba(50, 255, 50, 0.08), rgba(245, 222, 179, 0.05)); /* Lime energy zones */
-    --bg-glass: rgba(245, 222, 179, 0.03);    /* Tan glass overlay - warm sophistication */
-    --bg-alt: rgba(46, 16, 101, 0.95);        /* Alternative purple background */
+    /* === BACKGROUND SYSTEM === */
+    /* New color scheme backgrounds */
+    --bg-primary: var(--color-very-light-pink);     /* Very light pink primary */
+    --bg-secondary: var(--color-light-pink);        /* Light pink secondary */
+    --bg-tertiary: var(--color-medium-green);       /* Medium green tertiary */
+    --bg-mining: var(--color-medium-green);         /* Medium green for mining */
+    --bg-glass: var(--color-very-light-pink);       /* Very light pink glass */
+    --bg-alt: var(--color-light-pink);              /* Light pink alternative */
     
-    /* Typography Hierarchy - Retro Imageboard Communication */
-    --text-primary: #F5DEB3;                  /* Tan - primary readability */
-    --text-secondary: rgba(245, 222, 179, 0.8); /* Faded tan - secondary content, metadata */
-    --text-muted: rgba(245, 222, 179, 0.6);   /* Muted tan - subtle details, timestamps */
-    --text-accent: #32FF32;                   /* Lime green emphasis - calls to action, highlights */
-    --text-mining: #32FF32;                   /* Mining activity - lime indicators */
-    --text-success: #32FF32;                  /* Success glow - achievements, completions */
-    --text-warning: #FFD700;                  /* Gold warning - cautious attention */
-    --text-error: #FF6B6B;                    /* Red error state - alerting */
+    /* Typography Hierarchy - Green & Pink Theme Typography */
+    --text-primary: var(--color-dark-green);           /* Dark green - excellent readability */
+    --text-secondary: rgba(58, 111, 67, 0.8);          /* Faded dark green - secondary content */
+    --text-muted: rgba(58, 111, 67, 0.6);              /* Muted dark green - subtle details */
+    --text-accent: var(--color-medium-green);          /* Medium green - accent color */
+    --text-mining: var(--color-medium-green);          /* Medium green - mining indicators */
+    --text-success: var(--color-dark-green);           /* Dark green - success states */
+    --text-warning: #FF8C00;                           /* Orange - warning states */
+    --text-error: #DC143C;                             /* Crimson - error states */
     
-    /* Border Architecture - Retro Imageboard Boundaries */
-    --border-primary: rgba(245, 222, 179, 0.3);  /* Tan divisions - clear structure */
-    --border-accent: #32FF32;                     /* Lime highlights - interactive elements */
-    --border-subtle: rgba(245, 222, 179, 0.2);   /* Whisper borders - gentle separation */
-    --border-mining: rgba(50, 255, 50, 0.5);     /* Mining indicators - lime activity */
-    --border-secondary: rgba(245, 222, 179, 0.25); /* Secondary divisions */
+    /* Border Architecture - Green & Pink Theme Borders */
+    --border-primary: rgba(58, 111, 67, 0.3);      /* Dark green borders - subtle definition */
+    --border-accent: var(--color-dark-green);       /* Dark green - accent borders */
+    --border-subtle: rgba(89, 172, 119, 0.25);     /* Very subtle green borders */
+    --border-mining: var(--color-medium-green);     /* Medium green - mining borders */
+    --border-secondary: rgba(58, 111, 67, 0.2);    /* Secondary green borders */
     
-    /* Interaction System - Retro Imageboard User Experience */
-    --accent-primary: #32FF32;                  /* Primary actions - lime green energy */
-    --accent-secondary: #FFB6C1;                /* Secondary actions - pink highlights */
-    --accent-mining: #32FF32;                   /* Mining-specific - lime productivity */
-    --accent-hover: rgba(50, 255, 50, 0.15);   /* Hover states - gentle lime feedback */
-    --accent-color: #32FF32;                    /* Legacy support */
-    --accent-green: #32FF32;                    /* Lime accent alias */
+    /* Interaction System - Green & Pink Theme Interactions */
+    --accent-primary: var(--color-medium-green);       /* Medium green - primary actions */
+    --accent-secondary: var(--color-dark-green);       /* Dark green - secondary actions */
+    --accent-mining: var(--color-medium-green);        /* Medium green - mining accents */
+    --accent-hover: rgba(89, 172, 119, 0.2);          /* Hover states - green feedback */
+    --accent-color: var(--color-medium-green);         /* Legacy support - green accent */
+    --accent-green: var(--color-dark-green);           /* Dark green accent alias */
 
     /* Precision Spacing Grid */
     --space-xs: 3px;          /* Hairline spacing */
@@ -52,10 +54,10 @@
     --space-xxl: 36px;        /* Layout blocks */
     --space-xxxl: 52px;       /* Page sections */
     
-    /* Professional Typography Stack */
+    /* Thin Monospace Typography Stack */
     --font-primary: 'SF Mono', 'Monaco', 'Cascadia Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
-    --font-secondary: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'SF Pro Text', system-ui, sans-serif;
-    --font-display: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-secondary: 'SF Mono', 'Monaco', 'Cascadia Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+    --font-display: 'SF Mono', 'Monaco', 'Cascadia Code', 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
     
     /* Information Density Scale */
     --font-size-micro: 10px;  /* Hash displays, timestamps */
@@ -75,12 +77,12 @@
     --radius-xl: 8px;         /* Major containers */
     --radius-round: 50%;      /* Circular elements */
     
-    /* Depth System - Ocean Themed */
-    --shadow-surface: 0 1px 2px rgba(9, 35, 39, 0.08);
-    --shadow-elevation: 0 2px 8px rgba(9, 35, 39, 0.12);
-    --shadow-floating: 0 8px 32px rgba(9, 35, 39, 0.16);
-    --shadow-mining: 0 0 24px rgba(0, 169, 165, 0.4);
-    --shadow-glow: 0 0 16px rgba(144, 194, 231, 0.3);
+    /* Depth System - Tan Theme Shadows */
+    --shadow-surface: 0 1px 2px rgba(47, 27, 12, 0.1);
+    --shadow-elevation: 0 2px 8px rgba(47, 27, 12, 0.15);
+    --shadow-floating: 0 8px 32px rgba(47, 27, 12, 0.2);
+    --shadow-mining: 0 0 24px rgba(218, 165, 32, 0.4);
+    --shadow-glow: 0 0 16px rgba(184, 134, 11, 0.3);
     
     /* Precision Timing */
     --transition-micro: 0.1s ease-out;
@@ -89,47 +91,47 @@
     --transition-slow: 0.4s cubic-bezier(0.2, 0, 0.13, 1.02);
 }
 
-/* === NIGHT MODE - DEEP RETRO ILLUMINATION === */
+/* === NIGHT MODE - DARK TAN THEME === */
 [data-theme="night"] {
-    /* Deeper Purple Night Canvas */
-    --bg-primary: #1A0D3D;                      /* Midnight purple - deepest grounding */
-    --bg-secondary: rgba(46, 16, 101, 0.95);    /* Rich purple night panels */
-    --bg-tertiary: rgba(245, 222, 179, 0.08);   /* Tan night whispers */
-    --bg-mining: linear-gradient(135deg, rgba(50, 255, 50, 0.12), rgba(245, 222, 179, 0.06)); /* Night lime energy */
-    --bg-glass: rgba(245, 222, 179, 0.05);      /* Tan night glass */
-    --bg-alt: rgba(46, 16, 101, 0.98);          /* Alternative night purple */
+    /* Dark Warm Night Canvas */
+    --bg-primary: #1A0F08;                      /* Very dark brown - deepest grounding */
+    --bg-secondary: rgba(47, 27, 12, 0.95);     /* Dark brown night panels */
+    --bg-tertiary: rgba(69, 39, 19, 0.85);      /* Medium dark brown backgrounds */
+    --bg-mining: rgba(218, 165, 32, 0.2);       /* Golden mining glow on dark */
+    --bg-glass: rgba(139, 69, 19, 0.15);        /* Warm glass effect on dark */
+    --bg-alt: rgba(47, 27, 12, 0.98);           /* Alternative dark brown */
     
-    /* Enhanced Night Typography - Luminous Communication */
-    --text-primary: #F5DEB3;                    /* Bright tan clarity - perfect readability */
-    --text-secondary: rgba(245, 222, 179, 0.9); /* Bright tan glow - enhanced visibility */
-    --text-muted: rgba(245, 222, 179, 0.6);     /* Ghostly tan whispers */
-    --text-accent: #66FF66;                     /* Luminous lime energy - bright CTAs */
-    --text-mining: #66FF66;                     /* Mining luminescence - activity brilliance */
-    --text-success: #66FF66;                    /* Success night glow - lime achievements */
-    --text-warning: #FFD700;                    /* Gold warning night */
-    --text-error: #FF6B6B;                      /* Red error night state */
+    /* Enhanced Night Typography - Warm Communication */
+    --text-primary: #F5DEB3;                    /* Wheat - excellent readability on dark */
+    --text-secondary: rgba(245, 222, 179, 0.9); /* Warm tan glow - enhanced visibility */
+    --text-muted: rgba(245, 222, 179, 0.6);     /* Muted warm whispers */
+    --text-accent: #DAA520;                     /* Goldenrod - warm bright accent */
+    --text-mining: #CD853F;                     /* Peru - mining activity color */
+    --text-success: #32CD32;                    /* Lime green - success glow */
+    --text-warning: #FFA500;                    /* Orange - warning states */
+    --text-error: #FF6347;                      /* Tomato - error states */
     
-    /* Night Border Architecture - Illuminated Structure */
-    --border-primary: rgba(245, 222, 179, 0.4);  /* Tan night divisions */
-    --border-accent: #66FF66;                     /* Luminous lime night highlights */
-    --border-subtle: rgba(245, 222, 179, 0.25);  /* Night whisper borders */
-    --border-mining: rgba(102, 255, 102, 0.7);   /* Glowing mining indicators */
-    --border-secondary: rgba(245, 222, 179, 0.3); /* Secondary night divisions */
+    /* Night Border Architecture - Warm Structure */
+    --border-primary: rgba(218, 165, 32, 0.4);  /* Golden night divisions */
+    --border-accent: #DAA520;                    /* Bright goldenrod highlights */
+    --border-subtle: rgba(245, 222, 179, 0.25); /* Night whisper borders */
+    --border-mining: rgba(218, 165, 32, 0.7);   /* Glowing golden mining indicators */
+    --border-secondary: rgba(245, 222, 179, 0.3); /* Secondary warm divisions */
     
-    /* Night Interaction System - Glowing User Experience */
-    --accent-primary: #66FF66;                    /* Luminous lime primary actions */
-    --accent-secondary: #FFB6C1;                  /* Pink night secondary */
-    --accent-mining: #66FF66;                     /* Glowing lime mining accent */
-    --accent-hover: rgba(102, 255, 102, 0.20);   /* Night hover glow */
-    --accent-color: #66FF66;                      /* Legacy night support */
-    --accent-green: #66FF66;                      /* Night lime accent */
+    /* Night Interaction System - Warm Glow Experience */
+    --accent-primary: #DAA520;                   /* Goldenrod primary actions */
+    --accent-secondary: #CD853F;                 /* Peru secondary actions */
+    --accent-mining: #FFD700;                    /* Gold mining accent */
+    --accent-hover: rgba(218, 165, 32, 0.25);   /* Golden hover glow */
+    --accent-color: #DAA520;                     /* Legacy night support */
+    --accent-green: #CD853F;                     /* Warm brown accent alias */
     
-    /* Enhanced Night Shadows - Deep Purple Depth */
-    --shadow-surface: 0 2px 6px rgba(26, 13, 61, 0.8);
-    --shadow-elevation: 0 6px 20px rgba(26, 13, 61, 0.7);
-    --shadow-floating: 0 16px 56px rgba(26, 13, 61, 0.6);
-    --shadow-mining: 0 0 36px rgba(102, 255, 102, 0.5);
-    --shadow-glow: 0 0 28px rgba(50, 255, 50, 0.4);
+    /* Enhanced Night Shadows - Warm Dark Depth */
+    --shadow-surface: 0 2px 6px rgba(0, 0, 0, 0.8);
+    --shadow-elevation: 0 6px 20px rgba(0, 0, 0, 0.7);
+    --shadow-floating: 0 16px 56px rgba(0, 0, 0, 0.6);
+    --shadow-mining: 0 0 36px rgba(218, 165, 32, 0.5);
+    --shadow-glow: 0 0 28px rgba(255, 215, 0, 0.4);
 }
 
 /* === RETRO IMAGEBOARD SPECIFIC STYLES === */
@@ -221,30 +223,8 @@ html {
 }
 
 body {
-    font-family: var(--font-primary);
-    background: 
-        /* Warm organic radial gradients for depth and warmth */
-        radial-gradient(circle at 20% 20%, rgba(176, 206, 136, 0.12) 0%, transparent 60%),
-        radial-gradient(circle at 80% 80%, rgba(255, 253, 143, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 50% 100%, rgba(76, 118, 59, 0.15) 0%, transparent 70%),
-        /* Primary earth-toned linear gradient foundation */
-        linear-gradient(135deg, 
-            var(--bg-primary) 0%,           /* Deep forest base */
-            #032611 25%,                    /* Deeper forest transition */
-            rgba(76, 118, 59, 0.9) 75%,    /* Rich forest mid-tone */
-            rgba(76, 118, 59, 0.7) 100%    /* Forest fade */
-        );
-    background-attachment: fixed;
-    color: var(--text-primary);
-    line-height: 1.5;
-    font-size: var(--font-size-base);
-    font-weight: 400;
-    letter-spacing: -0.005em;
-    overflow-x: hidden;
-    min-height: 100vh;
-    transition: all var(--transition-smooth);
-    /* Enhanced organic texture overlay for natural feel */
-    position: relative;
+    background: tan;
+}
 }
 
 body::before {
@@ -2406,46 +2386,49 @@ a, button, .clickable, [role="button"], input[type="submit"], input[type="button
     margin-top: var(--space-xs);
 }
 
-/* === QUANTUM SYSTEM OVERRIDES === */
-/* Ensures consistent quantum theme application */
+/* === COMPREHENSIVE TAN THEME SYSTEM === */
+/* Unified tan-themed design system for the entire site */
 
 html, body {
     background: 
-        /* Warm organic radial gradients for depth and warmth */
-        radial-gradient(circle at 20% 20%, rgba(176, 206, 136, 0.12) 0%, transparent 60%),
-        radial-gradient(circle at 80% 80%, rgba(255, 253, 143, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 50% 100%, rgba(76, 118, 59, 0.15) 0%, transparent 70%),
-        /* Primary earth-toned linear gradient foundation */
+        /* Warm tan gradient foundation - the primary site background */
         linear-gradient(135deg, 
-            var(--bg-primary) 0%,           /* Deep forest base */
-            #032611 25%,                    /* Deeper forest transition */
-            rgba(76, 118, 59, 0.9) 75%,    /* Rich forest mid-tone */
-            rgba(76, 118, 59, 0.7) 100%    /* Forest fade */
+            #DEB887 0%,        /* Light burlywood */
+            #D2B48C 25%,       /* Tan */
+            #BC9A6A 50%,       /* Medium tan */
+            #A0825C 75%,       /* Darker tan */
+            #8B7355 100%       /* Dark tan */
         ) !important;
     background-attachment: fixed !important;
-    color: var(--text-primary) !important;
+    color: #2F1B0C !important; /* Dark brown text for excellent contrast */
+    min-height: 100vh;
 }
 
-/* Quantum Glass Morphism */
-body * {
-    background-color: initial !important;
-}
-
+/* === TAN THEME CONTENT CONTAINERS === */
 .container, .main-container, #app, [data-theme] {
-    background: transparent !important;
+    background: var(--bg-secondary) !important;
     backdrop-filter: blur(8px) saturate(1.1) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-elevation) !important;
 }
 
-/* Premium Button System */
+/* === TAN THEME BUTTON SYSTEM === */
 button, 
 input[type="submit"],
 input[type="button"],
 .btn {
     color: var(--bg-primary) !important;
     background: var(--accent-primary) !important;
-    border: 1px solid var(--border-accent) !important;
-    font-weight: 500 !important;
+    border: 2px solid var(--border-accent) !important;
+    font-weight: 600 !important;
+    font-family: var(--font-primary) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2) !important;
+    font-size: var(--font-size-sm) !important;
+    letter-spacing: 0.5px !important;
     transition: all var(--transition-fast) !important;
+    padding: var(--space-sm) var(--space-lg) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-surface) !important;
 }
 
 button:hover,
@@ -2454,7 +2437,8 @@ input[type="button"]:hover,
 .btn:hover {
     background: var(--accent-secondary) !important;
     box-shadow: var(--shadow-glow) !important;
-    transform: translateY(-1px) !important;
+    transform: translateY(-2px) !important;
+    border-color: var(--accent-primary) !important;
 }
 
 .tui-btn-outline {
@@ -2467,30 +2451,44 @@ input[type="button"]:hover,
     color: var(--text-accent) !important;
 }
 
-/* Quantum Content Containers */
-.post, .thread, .postarea, .haichan-form-panel, .nav-links {
-    border: 1px solid var(--border-primary) !important;
+/* === TAN THEME CONTENT CONTAINERS === */
+.post, .thread, .postarea, .haichan-form-panel, .nav-links, .thread-preview {
+    border: 2px solid var(--border-primary) !important;
     box-shadow: var(--shadow-elevation) !important;
     background: var(--bg-secondary) !important;
     backdrop-filter: blur(8px) saturate(1.1) !important;
     border-radius: var(--radius-lg) !important;
+    color: var(--text-primary) !important;
+    margin-bottom: var(--space-lg) !important;
+    padding: var(--space-lg) !important;
 }
 
-/* Premium Form Elements */
+.post:hover, .thread:hover, .thread-preview:hover {
+    border-color: var(--border-accent) !important;
+    box-shadow: var(--shadow-floating) !important;
+    transform: translateY(-2px) !important;
+    background: var(--bg-glass) !important;
+}
+
+/* === TAN THEME FORM ELEMENTS === */
 input, textarea, select {
-    border: 1px solid var(--border-primary) !important;
+    border: 2px solid var(--border-primary) !important;
     background: var(--bg-tertiary) !important;
     color: var(--text-primary) !important;
     border-radius: var(--radius-md) !important;
     padding: var(--space-sm) var(--space-md) !important;
     font-family: var(--font-primary) !important;
+    font-size: var(--font-size-sm) !important;
     transition: all var(--transition-fast) !important;
+    box-shadow: var(--shadow-surface) !important;
 }
 
 input:focus, textarea:focus, select:focus {
     border-color: var(--border-accent) !important;
-    box-shadow: 0 0 0 2px rgba(0, 169, 165, 0.1), var(--shadow-surface) !important;
+    box-shadow: 0 0 0 3px var(--accent-hover), var(--shadow-elevation) !important;
     background: var(--bg-glass) !important;
+    transform: translateY(-1px) !important;
+    outline: none !important;
 }
 
 /* Premium Panels */
@@ -2518,56 +2516,397 @@ input:focus, textarea:focus, select:focus {
     transform: translateY(-2px) !important;
 }
 
-/* Mining-Specific Enhancements */
-.mining-dashboard, .pow-bump-section {
+/* === TAN THEME MINING ELEMENTS === */
+.mining-dashboard, .pow-bump-section, #mining-dashboard, #enhanced-mining-dashboard {
     background: var(--bg-mining) !important;
-    border: 2px solid var(--border-mining) !important;
+    border: 3px solid var(--border-mining) !important;
     box-shadow: var(--shadow-mining) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: var(--space-xl) !important;
+    backdrop-filter: blur(12px) saturate(1.2) !important;
 }
 
-/* Anonymous Mode Quantum Override */
-body.anonymous-mode {
-    filter: invert(1) hue-rotate(180deg) contrast(1.1) brightness(0.9) !important;
+.mining-dashboard .dashboard-header, 
+#mining-dashboard .dashboard-header, 
+#enhanced-mining-dashboard .dashboard-header {
+    background: linear-gradient(135deg, var(--accent-mining), var(--accent-primary)) !important;
+    color: var(--bg-primary) !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3) !important;
+    padding: var(--space-md) !important;
+    border-radius: var(--radius-md) !important;
+    margin-bottom: var(--space-lg) !important;
 }
 
-body.anonymous-mode img,
-body.anonymous-mode video,
-body.anonymous-mode iframe {
+/* === TAN THEME NAVIGATION === */
+.header, .board-header {
+    background: var(--bg-secondary) !important;
+    border: 2px solid var(--border-primary) !important;
+    box-shadow: var(--shadow-elevation) !important;
+    border-radius: var(--radius-lg) !important;
+}
+
+.header h1 a, .board-header h2 {
+    color: var(--text-primary) !important;
+    text-shadow: 0 2px 4px var(--accent-hover) !important;
+}
+
+/* === COMPREHENSIVE ANONYMOUS MODE STYLING === */
+/* Anonymous mode inverts all colors for dark aesthetic */
+html.anonymous-mode {
+    /* Override root color variables for complete theme inversion */
+    --color-dark-green: #C59068;      /* Inverted: was #3A6F43 -> warm orange */
+    --color-medium-green: #A65388;    /* Inverted: was #59AC77 -> purple-pink */
+    --color-light-pink: #025555;      /* Inverted: was #FDAAAA -> dark teal */
+    --color-very-light-pink: #002A2A; /* Inverted: was #FFD5D5 -> very dark teal */
+    
+    /* Update all dependent variables automatically */
+    --bg-primary: var(--color-very-light-pink);
+    --bg-secondary: var(--color-light-pink);
+    --bg-tertiary: var(--color-medium-green);
+    --bg-mining: var(--color-medium-green);
+    --bg-glass: var(--color-very-light-pink);
+    --bg-alt: var(--color-light-pink);
+    
+    --text-primary: var(--color-dark-green);
+    --text-secondary: rgba(197, 144, 104, 0.8);
+    --text-muted: rgba(197, 144, 104, 0.6);
+    --text-accent: var(--color-medium-green);
+    --text-mining: var(--color-medium-green);
+    --text-success: var(--color-dark-green);
+    --text-warning: #0073FF;          /* Inverted orange */
+    --text-error: #23EBC3;            /* Inverted crimson */
+    
+    --border-primary: rgba(197, 144, 104, 0.3);
+    --border-accent: var(--color-dark-green);
+    --border-subtle: rgba(166, 83, 136, 0.25);
+    --border-mining: var(--color-medium-green);
+    --border-secondary: rgba(197, 144, 104, 0.2);
+    
+    --accent-primary: var(--color-medium-green);
+    --accent-secondary: var(--color-dark-green);
+    --accent-mining: var(--color-medium-green);
+    --accent-hover: rgba(166, 83, 136, 0.2);
+    --accent-color: var(--color-medium-green);
+}
+
+html.anonymous-mode body {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Preserve media content from inversion */
+html.anonymous-mode img,
+html.anonymous-mode video,
+html.anonymous-mode iframe,
+html.anonymous-mode canvas {
     filter: invert(1) hue-rotate(180deg) !important;
+    border-radius: 4px;
 }
 
-/* Quantum Scrollbars */
+/* Anonymous mode indicator */
+html.anonymous-mode::before {
+    content: "👻 ANONYMOUS MODE";
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(166, 83, 136, 0.9);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    pointer-events: none;
+}
+
+/* Special handling for specific elements in anonymous mode */
+html.anonymous-mode .board-header,
+html.anonymous-mode .market-hero,
+html.anonymous-mode .nav-container {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-primary) !important;
+}
+
+html.anonymous-mode button,
+html.anonymous-mode .btn,
+html.anonymous-mode input[type="submit"] {
+    background: var(--accent-primary) !important;
+    color: var(--bg-primary) !important;
+    border-color: var(--border-accent) !important;
+}
+
+html.anonymous-mode a {
+    color: var(--text-accent) !important;
+}
+
+html.anonymous-mode a:hover {
+    color: var(--accent-primary) !important;
+    background: var(--accent-hover) !important;
+}
+
+/* === TAN THEME SCROLLBARS === */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 12px;
+    height: 12px;
 }
 
 ::-webkit-scrollbar-track {
     background: var(--bg-tertiary);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--accent-primary);
-    border-radius: var(--radius-sm);
-    opacity: 0.7;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: var(--radius-md);
+    border: 2px solid var(--bg-secondary);
     transition: all var(--transition-fast);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-secondary);
-    opacity: 1;
+    background: linear-gradient(135deg, var(--accent-secondary), var(--accent-mining));
+    transform: scale(1.1);
 }
 
-/* === WARM ORGANIC SELECTION === */
+/* === TAN THEME TEXT SELECTION === */
 ::selection {
-    background: rgba(255, 253, 143, 0.35);  /* Warm cream highlight */
-    color: var(--dark-forest);               /* Deep forest text on cream */
+    background: var(--accent-hover);
+    color: var(--text-primary);
     text-shadow: none;
 }
 
 ::-moz-selection {
-    background: rgba(255, 253, 143, 0.35);  /* Warm cream highlight */
-    color: var(--dark-forest);               /* Deep forest text on cream */
+    background: var(--accent-hover);
+    color: var(--text-primary);
     text-shadow: none;
+}
+
+/* === TAN THEME LINKS === */
+a, a:visited {
+    color: var(--accent-primary) !important;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    border-bottom: 1px solid transparent;
+}
+
+a:hover, a:focus {
+    color: var(--accent-secondary) !important;
+    border-bottom-color: var(--accent-secondary) !important;
+    text-shadow: 0 1px 2px var(--accent-hover);
+}
+
+/* === TAN THEME BOARD CARDS === */
+.board-item {
+    background: var(--bg-secondary) !important;
+    border: 2px solid var(--border-primary) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-elevation) !important;
+    padding: var(--space-lg) !important;
+    margin-bottom: var(--space-lg) !important;
+    transition: all var(--transition-smooth) !important;
+}
+
+.board-item:hover {
+    border-color: var(--border-accent) !important;
+    box-shadow: var(--shadow-floating) !important;
+    transform: translateY(-3px) !important;
+    background: var(--bg-glass) !important;
+}
+
+.board-code a, .board-name, .board-desc {
+    color: var(--text-primary) !important;
+}
+
+.board-code a:hover {
+    color: var(--text-accent) !important;
+}
+
+/* === TAN THEME TOOLBAR STYLING === */
+#haichan-toolbar {
+    background: linear-gradient(135deg, var(--bg-secondary), var(--bg-alt)) !important;
+    border-top: 2px solid var(--border-primary) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--shadow-floating) !important;
+    backdrop-filter: blur(16px) saturate(1.3) !important;
+}
+
+#haichan-toolbar a {
+    color: var(--text-primary) !important;
+    transition: all var(--transition-fast) !important;
+}
+
+#haichan-toolbar a:hover {
+    color: var(--text-accent) !important;
+    text-shadow: 0 1px 2px var(--accent-hover) !important;
+}
+
+#haichan-toolbar button {
+    background: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-primary) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: var(--space-xs) var(--space-sm) !important;
+    font-size: var(--font-size-xs) !important;
+    transition: all var(--transition-fast) !important;
+}
+
+#haichan-toolbar button:hover {
+    background: var(--accent-hover) !important;
+    border-color: var(--border-accent) !important;
+    color: var(--text-accent) !important;
+}
+
+/* === TAN THEME MINING STATUS INDICATORS === */
+.mining-status, .mining-stat, .pow-notification {
+    background: var(--bg-mining) !important;
+    border: 2px solid var(--border-mining) !important;
+    color: var(--text-mining) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--space-sm) !important;
+    box-shadow: var(--shadow-surface) !important;
+}
+
+/* === TAN THEME IMAGE STYLING === */
+img, .thumbnail, .thread-image img, .post-image img {
+    border: 2px solid var(--border-primary) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-surface) !important;
+    transition: all var(--transition-smooth) !important;
+}
+
+img:hover, .thumbnail:hover, .thread-image img:hover, .post-image img:hover {
+    border-color: var(--border-accent) !important;
+    box-shadow: var(--shadow-glow) !important;
+    transform: scale(1.02) !important;
+}
+
+/* === TAN THEME ALERTS AND NOTIFICATIONS === */
+.alert, .alert-info, .alert-success, .alert-danger, .alert-warning {
+    background: var(--bg-secondary) !important;
+    border: 2px solid var(--border-primary) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-lg) !important;
+    padding: var(--space-lg) !important;
+    box-shadow: var(--shadow-elevation) !important;
+}
+
+.alert-success {
+    border-color: var(--text-success) !important;
+    background: rgba(34, 139, 34, 0.1) !important;
+}
+
+.alert-warning {
+    border-color: var(--text-warning) !important;
+    background: rgba(255, 140, 0, 0.1) !important;
+}
+
+.alert-danger {
+    border-color: var(--text-error) !important;
+    background: rgba(220, 20, 60, 0.1) !important;
+}
+
+/* === FINAL COHESIVENESS RULES === */
+/* Ensure all text maintains proper contrast on tan backgrounds */
+* {
+    color: var(--text-primary) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary) !important;
+    text-shadow: 0 1px 2px var(--accent-hover) !important;
+}
+
+/* Ensure all panels and cards follow the tan theme */
+.card, .panel, .widget, .sidebar, .content-area {
+    background: var(--bg-secondary) !important;
+    border: 2px solid var(--border-primary) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-elevation) !important;
+}
+
+/* Responsive adjustments for tan theme */
+@media (max-width: 768px) {
+    .board-item, .post, .thread, .thread-preview {
+        padding: var(--space-md) !important;
+        margin-bottom: var(--space-md) !important;
+    }
+    
+    #haichan-toolbar {
+        padding: var(--space-sm) !important;
+        font-size: var(--font-size-xs) !important;
+    }
+}
+
+/* === ENHANCED TAN THEME CONSISTENCY === */
+/* Ensure mining dashboard works perfectly with tan theme */
+.mining-dashboard-enhanced {
+    background: var(--bg-secondary) !important;
+    border: 2px solid var(--accent-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+.mining-dashboard-title {
+    color: var(--text-primary) !important;
+}
+
+.mining-metric-value {
+    color: var(--accent-primary) !important;
+}
+
+.mining-metric-label {
+    color: var(--text-secondary) !important;
+}
+
+/* Image library tan theme consistency */
+.image-item {
+    background: var(--bg-tertiary) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+/* Chat and UI components */
+.chat-panel, .haichan-form-panel {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Buttons and interactive elements */
+button, input[type="submit"], .btn {
+    background: var(--accent-primary) !important;
+    color: var(--bg-primary) !important;
+    border: 1px solid var(--accent-secondary) !important;
+}
+
+button:hover, input[type="submit"]:hover, .btn:hover {
+    background: var(--accent-secondary) !important;
+}
+
+/* Input fields consistency */
+input, textarea, select {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--accent-primary) !important;
+}
+
+/* Navigation and toolbar improvements */
+.nav-links, .haichan-toolbar {
+    background: var(--bg-secondary) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+/* Board grid consistency */
+.board-item {
+    background: var(--bg-secondary) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+.board-item:hover {
+    background: var(--bg-tertiary) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(184, 134, 11, 0.3);
 }

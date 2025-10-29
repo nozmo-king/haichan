@@ -1,6 +1,6 @@
 @extends('layout')
 
-@section('title', 'Forum Home')
+@section('title', 'Home')
 
 @section('content')
 <div class="board-grid">

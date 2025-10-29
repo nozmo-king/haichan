@@ -1,5 +1,5 @@
 [workspace]
-members = ["verifier", "miner-wasm", "utils/nonce_finder"]
+members = ["verifier", "miner-wasm"]
 resolver = "2"
 
 [workspace.dependencies]

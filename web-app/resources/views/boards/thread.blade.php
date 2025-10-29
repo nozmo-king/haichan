@@ -16,7 +16,7 @@
 </div>
 
 <!-- Original Post -->
-<div class="post" style="margin: 20px 0;" 
+<div class="post {{ ($thread->user_id && $thread->bitcoinUser && $thread->bitcoinUser->is_admin) ? 'admin-post' : '' }}" style="margin: 20px 0;" 
      data-mineable="true"
      data-mine-id="{{ $thread->id }}" 
      data-mine-type="thread" 
@@ -27,7 +27,9 @@
     <div class="post-header">
         <span class="post-name">
             @if($thread->user_id && $thread->bitcoinUser)
-                <a href="{{ route('user.profile', $thread->user_id) }}" style="color: inherit; text-decoration: none; font-weight: bold;">{{ $thread->bitcoinUser->getDisplayName() }}</a>
+                <a href="{{ route('user.profile', $thread->user_id) }}" style="color: inherit; text-decoration: none; font-weight: bold;">
+                    {{ $thread->getTripcode() }}
+                </a>
             @else
                 Anonymous
             @endif
@@ -70,7 +72,7 @@
 
 <!-- Replies -->
 @foreach($posts as $post)
-<div class="post" 
+<div class="post {{ ($post->user_id && $post->bitcoinUser && $post->bitcoinUser->is_admin) ? 'admin-post' : '' }}" 
      data-mineable="true"
      data-mine-id="{{ $post->id }}" 
      data-mine-type="post" 
@@ -127,6 +129,18 @@
         <form method="POST" action="/{{ $board->code }}/{{ $thread->id }}/reply" enctype="multipart/form-data" class="unified-post-form">
             @csrf
             
+            <!-- Error Display -->
+            @if($errors->any())
+                <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 10px; margin-bottom: 15px; border-radius: 5px;">
+                    <strong>Validation Errors:</strong>
+                    <ul style="margin: 5px 0 0 20px;">
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            
             <div class="tui-field">
                 <label class="tui-label" for="post-name">Name (optional)</label>
                 <input type="text" name="name" id="post-name" class="tui-input" placeholder="Anonymous">
@@ -135,7 +149,7 @@
             
             <div class="tui-field">
                 <label class="tui-label" for="post-content">Comment</label>
-                <textarea name="content" id="post-content" class="tui-textarea" required rows="6" cols="48" 
+                <textarea name="reply_content" id="post-content" class="tui-textarea" required rows="6" cols="48" 
                           placeholder="Enter your reply... Use >>hash to quote posts"></textarea>
                 <div class="tui-hint">Required. Max 5000 characters.</div>
             </div>
@@ -154,12 +168,13 @@
             </div>
             
             <!-- Image Hash Alternative -->
-            <div class="tui-alternative">
-                <label class="tui-label" for="post_image_hash">OR use existing image hash:</label>
-                <input type="text" name="image_hash" id="post_image_hash" class="tui-input tui-mono" 
-                       placeholder="Paste image hash from library..." onchange="handlePostHashInput()">
-                <div class="tui-hint">Copy hash from Image Library instead of uploading.</div>
-            </div>
+            <x-image-picker 
+                name="image_hash" 
+                label="OR Choose from Image Library"
+                placeholder="Browse library or enter image hash manually..."
+                pattern="[a-fA-F0-9]{64}"
+                style="font-family: 'Courier New', monospace;"
+            />
             
             <!-- Anonymous posting option -->
             <div class="tui-field">
@@ -170,20 +185,23 @@
                 </label>
             </div>
             
-            <!-- PoW fields temporarily removed - using simplified reply system -->
+            <!-- PoW fields for mining system -->
+            <input type="hidden" name="pow_nonce">
+            <input type="hidden" name="pow_hash">
+            <input type="hidden" name="pow_challenge_id">
             
             <div class="tui-actions">
                 <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
                     <div style="display: flex; gap: 10px;">
-                        <button type="submit" class="tui-btn tui-btn-primary" id="reply-submit-btn">
-                            📤 Post Reply
+                        <button type="submit" class="tui-btn tui-btn-primary tui-btn-disabled" id="reply-submit-btn" disabled>
+                            Mine Proof First
                         </button>
                         <button type="button" class="tui-btn tui-btn-outline" onclick="toggleQuickReply()">
                             Cancel
                         </button>
                     </div>
                     <div id="reply-mining-status" style="font-size: 12px; color: #6B7A6B;">
-                        Fill content to begin mining
+                        💡 Start typing to begin mining...
                     </div>
                 </div>
             </div>
@@ -209,10 +227,18 @@ function toggleQuickReply() {
     if (replyForm.style.display === 'none' || !replyForm.style.display) {
         replyForm.style.display = 'block';
         replyForm.scrollIntoView({ behavior: 'smooth' });
-        quickBtn.textContent = '[Hide Reply]';
+        quickBtn.textContent = '💬 Hide Reply';
+        
+        // Ensure mining is initialized when form opens
+        if (window.replyFormMiner && window.replyFormMiner.setup) {
+            setTimeout(() => {
+                console.log('🔄 Re-initializing mining on form open...');
+                window.replyFormMiner.setup();
+            }, 300);
+        }
     } else {
         replyForm.style.display = 'none';
-        quickBtn.textContent = '[Reply]';
+        quickBtn.textContent = '💬 Reply';
     }
 }
 
@@ -220,7 +246,7 @@ function previewPostImage(input) {
     const preview = document.getElementById('post-image-preview');
     const img = document.getElementById('post-preview-img');
     const info = document.getElementById('post-file-info');
-    const hashInput = document.getElementById('post_image_hash');
+    const hashInput = document.querySelector('input[name="image_hash"]'); // Updated to work with image picker
     
     if (input.files?.[0]) {
         const file = input.files[0];
@@ -233,30 +259,12 @@ function previewPostImage(input) {
         };
         
         reader.readAsDataURL(file);
-        hashInput.value = '';
+        if (hashInput) hashInput.value = '';
     } else {
         preview.style.display = 'none';
     }
 }
 
-function handlePostHashInput() {
-    const hashInput = document.getElementById('post_image_hash');
-    const fileInput = document.getElementById('post-file');
-    const preview = document.getElementById('post-image-preview');
-    
-    if (hashInput.value.trim()) {
-        fileInput.value = '';
-        preview.style.display = 'none';
-        
-        if (hashInput.value.length === 64 && /^[a-f0-9]{64}$/i.test(hashInput.value)) {
-            hashInput.style.borderColor = '#28a745';
-        } else {
-            hashInput.style.borderColor = '#dc3545';
-        }
-    } else {
-        hashInput.style.borderColor = '';
-    }
-}
 
 function quotePost(postId) {
     // Open reply form if closed
@@ -356,66 +364,7 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Simple Reply Form Handler (PoW temporarily disabled)
-document.addEventListener('DOMContentLoaded', function() {
-    const replyForm = document.querySelector('.unified-post-form');
-    const contentInput = document.getElementById('post-content');
-    const submitBtn = document.getElementById('reply-submit-btn');
-    const miningStatus = document.getElementById('reply-mining-status');
-    
-    if (!replyForm || !contentInput || !submitBtn) {
-        console.log('Reply form elements not found');
-        return;
-    }
-    
-    console.log('Reply form initialized (PoW temporarily bypassed)');
-    
-    // Simple content validation
-    function validateReplyContent() {
-        const content = contentInput.value.trim();
-        
-        if (content.length >= 5) {
-            // Enable submit button
-            submitBtn.disabled = false;
-            submitBtn.style.opacity = '1';
-            submitBtn.style.cursor = 'pointer';
-            submitBtn.style.background = 'linear-gradient(135deg, #708B75, #5a7860)';
-            submitBtn.textContent = '📤 Post Reply';
-            miningStatus.innerHTML = '<span style="color: #28a745;">✅ Ready to post!</span>';
-        } else {
-            // Disable submit button
-            submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.6';
-            submitBtn.style.background = '#ccc';
-            submitBtn.textContent = '📤 Post Reply';
-            miningStatus.innerHTML = '<span style="color: #666;">Enter at least 5 characters to post</span>';
-        }
-    }
-    
-    // Validate content as user types
-    contentInput.addEventListener('input', validateReplyContent);
-    
-    // Form submission handler
-    replyForm.addEventListener('submit', function(e) {
-        const contentText = contentInput.value.trim();
-        
-        if (contentText.length < 5) {
-            e.preventDefault();
-            miningStatus.innerHTML = '<span style="color: #dc3545;">⚠️ Please enter at least 5 characters</span>';
-            return;
-        }
-        
-        console.log('Submitting reply (no PoW required)');
-        
-        // Show loading state
-        submitBtn.disabled = true;
-        submitBtn.textContent = '⏳ Posting Reply...';
-        miningStatus.innerHTML = '<span style="color: #708B75;">🔄 Submitting your reply...</span>';
-    });
-    
-    // Initial validation
-    validateReplyContent();
-});
+// Reply form mining handled by ReplyFormMiner in simple-pow.js
 
 // Auto-focus content area when reply form is opened
 document.addEventListener('DOMContentLoaded', function() {
@@ -442,3 +391,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 @endsection
+
+@section('scripts')
+<script src="/js/simple-pow.js?v={{ time() }}"></script>
+@endsection
+

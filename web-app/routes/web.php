@@ -12,7 +12,7 @@ Route::get('/', function () {
             // Show full welcome dashboard for authenticated users
             $userCount = \App\Models\BitcoinAuth::count();
             $userCap = 256;
-            $boards = \App\Models\Board::getShiftingOrder();
+            $boards = \App\Models\Board::all();
 
             // Calculate real stats from ProofOfWork table
             $recentProofs = \App\Models\ProofOfWork::where('verified_at', '>', now()->subMinutes(5))->count();
@@ -71,16 +71,30 @@ Route::get('/', function () {
             }
             $globalHashrate = $hourlyHashes;
 
-            return view('mining-market-dashboard', compact('userCount', 'userCap', 'boards', 'recentProofs', 'activeSessions'));
+            return view('welcome', compact('userCount', 'userCap', 'boards', 'recentProofs', 'activeSessions', 'totalProofs', 'totalHashes', 'globalHashrate'));
         }
         
-        // Show simple boards index for non-authenticated users
-        $boards = \App\Models\Board::getActiveBoards();
-        return view('boards.index', compact('boards'));
+        // Show slot machine landing page for non-authenticated users
+        $userCount = \App\Models\BitcoinAuth::count();
+        $userCap = 256;
+        $totalProofs = \App\Models\ProofOfWork::count();
+        $boardCount = \App\Models\Board::count();
+        
+        return view('landing', compact('userCount', 'userCap', 'totalProofs', 'boardCount'));
     } catch (Exception $e) {
         return response()->json(['error' => $e->getMessage()]);
     }
 });
+
+// Preview landing page route (for testing while logged in)
+Route::get('/preview-landing', function () {
+    $userCount = \App\Models\BitcoinAuth::count();
+    $userCap = 256;
+    $totalProofs = \App\Models\ProofOfWork::count();
+    $boardCount = \App\Models\Board::count();
+    
+    return view('landing', compact('userCount', 'userCap', 'totalProofs', 'boardCount'));
+})->name('preview.landing');
 
 // Stats page
 Route::get('/stats', [StatsController::class, 'index'])->name('stats');
@@ -99,23 +113,26 @@ Route::get('/anon', function () {
 // Public authentication routes - both mobile and web support
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('auth.login');
-Route::get('/auth/register', [AuthController::class, 'showSimpleRegister'])->name('register');
-Route::get('/auth/register-advanced', [AuthController::class, 'showRegister'])->name('register.advanced');
-Route::post('/auth/generate-address', [AuthController::class, 'generateAddress']);
-Route::get('/auth/invite-status', function () {
-    return response()->json(\App\Models\InviteCode::getInviteStatus());
-});
 
-// Challenge endpoint for mobile cryptographic auth
-Route::post('/challenge', [AuthController::class, 'getChallenge'])->middleware('throttle:25,1')->name('auth.challenge');
+// Invite status endpoint for login page
+Route::get('/auth/invite-status', function() {
+    $currentUsers = \App\Models\BitcoinAuth::count();
+    $maxUsers = 256;
+    $remainingSlots = max(0, $maxUsers - $currentUsers);
+    
+    return response()->json([
+        'current_users' => $currentUsers,
+        'max_users' => $maxUsers,
+        'remaining_slots' => $remainingSlots,
+        'registration_open' => $remainingSlots > 0
+    ]);
+});
 
 // Login routes - supporting both mobile cryptographic and web auth
 Route::post('/login/cryptographic', [AuthController::class, 'cryptographicLogin'])->middleware('throttle:25,1')->name('auth.cryptographic.login');
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
 Route::post('/auth/login-backup', [AuthController::class, 'backupLogin'])->middleware('throttle:10,1');
-// Simple registration - primary route for quick registration
-Route::post('/auth/register', [AuthController::class, 'simpleRegister'])->middleware('throttle:10,1');
-Route::post('/auth/register-advanced', [AuthController::class, 'register'])->middleware('throttle:10,1');
+
 
 // Username check API endpoint  
 Route::post('/auth/check-username', [AuthController::class, 'checkUsername'])->middleware('throttle:20,1');
@@ -126,13 +143,10 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->
 Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout.alt');
 
 // Registration routes (public)
-Route::get('/register', function() {
-    return view('auth.register-with-keys');
-})->name('auth.register.form');
+Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register/validate-friend-code', [AuthController::class, 'validateFriendCode'])->name('auth.validate.friend.code');
-Route::get('/register/{friendCode}', [AuthController::class, 'showRegister'])->name('auth.register')->middleware('validate.friend.code');
+Route::get('/register/{friendCode}', [AuthController::class, 'showRegister'])->name('auth.register');
 Route::post('/register', [AuthController::class, 'register'])->name('auth.register.store');
-Route::post('/register/simple', [AuthController::class, 'simpleRegister'])->name('auth.register.simple');
 
 // Image serving routes - public access
 Route::get('/image/thread/{id}', [App\Http\Controllers\ForumController::class, 'serveThreadImage'])->name('thread.image');
@@ -225,37 +239,37 @@ Route::middleware('bitcoin.auth')->group(function () {
         // Reply to thread (MUST come before {board} routes to avoid conflicts)
         Route::post('/{board}/{threadId}/reply', [App\Http\Controllers\ForumController::class, 'storeReply'])
             ->name('forum.reply')
-            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political', 'threadId' => '[0-9]+']);
+            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|ddl|i|General|Technology|Business|Meta|Film|Random|Literature|Music|Political|Doodles|Images', 'threadId' => '[0-9]+']);
 
         // Thread creation (specific path, must come before {board})
         Route::get('/{board}/create', [App\Http\Controllers\ForumController::class, 'createThread'])
             ->name('board.create')
-            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|ddl|i|General|Technology|Business|Meta|Film|Random|Literature|Music|Political|Doodles|Images');
 
         // Thread creation POST (specific path)
         Route::post('/{board}/create', [App\Http\Controllers\ForumController::class, 'storeThread'])
             ->name('board.create.store')
-            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|ddl|i|General|Technology|Business|Meta|Film|Random|Literature|Music|Political|Doodles|Images');
 
         // Board catalog (specific path, must come before {board})
         Route::get('/{board}/catalog', [App\Http\Controllers\ForumController::class, 'showCatalog'])
             ->name('board.catalog')
-            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|ddl|i|General|Technology|Business|Meta|Film|Random|Literature|Music|Political|Doodles|Images');
 
         // Thread view (specific path, must come before {board})
         Route::get('/{board}/{threadId}', [App\Http\Controllers\ForumController::class, 'showThread'])
             ->name('forum.thread')
-            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political', 'threadId' => '[0-9]+']);
+            ->where(['board' => 'gen|tech|biz|film|x|lit|meta|mu|pol|ddl|i|General|Technology|Business|Meta|Film|Random|Literature|Music|Political|Doodles|Images', 'threadId' => '[0-9]+']);
 
         // Thread creation fallback POST (less specific, comes after specific paths)
         Route::post('/{board}', [App\Http\Controllers\ForumController::class, 'storeThread'])
             ->name('board.thread.store')
-            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|ddl|i|General|Technology|Business|Meta|Film|Random|Literature|Music|Political|Doodles|Images');
 
         // Board main page (least specific, comes last)
         Route::get('/{board}', [App\Http\Controllers\ForumController::class, 'showBoard'])
             ->name('board.show')
-            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|General|Technology|Business|Meta|Film|Random|Literature|Music|Political');
+            ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|ddl|i|General|Technology|Business|Meta|Film|Random|Literature|Music|Political|Doodles|Images');
     });
 
     // Point Shop routes (protected)

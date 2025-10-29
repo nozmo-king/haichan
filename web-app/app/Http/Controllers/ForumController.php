@@ -33,13 +33,12 @@ class ForumController extends Controller
             return Thread::where('board_id', $board->id)
                 ->with(['bitcoinUser', 'proofOfWork'])
                 ->withCount('posts')
-                ->withSum('proofOfWork as pow_points', 'points')
-                ->orderByDesc(\DB::raw('bump_score + COALESCE(pow_points, 0)'))
                 ->orderBy('bumped_at', 'desc')
                 ->take(20)
                 ->get()
                 ->map(function ($thread) {
-                    $thread->accumulated_points = $thread->bump_score + ($thread->pow_points ?? 0);
+                    // Use consistent real-time calculation
+                    $thread->accumulated_points = $thread->bump_score + \App\Models\ProofOfWork::where('thread_id', $thread->id)->sum('points');
 
                     return $thread;
                 });
@@ -57,13 +56,12 @@ class ForumController extends Controller
         $threads = Thread::where('board_id', $boardModel->id)
             ->with(['bitcoinUser', 'proofOfWork'])
             ->withCount('posts')
-            ->withSum('proofOfWork as pow_points', 'points')
-            ->orderByDesc(\DB::raw('bump_score + COALESCE(pow_points, 0)'))
             ->orderBy('bumped_at', 'desc')
             ->take(100)
             ->get()
             ->map(function ($thread) {
-                $thread->accumulated_points = $thread->bump_score + ($thread->pow_points ?? 0);
+                // Use same calculation as thread view for consistency
+                $thread->accumulated_points = $thread->bump_score + \App\Models\ProofOfWork::where('thread_id', $thread->id)->sum('points');
 
                 return $thread;
             });
@@ -82,7 +80,9 @@ class ForumController extends Controller
             ->take(200) // Show more threads since it's from all boards
             ->get()
             ->map(function ($thread) {
-                $thread->accumulated_points = $thread->bump_score + ($thread->pow_points ?? 0);
+                // Use consistent real-time calculation
+                $threadPoW = \App\Models\ProofOfWork::where('thread_id', $thread->id)->sum('points');
+                $thread->accumulated_points = $thread->bump_score + $threadPoW + ($thread->pow_difficulty ?? 0);
 
                 return $thread;
             });
@@ -139,10 +139,7 @@ class ForumController extends Controller
 
         $posts = $posts->get();
 
-        // Add accumulated points for each post (like we do for threads)
-        $posts->each(function ($post) {
-            $post->accumulated_points = ($post->pow_difficulty ?? 0);
-        });
+        // Note: Posts now have getAccumulatedPointsAttribute() accessor that calculates real PoW points
 
         return view('boards.thread', ['board' => $boardModel, 'thread' => $thread, 'posts' => $posts]);
     }
@@ -272,6 +269,37 @@ class ForumController extends Controller
 
         Log::info('storeThread: Entered method.');
 
+        // Rate limiting check for thread creation
+        $userId = session('bitcoin_auth_id');
+        $ipAddress = $request->ip();
+        
+        if ($userId) {
+            $recentThreads = Thread::where('user_id', $userId)
+                ->where('created_at', '>', now()->subMinutes(5))
+                ->count();
+                
+            if ($recentThreads >= 3) {
+                Log::warning('THREAD CREATION RATE LIMIT EXCEEDED', [
+                    'user_id' => $userId,
+                    'count' => $recentThreads
+                ]);
+                return back()->withErrors(['error' => 'Rate limit: Maximum 3 threads per 5 minutes.'])->withInput();
+            }
+        }
+        
+        // IP-based rate limiting
+        $ipThreads = Thread::where('ip_address', $ipAddress)
+            ->where('created_at', '>', now()->subMinutes(5))
+            ->count();
+            
+        if ($ipThreads >= 5) {
+            Log::warning('IP THREAD CREATION RATE LIMIT EXCEEDED', [
+                'ip' => $ipAddress,
+                'count' => $ipThreads
+            ]);
+            return back()->withErrors(['error' => 'Rate limit: Maximum 5 threads per 5 minutes per IP.'])->withInput();
+        }
+
         // Log thread creation for monitoring (production-safe)
         Log::info('Thread creation attempt', [
             'board' => $board,
@@ -279,30 +307,43 @@ class ForumController extends Controller
             'user_authenticated' => (bool) session('bitcoin_auth_id')
         ]);
 
-        // Comprehensive input validation - image OR image_hash required
-        try {
+        // Get board model for special board rules
+        $boardModel = Board::where('code', $board)->firstOrFail();
+        
+        // Special validation for /i/ Images board - images required, no text content
+        if ($boardModel->code === 'i') {
+            $validated = $request->validate([
+                'title' => 'required|string|max:200|min:3',
+                'content' => 'nullable|max:0', // No content allowed on /i/
+                'image' => 'required|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'pow_nonce' => 'required|integer|min:0',
+                'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'pow_challenge_id' => 'required|string',
+                'post_anonymous' => 'boolean',
+            ]);
+            
+            // Override content to be empty for /i/ board
+            $validated['content'] = '';
+            
+            Log::info('storeThread: /i/ board validation successful - image required, no content.');
+        } else {
+            // Comprehensive input validation - image OR image_hash required
             Log::info('storeThread: Validating request...');
             $validated = $request->validate([
                 'title' => 'required|string|max:200|min:3',
                 'content' => 'required|string|max:5000|min:5',
-                'image' => 'nullable|max:25600',
+                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
                 'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
                 'pow_nonce' => 'required|integer|min:0',
                 'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
-                'pow_challenge_id' => 'required|string|size:36|regex:/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/',
+                'pow_challenge_id' => 'required|string',
                 'post_anonymous' => 'boolean',
             ]);
             Log::info('storeThread: Validation successful.');
-            
-            // Validation successful
-            
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation failed', [
-                'errors' => $e->errors(),
-                'input_data' => $request->only(['title', 'content', 'pow_nonce', 'pow_hash', 'pow_challenge_id'])
-            ]);
-            throw $e;
         }
+        
+        // Validation successful - continue with thread creation
 
         // Image validation check
 
@@ -367,9 +408,8 @@ class ForumController extends Controller
         }
         Log::info('storeThread: Challenge verification successful.');
 
-        // Mark challenge as used
+        // Store challenge reference but don't mark as used yet
         $challenge = $verificationResult['challenge'];
-        $challenge->markAsUsed();
 
         Log::info('storeThread: Preparing thread data...');
         $threadData = [
@@ -491,6 +531,10 @@ try {
                 'thread_id' => $thread->id,
                 'cache_key_cleared' => $cacheKey
             ]);
+
+            // Only mark challenge as used after successful thread creation
+            $challenge->markAsUsed();
+            Log::info('storeThread: Challenge marked as used.');
 
             Log::info('storeThread: Redirecting to thread page.');
             return redirect("/$board/{$thread->id}");
@@ -623,6 +667,37 @@ try {
     
     private function storeReplyWithNewPoW(Request $request, $board, $threadId)
     {
+        // Rate limiting check for replies
+        $userId = session('bitcoin_auth_id');
+        $ipAddress = $request->ip();
+        
+        if ($userId) {
+            $recentReplies = Post::where('user_id', $userId)
+                ->where('created_at', '>', now()->subMinute())
+                ->count();
+                
+            if ($recentReplies >= 10) {
+                Log::warning('REPLY RATE LIMIT EXCEEDED', [
+                    'user_id' => $userId,
+                    'count' => $recentReplies
+                ]);
+                return back()->withErrors(['error' => 'Rate limit: Maximum 10 replies per minute.'])->withInput();
+            }
+        }
+        
+        // IP-based rate limiting
+        $ipReplies = Post::where('ip_address', $ipAddress)
+            ->where('created_at', '>', now()->subMinute())
+            ->count();
+            
+        if ($ipReplies >= 15) {
+            Log::warning('IP REPLY RATE LIMIT EXCEEDED', [
+                'ip' => $ipAddress,
+                'count' => $ipReplies
+            ]);
+            return back()->withErrors(['error' => 'Rate limit: Maximum 15 replies per minute per IP.'])->withInput();
+        }
+
         // Log reply creation attempt
         Log::info('Reply creation attempt (New PoW)', [
             'board' => $board,
@@ -630,14 +705,38 @@ try {
             'user_authenticated' => (bool) session('bitcoin_auth_id')
         ]);
 
-        // Basic validation for content
+        // Get board model for special board rules
+        $boardModel = Board::where('code', $board)->firstOrFail();
+        
+        // Full validation including PoW fields
         try {
-            $validated = $request->validate([
-                'content' => 'required|string|max:5000|min:5',
-                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
-                'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
-                'post_anonymous' => 'boolean',
-            ]);
+            // Special validation for /i/ Images board - images required, no text content
+            if ($boardModel->code === 'i') {
+                $validated = $request->validate([
+                    'reply_content' => 'nullable|max:0', // No content allowed on /i/
+                    'image' => 'required|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                    'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
+                    'pow_nonce' => 'required|integer|min:0',
+                    'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
+                    'pow_challenge_id' => 'required|string',
+                    'post_anonymous' => 'boolean',
+                ]);
+                
+                // Override content to be empty for /i/ board
+                $validated['reply_content'] = '';
+                
+                Log::info('Reply: /i/ board validation successful - image required, no content.');
+            } else {
+                $validated = $request->validate([
+                    'reply_content' => 'required|string|max:5000|min:5',
+                    'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                    'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
+                    'pow_nonce' => 'required|integer|min:0',
+                    'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
+                    'pow_challenge_id' => 'required|string',
+                    'post_anonymous' => 'boolean',
+                ]);
+            }
             
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Reply validation failed', [
@@ -658,9 +757,28 @@ try {
             ->firstOrFail();
         $thread = Thread::with('bitcoinUser')->findOrFail($threadId);
 
-        // For now, create the reply directly without PoW (temporary fix)
-        // TODO: Integrate with new PoW system properly
-        Log::info('Creating reply without PoW verification (temporary)');
+        // Verify PoW challenge
+        Log::info('Reply: Verifying challenge...');
+        $verifier = new ChallengeVerifier();
+        $verificationResult = $verifier->verifyChallenge(
+            $validated['pow_challenge_id'],
+            $validated['pow_nonce'],
+            $validated['pow_hash']
+        );
+
+        if (!$verificationResult['valid']) {
+            Log::error('Reply challenge verification failed', [
+                'error' => $verificationResult['error'],
+                'board' => $board,
+                'thread_id' => $threadId,
+                'challenge_id' => $validated['pow_challenge_id'],
+                'nonce' => $validated['pow_nonce'],
+                'submitted_hash' => $validated['pow_hash'],
+            ]);
+
+            return back()->withErrors(['pow' => 'Proof of work verification failed: '.$verificationResult['error']])->withInput();
+        }
+        Log::info('Reply: Challenge verification successful.');
         
         // Get authenticated user or create anonymous user
         $userId = session('bitcoin_auth_id');
@@ -676,12 +794,18 @@ try {
 
         $postData = [
             'thread_id' => $thread->id,
-            'content' => $request->content,
+            'content' => $validated['reply_content'],
             'user_id' => $finalUserId,
             'author_name' => $authorName,
             'parent_id' => null, // Simple replies, no nesting for now
             'ip_address' => $request->ip(),
             'country_flag' => \App\Helpers\GeoHelper::getCountryFlag($request->ip()),
+            'pow_nonce' => $validated['pow_nonce'],
+            'pow_hash' => $validated['pow_hash'],
+            'pow_challenge_id' => $validated['pow_challenge_id'],
+            'pow_pattern' => $verificationResult['challenge']->difficulty,
+            'pow_difficulty' => $this->calculatePoWPoints($validated['pow_hash'], $verificationResult['challenge']->difficulty),
+            'pow_verified_at' => now(),
         ];
 
         // Handle image upload or existing hash
@@ -716,10 +840,38 @@ try {
             $postData['image_hash'] = $existingImage->hash;
         }
 
+        // Mark challenge as used
+        $challenge = $verificationResult['challenge'];
+        $challenge->markAsUsed();
+
         // Use database transaction to ensure data is committed before redirect
         try {
-            $post = \DB::transaction(function () use ($postData) {
+            $post = \DB::transaction(function () use ($postData, $challenge, $finalUserId, $validated) {
                 $post = Post::create($postData);
+
+                // Create ProofOfWork record for reply
+                $powPoints = $this->calculatePoWPoints($validated['pow_hash'], $challenge->difficulty);
+
+                $proofOfWork = \App\Models\ProofOfWork::create([
+                    'challenge_id' => $challenge->id,
+                    'user_id' => $finalUserId, // Can be null for anonymous users
+                    'post_id' => $post->id, // Associate with the reply post
+                    'hash' => $validated['pow_hash'],
+                    'nonce' => $validated['pow_nonce'],
+                    'data' => json_encode($challenge->canonical_payload),
+                    'pattern' => $challenge->difficulty,
+                    'points' => $powPoints,
+                    'verified_at' => now(),
+                    'ip_address' => request()->ip(),
+                ]);
+
+                // Award points to user if logged in
+                if ($finalUserId) {
+                    $user = \App\Models\BitcoinAuth::find($finalUserId);
+                    if ($user) {
+                        $user->awardMiningPoints($powPoints);
+                    }
+                }
 
                 // Force immediate save and ensure relationships are fresh
                 $post->refresh();
@@ -732,7 +884,7 @@ try {
             $thread->touch('bumped_at');
 
             // Log the created post data for debugging
-            Log::info('Reply created (without PoW)', [
+            Log::info('Reply created successfully with PoW', [
                 'id' => $post->id,
                 'parent_id' => $post->parent_id,
                 'thread_id' => $post->thread_id,
@@ -838,44 +990,53 @@ try {
 
         // Detect fallback/dummy values and give zero points
         if ($hash === '21e8000000000000000000000000000000000000000000000000000000000000') {
-            return 0; // No points for fallback values
+            return 0;
+        }
+        
+        // Detect suspiciously regular hashes (too many zeros)
+        $zeroCount = substr_count($hash, '0');
+        if ($zeroCount > 50) {
+            Log::warning('SUSPICIOUS HASH IN THREAD CREATION', [
+                'hash' => $hash,
+                'zero_count' => $zeroCount
+            ]);
+            return 0;
         }
 
         // Base points for different patterns
         $pointMap = [
-            '21' => 0.1,      // Easy difficulty
-            '21e' => 0.5,     // Medium difficulty
-            '21e8' => 100,    // Hard difficulty
-            '21e80' => 500,   // Very hard
-            '21e800' => 2500, // Extreme
+            '21' => 0.1,
+            '21e' => 0.5,
+            '21e8' => 100,
+            '21e80' => 500,
+            '21e800' => 2500,
         ];
 
-        // Check for exact pattern match first
         if (isset($pointMap[$expectedPattern])) {
             $basePoints = $pointMap[$expectedPattern];
         } else {
-            $basePoints = 0.1; // Default minimum
+            $basePoints = 0.1;
         }
 
         // Bonus for exceeding expected difficulty
         if (str_starts_with($hash, '21e800') && $expectedPattern !== '21e800') {
-            $basePoints *= 25; // Extreme bonus
+            $basePoints *= 25;
         } elseif (str_starts_with($hash, '21e80') && ! in_array($expectedPattern, ['21e80', '21e800'])) {
-            $basePoints *= 5; // High bonus
+            $basePoints *= 5;
         } elseif (str_starts_with($hash, '21e8') && ! in_array($expectedPattern, ['21e8', '21e80', '21e800'])) {
-            $basePoints *= 2; // Moderate bonus
+            $basePoints *= 2;
         }
 
         // Special rare patterns
         if (str_starts_with($hash, '000')) {
-            $basePoints *= 10; // Legendary
+            $basePoints *= 10;
         } elseif (str_starts_with($hash, '666')) {
-            $basePoints *= 15; // Cursed
+            $basePoints *= 15;
         } elseif (str_contains($hash, 'dead')) {
-            $basePoints *= 8; // Death hash
+            $basePoints *= 8;
         }
 
-        return max(0.1, $basePoints); // Minimum 0.1 points
+        return max(0.1, $basePoints);
     }
 
     /**

@@ -28,7 +28,7 @@
 <div style="background: transparent; margin-bottom: 30px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <h3 style="font-size: 16px; color: #444B6E; margin: 0;">
-            <a href="/gen/create" style="color: #444B6E; text-decoration: none;">🧵 Create New Thread</a>
+            <a href="/{{ $board->code }}/create" style="color: #444B6E; text-decoration: none;">🧵 Create New Thread</a>
         </h3>
         <button type="button" style="background: transparent; border: 1px solid #d4d4d4; color: #444B6E; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;" id="thread-form-toggle" onclick="toggleThreadForm()">−</button>
     </div>
@@ -76,13 +76,13 @@
             </div>
             
             <!-- Library Hash Alternative -->
-            <div class="field-group alternative">
-                <label class="field-label" for="thread-image-hash">🔗 OR Use Library Image</label>
-                <input type="text" name="image_hash" id="thread-image-hash" class="field-input mono" 
-                       placeholder="Paste 64-character image hash from library..."
-                       onchange="handleThreadHashInput()">
-                <div class="field-hint">Alternative to file upload • Paste hash from Image Library</div>
-            </div>
+            <x-image-picker 
+                name="image_hash" 
+                label="🔗 OR Use Library Image"
+                placeholder="Browse library or enter image hash manually..."
+                pattern="[a-fA-F0-9]{64}"
+                style="font-family: 'Courier New', monospace;"
+            />
             
             <!-- Author Options -->
             <div class="field-group">
@@ -116,7 +116,7 @@
 <!-- Threads -->
 <div class="threads-list">
 @forelse($threads as $thread)
-<div class="post" data-thread-id="{{ $thread->id }}" data-mine-type="thread" data-board-code="{{ $board->code }}">
+<div class="post {{ ($thread->user_id && $thread->bitcoinUser && $thread->bitcoinUser->is_admin) ? 'admin-post' : '' }}" data-thread-id="{{ $thread->id }}" data-mine-type="thread" data-board-code="{{ $board->code }}">
     <div class="post-header">
         <span class="post-name">
             @if($thread->user_id && $thread->bitcoinUser)
@@ -184,66 +184,184 @@
 </div>
 
 <script>
+let currentMiner = null;
+let latestProof = null;
+
+// Mouseover mining system is now global in layout.blade.php
+
+async function startMining() {
+    if (currentMiner) {
+        currentMiner.stop = true;  // Signal existing miner to stop
+    }
+    
+    const btn = document.querySelector('#new-thread-form button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = '⛏️ Mining...';
+    
+    try {
+        // Get real challenge from server
+        const challengeResponse = await fetch('/api/mining/challenges', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                target_type: 'thread',
+                action: 'create',
+                difficulty: '21e8',
+                board_code: '{{ $board->code }}'
+            })
+        });
+        
+        if (!challengeResponse.ok) {
+            throw new Error('Failed to get mining challenge');
+        }
+        
+        const challengeData = await challengeResponse.json();
+        const difficulty = challengeData.difficulty || '21e8';
+        const canonicalPayload = challengeData.canonical_payload;
+        const payloadString = JSON.stringify(canonicalPayload);
+        
+        // Create new miner
+        currentMiner = {
+            stop: false,
+            async mine() {
+                let nonce = Math.floor(Math.random() * 1000000);
+                let hash = '';
+                
+                while (nonce < 10000000 && !this.stop) {
+                    const input = payloadString + ':' + nonce;
+                    
+                    const encoder = new TextEncoder();
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(input));
+                    const hashArray = new Uint8Array(hashBuffer);
+                    hash = Array.from(hashArray).map(b => b.toString(16).padStart(2, '0')).join('');
+                    
+                    // Real difficulty check for 21e8
+                    if (hash.toLowerCase().startsWith('21e8')) {
+                        latestProof = {
+                            nonce: nonce,
+                            hash: hash,
+                            challenge_id: challengeData.token
+                        };
+                        
+                        btn.disabled = false;
+                        btn.textContent = '📤 Post Thread (Mined!)';
+                        btn.style.background = '#28a745';
+                        
+                        document.getElementById('thread-pow-nonce').value = latestProof.nonce;
+                        document.getElementById('thread-pow-hash').value = latestProof.hash;
+                        document.getElementById('thread-pow-challenge-id').value = latestProof.challenge_id;
+                        
+                        return true;
+                    }
+                    
+                    nonce++;
+                    
+                    // Update progress every 50k hashes
+                    if (nonce % 50000 === 0 && !this.stop) {
+                        btn.textContent = `⛏️ Mining... ${Math.floor(nonce/1000)}k hashes`;
+                        await new Promise(resolve => setTimeout(resolve, 1));
+                    }
+                }
+                
+                return false;
+            }
+        };
+        
+        currentMiner.mine();
+        
+    } catch (error) {
+        btn.disabled = false;
+        btn.textContent = '❌ Mining failed';
+        console.error('Mining failed:', error);
+    }
+}
+
+// Start mining when user starts typing (keep thread creation simple)
+document.getElementById('thread-title').addEventListener('input', function() {
+    if (this.value.length >= 3 && !currentMiner) {
+        startMining();
+    }
+});
+
+document.getElementById('thread-content').addEventListener('input', function() {
+    if (this.value.length >= 5 && !currentMiner) {
+        startMining();
+    }
+});
+
+// Handle form submission
 document.getElementById('new-thread-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    if (!latestProof) {
+        alert('Please wait for mining to complete');
+        return;
+    }
+    
+    // If we already tried to submit this proof, generate a new one
+    if (latestProof.used) {
+        alert('Mining a new proof...');
+        latestProof = null;
+        await startMining();
+        if (!latestProof) {
+            alert('Failed to generate new proof');
+            return;
+        }
+    }
+    
+    // Mark this proof as used so we don't reuse it
+    latestProof.used = true;
+    
     const btn = this.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    btn.textContent = '⏳ Mining proof...';
+    const originalText = btn.textContent;
+    const originalColor = btn.style.background;
     
     try {
-        // Wait for mining brain or fallback systems to be available
-        let miner = null;
-        let retries = 0;
+        btn.disabled = true;
+        btn.textContent = '📤 Submitting...';
+        btn.style.background = '#6c757d';
         
-        while (!miner && retries < 50) {
-            // Check for mining brain first
-            if (window.haichanMiningBrain && window.haichanMiningBrain.isInitialized) {
-                miner = window.haichanMiningBrain;
-                console.log('Using haichanMiningBrain for thread creation');
-            }
-            // Check for simplePoW as fallback
-            else if (window.simplePoW && typeof window.simplePoW.acquireProofFor === 'function') {
-                miner = window.simplePoW;
-                console.log('Using simplePoW for thread creation');
-            }
-            // Try to create mining brain if class exists
-            else if (window.HaichanMiningBrain && !window.haichanMiningBrain) {
-                try {
-                    console.log('Creating new HaichanMiningBrain instance');
-                    window.haichanMiningBrain = new HaichanMiningBrain();
-                } catch (e) {
-                    console.error('Failed to create mining brain:', e);
-                }
-            }
-            
-            if (!miner) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                retries++;
-            }
-        }
+        // Create FormData from the form
+        const formData = new FormData(this);
         
-        if (!miner) {
-            throw new Error('No mining system available after ' + retries + ' retries');
-        }
-        
-        const proof = await miner.acquireProofFor({
-            board_code: '{{ $board->code }}',
-            target_type: 'thread',
-            target_id: null,
-            action: 'create',
-            difficulty: '21e8'
+        // Submit via fetch to handle errors properly
+        const response = await fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         });
         
-        document.getElementById('thread-pow-nonce').value = proof.nonce;
-        document.getElementById('thread-pow-hash').value = proof.hash;
-        document.getElementById('thread-pow-challenge-id').value = proof.challenge_id;
-        
-        this.submit();
+        if (response.ok) {
+            // Success - redirect to the new thread or board
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                window.location.reload();
+            }
+        } else {
+            // Handle validation errors
+            const errorData = await response.text();
+            console.error('Form submission failed:', errorData);
+            alert('Thread creation failed. Please check your input and try again.');
+            
+            btn.disabled = false;
+            btn.textContent = originalText;
+            btn.style.background = originalColor;
+        }
     } catch (error) {
-        alert('Mining failed: ' + error.message);
+        console.error('Form submission error:', error);
+        alert('Network error occurred. Please try again.');
+        
         btn.disabled = false;
-        btn.textContent = '📤 Post Thread';
+        btn.textContent = originalText;
+        btn.style.background = originalColor;
     }
 });
 
@@ -294,30 +412,17 @@ function removeThreadPreview() {
     document.getElementById('thread-image-preview').style.display = 'none';
 }
 
-function handleThreadHashInput() {
-    const hashInput = document.getElementById('thread-image-hash');
-    const fileInput = document.getElementById('thread-image');
-    const preview = document.getElementById('thread-image-preview');
-    
-    if (hashInput.value.trim()) {
-        fileInput.value = ''; // Clear file input
-        preview.style.display = 'none';
-        
-        // Validate hash format
-        if (hashInput.value.length === 64 && /^[a-f0-9]{64}$/i.test(hashInput.value)) {
-            hashInput.style.borderColor = 'var(--success-color, #28a745)';
-        } else {
-            hashInput.style.borderColor = 'var(--error-color, #dc3545)';
-        }
-    } else {
-        hashInput.style.borderColor = '';
-    }
-}
 
 function resetThreadForm() {
     document.getElementById('new-thread-form').reset();
     document.getElementById('thread-image-preview').style.display = 'none';
-    document.getElementById('thread-image-hash').style.borderColor = '';
+    
+    // Clear image hash field in the image picker component
+    const hashInput = document.querySelector('input[name="image_hash"]');
+    if (hashInput) {
+        hashInput.value = '';
+        hashInput.style.borderColor = '';
+    }
     
     // Clear PoW fields
     document.getElementById('thread-pow-nonce').value = '';
@@ -351,13 +456,15 @@ let pollInterval;
 
 function startThreadPolling() {
     updateThreadOrder();
-    pollInterval = setInterval(updateThreadOrder, 5000);
+    pollInterval = setInterval(updateThreadOrder, 2000); // Poll every 2 seconds for more responsive updates
 }
 
 async function updateThreadOrder() {
     try {
+        console.log('🔄 Fetching thread order updates...');
         const response = await fetch('/api/boards/{{ $board->code }}/thread-order');
         const data = await response.json();
+        console.log('📊 Thread data received:', data);
         
         data.threads.forEach(thread => {
             const threadEl = document.querySelector(`[data-thread-id="${thread.id}"]`);
@@ -368,6 +475,7 @@ async function updateThreadOrder() {
                     const newValue = thread.accumulated_points;
                     
                     if (newValue !== oldValue) {
+                        console.log(`⚡ Thread ${thread.id} points updated: ${oldValue} -> ${newValue}`);
                         powIndicator.dataset.value = newValue;
                         powIndicator.textContent = `⚡${newValue.toFixed(1)}`;
                         
@@ -635,5 +743,4 @@ document.addEventListener('DOMContentLoaded', startThreadPolling);
 }
 </style>
 
-@include('components.mining-dashboard')
 @endsection

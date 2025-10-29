@@ -9,6 +9,7 @@ export default defineConfig({
                 'resources/css/grunge-chaos-scoped.css',
                 'resources/css/chaos-effects.css',
                 'resources/js/app.js'
+            ],
         }),
     ],
     server: {
@@ -27,5 +28,7 @@ export default defineConfig({
                 'resources/css/grunge-chaos-scoped.css',
                 'resources/css/chaos-effects.css',
                 'resources/js/app.js'
+            ],
+        },
     },
 });

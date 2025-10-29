@@ -1,9 +1,9 @@
 /* HAICHAN V2 - Single Unified CSS */
 /* Brutalist imageboard aesthetic */
 
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
     :root {
@@ -137,4 +137,159 @@
     .border-3 { border-width: 3px; }
     .border-4 { border-width: 4px; }
     .border-l-8 { border-left-width: 8px; }
+    
+    /* Admin Post Styles */
+    .admin-post {
+        background: rgba(0, 0, 0, 0.95) !important;
+        color: var(--cream) !important;
+        border: 3px solid var(--cream) !important;
+        border-left: 6px solid var(--sage) !important;
+        box-shadow: 
+            4px 4px 0 rgba(255, 253, 143, 0.3),
+            inset 0 0 20px rgba(176, 206, 136, 0.2) !important;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .admin-post::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, 
+            transparent 25%, 
+            rgba(255, 253, 143, 0.1) 25%, 
+            rgba(255, 253, 143, 0.1) 50%, 
+            transparent 50%, 
+            transparent 75%, 
+            rgba(176, 206, 136, 0.1) 75%);
+        background-size: 20px 20px;
+        animation: adminPattern 4s linear infinite;
+        pointer-events: none;
+        z-index: 0;
+    }
+    
+    .admin-post * {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .admin-post .post-content {
+        animation: adminStrobe 2s infinite;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(255, 253, 143, 0.5);
+    }
+    
+    .admin-post .post-header {
+        color: var(--sage) !important;
+        font-weight: bold;
+        animation: adminHeaderGlow 3s infinite;
+        text-shadow: 0 0 8px rgba(176, 206, 136, 0.8);
+    }
+    
+    @keyframes adminStrobe {
+        0%, 100% { 
+            color: var(--cream);
+            text-shadow: 0 0 10px rgba(255, 253, 143, 0.5);
+        }
+        25% { 
+            color: var(--sage);
+            text-shadow: 0 0 15px rgba(176, 206, 136, 0.8);
+        }
+        50% { 
+            color: var(--cream);
+            text-shadow: 0 0 20px rgba(255, 253, 143, 0.7);
+        }
+        75% { 
+            color: var(--forest-light);
+            text-shadow: 0 0 12px rgba(176, 206, 136, 0.6);
+        }
+    }
+    
+    @keyframes adminHeaderGlow {
+        0%, 100% { 
+            text-shadow: 0 0 8px rgba(176, 206, 136, 0.8);
+        }
+        50% { 
+            text-shadow: 0 0 20px rgba(255, 253, 143, 1);
+        }
+    }
+    
+    @keyframes adminPattern {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(20px); }
+    }
+    
+    /* Mining Buzz Effects */
+    .mining-buzz {
+        animation: miningBuzz 0.1s infinite alternate;
+        box-shadow: 0 0 15px rgba(255, 253, 143, 0.8) !important;
+        border-color: var(--cream) !important;
+    }
+    
+    .mining-buzz-intense {
+        animation: miningBuzzIntense 0.08s infinite alternate;
+        box-shadow: 0 0 25px rgba(176, 206, 136, 1) !important;
+        border-color: var(--sage) !important;
+        transform: scale(1.01);
+    }
+    
+    .mining-buzz-jackpot {
+        animation: miningBuzzJackpot 0.05s infinite alternate;
+        box-shadow: 
+            0 0 30px rgba(255, 253, 143, 1),
+            inset 0 0 20px rgba(176, 206, 136, 0.5) !important;
+        border-color: var(--gold) !important;
+        transform: scale(1.02);
+    }
+    
+    @keyframes miningBuzz {
+        0% { 
+            transform: translateX(0) translateY(0);
+        }
+        100% { 
+            transform: translateX(1px) translateY(1px);
+        }
+    }
+    
+    @keyframes miningBuzzIntense {
+        0% { 
+            transform: translateX(0) translateY(0) scale(1.01);
+        }
+        25% { 
+            transform: translateX(-1px) translateY(1px) scale(1.01);
+        }
+        50% { 
+            transform: translateX(1px) translateY(-1px) scale(1.01);
+        }
+        75% { 
+            transform: translateX(-1px) translateY(-1px) scale(1.01);
+        }
+        100% { 
+            transform: translateX(1px) translateY(1px) scale(1.01);
+        }
+    }
+    
+    @keyframes miningBuzzJackpot {
+        0% { 
+            transform: translateX(0) translateY(0) scale(1.02) rotate(0deg);
+        }
+        20% { 
+            transform: translateX(-2px) translateY(1px) scale(1.02) rotate(-0.5deg);
+        }
+        40% { 
+            transform: translateX(2px) translateY(-1px) scale(1.02) rotate(0.5deg);
+        }
+        60% { 
+            transform: translateX(-1px) translateY(-2px) scale(1.02) rotate(-0.3deg);
+        }
+        80% { 
+            transform: translateX(1px) translateY(2px) scale(1.02) rotate(0.3deg);
+        }
+        100% { 
+            transform: translateX(2px) translateY(-1px) scale(1.02) rotate(0deg);
+        }
+    }
 }

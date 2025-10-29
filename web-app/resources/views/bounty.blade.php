@@ -3,23 +3,25 @@
 @section('title', 'Code & Bug Bounty Program')
 
 @section('content')
-<div class="bounty-hero" style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #F5F5DC, #FFFACD); border: 2px solid #708B75; border-radius: 12px; margin-bottom: 30px;">
-    <h1 style="font-family: 'Nova Cut', serif; font-size: 32px; color: #444B6E; margin: 0 0 15px 0;">
+<div class="hero">
+    <h1 class="hero-title">
         🏆 HAICHAN BUG BOUNTY
     </h1>
-    <p style="color: #6B7A6B; font-size: 16px; max-width: 600px; margin: 0 auto;">
+    <p class="hero-subtitle">
         Help us improve Haichan's proof-of-work imageboard system. Find bugs, suggest improvements, contribute code - earn rewards!
     </p>
 </div>
 
-<div class="bounty-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px;">
+<div class="grid grid-cols-3 gap-md mb-lg" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
     
     <!-- Security Bugs -->
-    <div class="bounty-category" style="background: #FFF; border: 2px solid #DC3545; border-radius: 8px; padding: 20px;">
-        <div class="category-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-            <span style="font-size: 24px;">🔒</span>
-            <h3 style="color: #DC3545; margin: 0;">Security Vulnerabilities</h3>
-        </div>
+    <x-card>
+        <x-slot name="header">
+            <div class="flex align-center gap-sm">
+                <span class="text-xl">🔒</span>
+                <h3 class="card-title text-error m-0">Security Vulnerabilities</h3>
+            </div>
+        </x-slot>
         <ul style="list-style: none; padding: 0; margin: 0 0 15px 0;">
             <li style="padding: 5px 0; color: #666;">• SQL Injection - <strong>$200-500</strong></li>
             <li style="padding: 5px 0; color: #666;">• XSS/CSRF - <strong>$100-300</strong></li>

@@ -419,6 +419,24 @@ class DoodleMiner {
 
             this.hashCount++;
             document.getElementById('current-hash').textContent = hash;
+            
+            // Update global mining state for toolbar
+            if (window.haichanGlobalState) {
+                window.haichanGlobalState.setState('mining.totalHashes', this.hashCount);
+                window.haichanGlobalState.setState('mining.isActive', this.isMining);
+                
+                const elapsed = (Date.now() - this.startTime) / 1000;
+                const currentHashRate = elapsed > 0 ? Math.floor(this.hashCount / elapsed) : 0;
+                window.haichanGlobalState.setState('mining.hashrate', currentHashRate);
+            }
+            
+            // Expose mining data globally for toolbar tracking
+            const elapsed = (Date.now() - this.startTime) / 1000;
+            window.currentMiner = {
+                hashCount: this.hashCount,
+                hashrate: elapsed > 0 ? Math.floor(this.hashCount / elapsed) : 0,
+                isActive: this.isMining
+            };
 
             // Update progress bar based on hash attempts
             const progress = (this.hashCount % 1000) / 10;
@@ -470,6 +488,17 @@ class DoodleMiner {
             clearInterval(this.statsInterval);
         }
 
+        // Update global mining state - mining completed
+        if (window.haichanGlobalState) {
+            window.haichanGlobalState.setState('mining.isActive', false);
+            // Keep final hashrate and total for display
+        }
+        
+        // Update global mining data - completed
+        if (window.currentMiner) {
+            window.currentMiner.isActive = false;
+        }
+
         this.log(`🎯 PROOF FOUND! Hash: ${hash}`);
         this.log(`✅ Doodle creation unlocked! Click "Create Doodle" to proceed.`);
 
@@ -506,6 +535,18 @@ class DoodleMiner {
 
         if (this.statsInterval) {
             clearInterval(this.statsInterval);
+        }
+
+        // Update global mining state
+        if (window.haichanGlobalState) {
+            window.haichanGlobalState.setState('mining.isActive', false);
+            window.haichanGlobalState.setState('mining.hashrate', 0);
+        }
+        
+        // Clear global mining data
+        if (window.currentMiner) {
+            window.currentMiner.isActive = false;
+            window.currentMiner.hashrate = 0;
         }
 
         this.log('⛔ Mining stopped by user');

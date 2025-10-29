@@ -1,13 +1,11 @@
 @php
-    $allBoards = \App\Models\Board::orderBy('code')->get();
+    $allBoards = \App\Models\Board::orderBy('created_at')->get();
 @endphp
 
 <div class="header">
-    <h1><a href="/">🏠 Haichan</a></h1>
+    <h1><a href="/">Home</a></h1>
     <nav class="main-navigation">
         <div class="nav-section">
-            <a href="/" class="nav-link home-link">🏠 Home</a>
-            
             <!-- Boards Dropdown -->
             <div class="dropdown-container">
                 <button class="nav-link dropdown-trigger" id="boards-dropdown">
@@ -33,6 +31,10 @@
             <a href="/mining" class="nav-link">⛏️ Mining</a>
             <a href="/rules" class="nav-link">📜 Rules</a>
             <a href="/faq" class="nav-link">❓ FAQ</a>
+            
+            @if(session('bitcoin_auth_user') && session('bitcoin_auth_user')->is_admin)
+                <a href="/admin" class="nav-link admin-cp-btn">⚙️ Admin CP</a>
+            @endif
         </div>
     </nav>
 </div>
@@ -74,7 +76,7 @@
 }
 
 .nav-link {
-    color: #F5F5DC;
+    color: #F5F5DC !important;
     text-decoration: none;
     padding: 8px 12px;
     border-radius: 4px;
@@ -88,6 +90,7 @@
 .nav-link:hover {
     background: rgba(245, 245, 220, 0.1);
     border-color: rgba(245, 245, 220, 0.3);
+    color: #F5F5DC !important;
     text-shadow: 0 0 5px currentColor;
 }
 
@@ -101,6 +104,35 @@
     background: rgba(245, 245, 220, 0.15);
     border-color: rgba(245, 245, 220, 0.3);
     font-weight: bold;
+}
+
+.admin-cp-btn {
+    background: rgba(255, 165, 0, 0.2) !important;
+    border-color: rgba(255, 165, 0, 0.5) !important;
+    color: #FFD700 !important;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 165, 0, 0.7);
+    animation: admin-glow 2s ease-in-out infinite alternate;
+}
+
+.admin-cp-btn:hover {
+    background: rgba(255, 165, 0, 0.3) !important;
+    border-color: rgba(255, 215, 0, 0.8) !important;
+    color: #FFF !important;
+    text-shadow: 0 0 10px rgba(255, 165, 0, 0.9);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 165, 0, 0.4);
+}
+
+@keyframes admin-glow {
+    from {
+        text-shadow: 0 0 5px rgba(255, 165, 0, 0.7);
+        border-color: rgba(255, 165, 0, 0.5);
+    }
+    to {
+        text-shadow: 0 0 8px rgba(255, 165, 0, 0.9);
+        border-color: rgba(255, 215, 0, 0.7);
+    }
 }
 
 /* Dropdown Styling */

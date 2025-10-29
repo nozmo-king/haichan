@@ -15,9 +15,15 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function showRegister()
+    public function showRegisterForm()
     {
-        return view('auth.login');
+        return view('auth.register-form');
+    }
+
+    public function showRegister(Request $request, $friendCode = null)
+    {
+        $remainingSlots = 256 - \App\Models\BitcoinAuth::count();
+        return view('auth.register', ['friendCode' => $friendCode, 'remainingSlots' => $remainingSlots]);
     }
     
     public function loginAnonymously()
@@ -74,6 +80,60 @@ class AuthController extends Controller
         ]);
 
         return redirect('/')->with('success', "Welcome back, {$user->username}!");
+    }
+
+    // Cryptographic login using public key and signature
+    public function cryptographicLogin(Request $request)
+    {
+        $request->validate([
+            'public_key' => 'required|string|size:64',
+            'signature' => 'required|string',
+            'message' => 'required|string', // The message that was signed
+        ]);
+
+        $publicKey = $request->public_key;
+        $signature = $request->signature;
+        $message = $request->message;
+
+        $user = BitcoinAuth::where('public_key', $publicKey)->first();
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'User not found with this public key.'], 404);
+        }
+
+        // In a real application, you would use a robust secp256k1 library to verify the signature.
+        // For this example, we'll use a simplified (and insecure) verification.
+        // The BitcoinAuth model has a placeholder verifySignature method.
+        if (!$user->verifySignature($message, $signature)) {
+            return response()->json(['success' => false, 'message' => 'Invalid signature.'], 401);
+        }
+
+        if ($user->is_banned) {
+            $banMessage = "Account banned: {$user->ban_reason}";
+            if ($user->banned_until) {
+                $banMessage .= " Until: {$user->banned_until->format('Y-m-d H:i')}";
+            }
+            return response()->json(['success' => false, 'message' => $banMessage], 403);
+        }
+
+        // Update last login
+        $user->last_login = now();
+        $user->mining_streak++;
+        $user->save();
+
+        // Log user in
+        session()->regenerate();
+        session([
+            'bitcoin_auth_id' => $user->id,
+            'bitcoin_auth_user' => $user->fresh(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Welcome back, {$user->username}!",
+            'user_pubkey' => $user->public_key, // Return public key for frontend storage
+            'username' => $user->username,
+        ]);
     }
 
     // Standard username/password login
@@ -137,12 +197,26 @@ class AuthController extends Controller
         return redirect('/')->with('success', "Welcome back, {$user->username}!");
     }
 
-    public function showSimpleRegister(Request $request)
+    // API endpoint to get current user's public key
+    public function getUserPublicKey()
     {
-        return view('auth.register-with-keys', [
-            'friendCode' => $request->get('code')
+        $userId = session('bitcoin_auth_id');
+        if (!$userId) {
+            return response()->json(['error' => 'Not authenticated'], 401);
+        }
+
+        $user = BitcoinAuth::find($userId);
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        return response()->json([
+            'user_pubkey' => $user->public_key,
+            'username' => $user->username,
         ]);
     }
+
+
 
     public function register(Request $request)
     {

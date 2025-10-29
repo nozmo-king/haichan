@@ -152,4 +152,15 @@ class MiningChallengeController extends Controller
             'expires_at' => $expiresAt->toIso8601String(),
         ]);
     }
+
+    public function getParams(Request $request)
+    {
+        return response()->json([
+            'success' => true,
+            'mode' => 'vanity_prefix',
+            'default_prefix' => '21e8',
+            'min_miner_version' => 1,
+            'suggested_prefix_by_load' => '21e8'
+        ]);
+    }
 }

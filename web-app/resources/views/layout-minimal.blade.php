@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Haichan - PoW Forum')</title>
+    <title>@yield('title', 'Haichan - Forum')</title>
     
     <!-- External Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,34 +18,16 @@
     
     <!-- Single Clean CSS -->
     <link rel="stylesheet" href="/css/haichan.css">
-    
-    <!-- Mining System -->
-    <script src="/js/transparent-pow.js"></script>
 
 </head>
 
 <body>
-    <!-- Mining Canvas Background -->
-    <canvas id="neural-mining-canvas" class="mining-canvas"></canvas>
-    
     <!-- Main Content -->
     <main id="main-content">
         @yield('content')
     </main>
     
-    <!-- Mining Dashboard -->
-    @include('components.mining-dashboard')
-    
     <!-- Theme Switcher -->
     @include('components.theme-switcher')
-    
-    <!-- Initialize Mining -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof initializeGlobalMining === 'function') {
-                initializeGlobalMining();
-            }
-        });
-    </script>
 </body>
 </html>

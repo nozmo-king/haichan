@@ -47,25 +47,23 @@
                 </div>
             </div>
 
-            <!-- Mineable Boards Directory -->
-            <div style="background: #F5F5DC; border: 2px solid #708B75; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 style="color: #708B75; font-size: 14px; margin: 0; font-weight: 500; letter-spacing: 0.5px;">🎲 Mineable Boards</h3>
-                    <div style="font-size: 10px; color: #6B7A6B;">Order shifts based on PoW activity • <span id="board-refresh-timer">0</span>s</div>
-                </div>
-
-                <div id="shifting-boards" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px;">
+            <!-- Boards -->
+            <div style="background: #F5F5DC; border: 2px solid #708B75; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="color: #708B75; font-size: 16px; margin: 0 0 15px 0; font-weight: 600;">📋 Boards</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
                     @php
-                        $shiftingBoards = \App\Models\Board::getShiftingOrder();
+                        $boards = \App\Models\Board::all();
                     @endphp
-                    @foreach($shiftingBoards as $board)
+                    @foreach($boards as $board)
                     <a href="/{{ $board->code }}" 
-                       class="mining-board" 
-                       data-board-id="{{ $board->id }}"
-                       data-pow-level="{{ $board->total_pow ?? 0 }}"
-                       style="text-decoration: none; display: block; background: #FFFFEE; border: 1px solid #708B75; border-radius: 4px; padding: 12px; text-align: center; transition: all 0.3s ease; position: relative;">
-                        <div style="position: absolute; top: 3px; right: 4px; font-size: 8px; color: #9AB87A;">{{ number_format($board->total_pow ?? 0) }}</div>
-                        <div style="font-size: 20px; margin-bottom: 5px;">
+                       class="board-box"
+                       style="text-decoration: none; display: flex; align-items: center; gap: 12px; padding: 12px 16px; 
+                              background: linear-gradient(145deg, #9AB87A, #708B75); 
+                              border: none; border-radius: 6px; 
+                              box-shadow: 4px 4px 8px rgba(0,0,0,0.2), -2px -2px 6px rgba(255,255,255,0.1);
+                              transition: all 0.2s ease;">
+                        <span style="font-size: 24px; filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.3));">
                             @switch($board->code)
                                 @case('gen') 💬 @break
                                 @case('tech') 💻 @break
@@ -77,20 +75,21 @@
                                 @case('mu') 🎵 @break
                                 @default 📌
                             @endswitch
+                        </span>
+                        <div style="flex: 1;">
+                            <div style="color: #FFFFEE; font-size: 14px; font-weight: 700; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">/{{ $board->code }}/</div>
+                            <div style="color: #F5F5DC; font-size: 11px; text-shadow: 1px 1px 1px rgba(0,0,0,0.2);">{{ $board->name ?? ucfirst($board->code) }}</div>
                         </div>
-                        <h3 style="color: #3D315B; margin: 0 0 3px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">/{{ $board->code }}/</h3>
-                        <div style="font-size: 8px; color: #6B7A6B; display: flex; justify-content: space-between; align-items: center;">
-                            <span>{{ $board->threads()->count() }}t</span>
-                            <div class="pow-indicator" style="width: 16px; height: 3px; background: linear-gradient(to right, #708B75, #9AB87A); border-radius: 2px;"></div>
-                            <span>{{ $board->threads()->sum('reply_count') }}p</span>
+                        <div style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px;">
+                            <span style="color: #FFFFEE; font-size: 12px; font-weight: 600; text-shadow: 1px 1px 1px rgba(0,0,0,0.3);">{{ $board->threads()->count() }}</span>
                         </div>
                     </a>
                     @endforeach
                 </div>
 
-                <div style="text-align: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #708B75;">
-                    <a href="/catalog" style="color: #708B75; text-decoration: none; font-size: 11px; font-weight: 500;">[The MC - All Threads]</a> • 
-                    <a href="/boards" style="color: #708B75; text-decoration: none; font-size: 11px; font-weight: 500;">[Full Directory]</a>
+                <div style="text-align: center; margin-top: 15px; padding-top: 15px; border-top: 2px solid #708B75;">
+                    <a href="/catalog" style="color: #708B75; text-decoration: none; font-size: 13px; font-weight: 600;">[Catalog]</a> • 
+                    <a href="/boards" style="color: #708B75; text-decoration: none; font-size: 13px; font-weight: 600;">[Full Directory]</a>
                 </div>
             </div>
 
@@ -164,127 +163,7 @@
     </div>
 
     <script>
-    // Mineable Board System - Dynamic reordering based on activity
-    let boardRefreshTimer = 0;
-    let miningActivity = {};
-    
-    // Initialize board mining system
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('🎲 Mineable Board System: Active');
-        initializeBoardMining();
-        startActivityTimer();
-        
-        // Mouseover mining for boards
-        document.querySelectorAll('.mining-board').forEach(board => {
-            board.addEventListener('mouseover', () => mineBoard(board));
-        });
-    });
-    
-    function initializeBoardMining() {
-        // Add subtle glow effect to boards with high PoW
-        document.querySelectorAll('.mining-board').forEach(board => {
-            const powLevel = parseInt(board.dataset.powLevel) || 0;
-            if (powLevel > 1000) {
-                board.style.boxShadow = '0 0 8px rgba(154, 184, 122, 0.4)';
-            }
-        });
-    }
-    
-    function mineBoard(boardElement) {
-        const boardId = boardElement.dataset.boardId;
-        
-        // Visual mining effect
-        boardElement.style.transform = 'scale(1.05)';
-        boardElement.style.borderColor = '#9AB87A';
-        
-        setTimeout(() => {
-            boardElement.style.transform = 'scale(1)';
-            boardElement.style.borderColor = '#708B75';
-        }, 200);
-        
-        // Track mining activity
-        if (!miningActivity[boardId]) miningActivity[boardId] = 0;
-        miningActivity[boardId]++;
-        
-        // Update PoW indicator
-        const indicator = boardElement.querySelector('.pow-indicator');
-        if (indicator) {
-            indicator.style.background = 'linear-gradient(to right, #9AB87A, #708B75)';
-            setTimeout(() => {
-                indicator.style.background = 'linear-gradient(to right, #708B75, #9AB87A)';
-            }, 300);
-        }
-    }
-    
-    function startActivityTimer() {
-        setInterval(() => {
-            boardRefreshTimer++;
-            const timerElement = document.getElementById('board-refresh-timer');
-            if (timerElement) {
-                timerElement.textContent = boardRefreshTimer;
-            }
-            
-            // Refresh board order every 30 seconds
-            if (boardRefreshTimer % 30 === 0) {
-                reshuffleBoards();
-            }
-            
-            // Update live activity every 15 seconds
-            if (boardRefreshTimer % 15 === 0) {
-                updateLiveActivity();
-            }
-        }, 1000);
-    }
-    
-    function reshuffleBoards() {
-        console.log('🎲 Reshuffling mineable boards...');
-        const boardsContainer = document.getElementById('shifting-boards');
-        if (!boardsContainer) return;
-        
-        const boards = Array.from(boardsContainer.children);
-        
-        // Sort by mining activity + PoW level + randomization
-        boards.sort((a, b) => {
-            const aActivity = miningActivity[a.dataset.boardId] || 0;
-            const bActivity = miningActivity[b.dataset.boardId] || 0;
-            const aPow = parseInt(a.dataset.powLevel) || 0;
-            const bPow = parseInt(b.dataset.powLevel) || 0;
-            const randomFactor = (Math.random() - 0.5) * 50;
-            
-            const aScore = (aActivity * 10) + (aPow / 100) + randomFactor;
-            const bScore = (bActivity * 10) + (bPow / 100) + randomFactor;
-            
-            return bScore - aScore;
-        });
-        
-        // Animate the reorder
-        boards.forEach((board, index) => {
-            setTimeout(() => {
-                board.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    boardsContainer.appendChild(board);
-                    board.style.transform = 'scale(1)';
-                }, 150);
-            }, index * 50);
-        });
-        
-        // Reset timer
-        boardRefreshTimer = 0;
-    }
-    
-    function updateLiveActivity() {
-        // In a real implementation, this would fetch new activity via AJAX
-        const activityElement = document.getElementById('live-activity');
-        if (activityElement) {
-            // Add a subtle pulse to indicate update
-            activityElement.style.opacity = '0.7';
-            setTimeout(() => {
-                activityElement.style.opacity = '1';
-            }, 300);
-        }
-    }
-    
-    // Language toggle functionality (existing)
+    // Language toggle functionality
     function toggleLanguage() {
         const elements = document.querySelectorAll('.fade-text[data-jp]');
         elements.forEach(el => {
@@ -336,43 +215,15 @@
         transition: opacity 0.5s ease-in-out;
     }
 
-    /* Mineable board effects */
-    .mining-board {
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        cursor: pointer;
-        position: relative;
-        overflow: visible;
+    /* 3D Board boxes */
+    .board-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 6px 6px 12px rgba(0,0,0,0.3), -3px -3px 8px rgba(255,255,255,0.15);
     }
 
-    .mining-board:hover {
-        transform: translateY(-3px) scale(1.02);
-        box-shadow: 0 6px 16px rgba(68, 75, 110, 0.2);
-        border-color: #9AB87A;
-        z-index: 10;
-    }
-
-    .mining-board:active {
-        transform: translateY(-1px) scale(1.01);
-    }
-
-    .mining-board[data-pow-level]:hover .pow-indicator {
-        animation: pow-indicator-glow 0.6s ease-in-out;
-    }
-
-    /* High PoW boards get special treatment */
-    .mining-board[data-pow-level] {
-        --pow-level: attr(data-pow-level number, 0);
-    }
-
-    /* Live activity pulse */
-    #live-activity {
-        transition: opacity 0.3s ease;
-    }
-
-    /* Network stats animations */
-    #shifting-boards > .mining-board {
-        animation-duration: 0.3s;
-        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    .board-box:active {
+        transform: translateY(1px);
+        box-shadow: 2px 2px 4px rgba(0,0,0,0.2), -1px -1px 3px rgba(255,255,255,0.1);
     }
 
     /* Quick action hover effects */
@@ -383,27 +234,11 @@
     a[href="/anon"]:hover { background: #5D4E75 !important; transform: scale(1.05); }
     a[href="/faq"]:hover { background: #6B7A6B !important; transform: scale(1.05); }
 
-    /* Responsive improvements for compact layout */
+    /* Responsive improvements */
     @media (max-width: 768px) {
-        #shifting-boards {
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 8px;
+        .board-box {
+            padding: 10px 12px;
         }
-        
-        .mining-board {
-            padding: 8px;
-        }
-        
-        .mining-board h3 {
-            font-size: 10px;
-        }
-    }
-
-    /* Board refresh timer styling */
-    #board-refresh-timer {
-        font-weight: bold;
-        color: #9AB87A;
-        text-shadow: 0 0 2px rgba(154, 184, 122, 0.3);
     }
     </style>
     

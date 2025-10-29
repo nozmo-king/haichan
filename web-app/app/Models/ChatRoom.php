@@ -84,7 +84,7 @@ class ChatRoom extends Model
         }
 
         // Check if user has minimum PoW points
-        $userTotalPow = $user->accumulated_points ?? 0;
+        $userTotalPow = $user->total_pow_points ?? 0;
         if ($userTotalPow < $this->min_pow_points) {
             return false;
         }

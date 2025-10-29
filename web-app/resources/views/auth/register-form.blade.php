@@ -37,8 +37,8 @@
                 required
                 style="width: 100%; padding: 12px; border: 1px solid #ccc; font-family: 'Courier New', monospace; font-size: 14px; background-color: #fff; box-sizing: border-box;"
             >
-            <p style="margin-top: 8px; font-size: 12px; color: #666;">
-                Friend codes are 32-character alphanumeric strings
+            <p style="margin-top: 8px; font-size: 12px; color: #666; filter: blur(4px); transition: filter 0.3s ease;" onmouseover="this.style.filter='blur(0px)'" onmouseout="this.style.filter='blur(4px)'">
+                Ask an existing member for their friend code (or use GENESIS2025 for testing)
             </p>
         </div>
 
@@ -120,11 +120,6 @@ async function validateAndRedirect() {
     
     if (!friendCode) {
         showError('Please enter a friend code');
-        return;
-    }
-
-    if (friendCode.length !== 32) {
-        showError('Friend codes must be exactly 32 characters long');
         return;
     }
 

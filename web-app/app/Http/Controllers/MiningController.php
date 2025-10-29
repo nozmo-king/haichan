@@ -6,16 +6,20 @@ use App\Models\BitcoinAuth;
 use App\Models\Challenge;
 use App\Models\ProofOfWork;
 use App\Services\ChallengeVerifier;
+use App\Services\PointCalculationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class MiningController extends Controller
 {
     protected $verifier;
+    protected $pointCalculationService;
 
-    public function __construct(ChallengeVerifier $verifier)
+    public function __construct(ChallengeVerifier $verifier, PointCalculationService $pointCalculationService)
     {
         $this->verifier = $verifier;
+        $this->pointCalculationService = $pointCalculationService;
     }
 
     public function index()
@@ -28,6 +32,43 @@ class MiningController extends Controller
      */
     public function submitMiningProof(Request $request)
     {
+        // Rate limiting check
+        $userId = session('bitcoin_auth_id');
+        $ipAddress = $request->ip();
+        
+        if ($userId) {
+            $recentCount = ProofOfWork::where('user_id', $userId)
+                ->where('created_at', '>', now()->subMinute())
+                ->count();
+                
+            if ($recentCount > 20) {
+                Log::warning('RATE LIMIT EXCEEDED', [
+                    'user_id' => $userId,
+                    'count' => $recentCount
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Rate limit exceeded. Please slow down.'
+                ], 429);
+            }
+        } else {
+            // IP-based rate limiting for anonymous users
+            $ipCount = ProofOfWork::where('ip_address', $ipAddress)
+                ->where('created_at', '>', now()->subMinute())
+                ->count();
+                
+            if ($ipCount > 30) {
+                Log::warning('IP RATE LIMIT EXCEEDED', [
+                    'ip' => $ipAddress,
+                    'count' => $ipCount
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Rate limit exceeded. Please slow down.'
+                ], 429);
+            }
+        }
+
         $request->validate([
             'challenge_token' => 'required|string',
             'client_nonce' => 'required|integer',
@@ -53,10 +94,16 @@ class MiningController extends Controller
             
             // Block dummy values
             $hash = $request->hash;
-            if ($hash === '21e8000000000000000000000000000000000000000000000000000000000000') {
+            $zeroCount = substr_count($hash, '0');
+            if ($zeroCount > 50) {
+                Log::warning('SUSPICIOUS HASH PATTERN REJECTED', [
+                    'hash' => $hash,
+                    'zero_count' => $zeroCount,
+                    'ip' => $request->ip()
+                ]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'Dummy values not accepted',
+                    'message' => 'Invalid hash pattern',
                 ], 400);
             }
 
@@ -69,44 +116,42 @@ class MiningController extends Controller
             }
 
             // Calculate points
-            $points = $this->calculatePoints($challenge->difficulty, $hash);
+            $points = $this->pointCalculationService->calculatePoints($challenge->difficulty, $hash);
 
             // Get authenticated user
-            $userId = session('bitcoin_auth_id');
-            $user = null;
-            if ($userId) {
-                $user = BitcoinAuth::find($userId);
-            }
+            $user = $userId ? BitcoinAuth::find($userId) : null;
 
-            // Create proof record
-            $proofOfWork = ProofOfWork::create([
-                'challenge_id' => $challenge->id,
-                'user_id' => $user ? $user->id : null,
-                'hash' => $hash,
-                'nonce' => $request->client_nonce,
-                'data' => json_encode($challenge->canonical_payload),
-                'pattern' => $challenge->difficulty,
-                'points' => $points,
-                'verified_at' => now(),
-                'ip_address' => $request->ip(),
-            ]);
-
-            // Award points to user if logged in
-            if ($user) {
-                $user->awardMiningPoints($points);
-                
-                Log::info('Mining points awarded', [
-                    'user_id' => $user->id,
-                    'username' => $user->username,
-                    'points_awarded' => $points,
-                    'total_points' => $user->fresh()->total_pow_points,
+            DB::transaction(function () use ($challenge, $user, $hash, $request, $points) {
+                // Create proof record
+                ProofOfWork::create([
+                    'challenge_id' => $challenge->id,
+                    'user_id' => $user ? $user->id : null,
                     'hash' => $hash,
-                    'pattern' => $challenge->difficulty
+                    'nonce' => $request->client_nonce,
+                    'data' => json_encode($challenge->canonical_payload),
+                    'pattern' => $challenge->difficulty,
+                    'points' => $points,
+                    'verified_at' => now(),
+                    'ip_address' => $request->ip(),
                 ]);
-            }
 
-            // Mark challenge as used
-            $challenge->markAsUsed();
+                // Award points to user if logged in
+                if ($user) {
+                    $user->awardMiningPoints($points);
+                    
+                    Log::info('Mining points awarded', [
+                        'user_id' => $user->id,
+                        'username' => $user->username,
+                        'points_awarded' => $points,
+                        'total_points' => $user->fresh()->total_pow_points,
+                        'hash' => $hash,
+                        'pattern' => $challenge->difficulty
+                    ]);
+                }
+
+                // Mark challenge as used
+                $challenge->markAsUsed();
+            });
 
             return response()->json([
                 'success' => true,
@@ -139,11 +184,25 @@ class MiningController extends Controller
     {
         $userId = session('bitcoin_auth_id');
         
+        // Allow guest access with limited stats
         if (!$userId) {
             return response()->json([
-                'success' => false,
-                'message' => 'Not authenticated',
-            ], 401);
+                'success' => true,
+                'guest' => true,
+                'user' => [
+                    'username' => 'Guest',
+                    'total_points' => 0,
+                    'level' => 1,
+                    'mining_power' => 1,
+                ],
+                'session' => [
+                    'proofs' => 0,
+                    'points' => 0,
+                    'hash_rate' => 0,
+                ],
+                'recent_proofs' => [],
+                'target' => 'jcb:guest:mining',
+            ]);
         }
 
         $user = BitcoinAuth::find($userId);
@@ -184,63 +243,5 @@ class MiningController extends Controller
             ],
             'recent_proofs' => $recentProofs,
         ]);
-    }
-
-    /**
-     * Calculate PoW points based on hash pattern difficulty
-     */
-    private function calculatePoints($expectedPattern, $hash)
-    {
-        $hash = strtolower($hash);
-        $expectedPattern = strtolower($expectedPattern);
-
-        // Base points for different patterns - UPDATED
-        $pointMap = [
-            '2' => 1,
-            '21' => 2.5,
-            '21e' => 5,
-            '21e8' => 10,
-            '21e80' => 50,
-            '21e800' => 250,
-            '000' => 500,
-            '111' => 400,
-            '666' => 666,
-            '777' => 777,
-            'deadbeef' => 3133,
-            '1337' => 1337,
-            'c0de' => 1000,
-            'beef' => 300,
-        ];
-
-        // Check for exact pattern match first
-        if (isset($pointMap[$expectedPattern])) {
-            $basePoints = $pointMap[$expectedPattern];
-        } else {
-            $basePoints = 0.1; // Default minimum
-        }
-
-        // Bonus for exceeding expected difficulty
-        if (str_starts_with($hash, '21e800') && $expectedPattern !== '21e800') {
-            $basePoints *= 25;
-        } elseif (str_starts_with($hash, '21e80') && !in_array($expectedPattern, ['21e80', '21e800'])) {
-            $basePoints *= 5;
-        } elseif (str_starts_with($hash, '21e8') && !in_array($expectedPattern, ['21e8', '21e80', '21e800'])) {
-            $basePoints *= 2;
-        }
-
-        // Special rare patterns bonus
-        if (str_starts_with($hash, '000')) {
-            $basePoints *= 10;
-        } elseif (str_starts_with($hash, '666')) {
-            $basePoints *= 15;
-        } elseif (str_contains($hash, 'dead')) {
-            $basePoints *= 8;
-        } elseif (str_contains($hash, '1337')) {
-            $basePoints *= 5;
-        } elseif (str_contains($hash, 'beef')) {
-            $basePoints *= 3;
-        }
-
-        return max(0.1, $basePoints);
     }
 }

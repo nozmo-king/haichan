@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-D3r_zK2v.css",
+    "file": "assets/app-WJDKPdYu.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -15,15 +15,9 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-By1HBQL3.js",
+    "file": "assets/app-BWAmYk0s.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
-  },
-  "resources/js/simple-mining.js": {
-    "file": "assets/simple-mining-Gfmnj68H.js",
-    "name": "simple-mining",
-    "src": "resources/js/simple-mining.js",
     "isEntry": true
   }
 }

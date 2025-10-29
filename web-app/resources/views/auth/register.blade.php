@@ -50,69 +50,89 @@
         @endif
 
         <!-- Registration Form -->
-        <form method="POST" action="/auth/register-advanced" id="advanced-register-form" style="margin-bottom: 30px;">
+        <form method="POST" action="/register" id="register-form" style="margin-bottom: 30px;">
             @csrf
 
             <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
                     🎟️ Friend Code
                 </label>
-                <input type="text" name="invite_code" id="invite_code" required
-                       placeholder="Enter your friend code..."
-                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
+                <input type="text" name="friend_code" id="friend_code" required
+                       value="{{ $friendCode ?? '' }}" readonly
+                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--secondary-bg); color: var(--text-primary); font-size: 14px; font-family: 'Courier New', monospace; box-sizing: border-box;">
             </div>
 
-            <div style="margin-bottom: 25px;">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
+                    👤 Username
+                </label>
+                <input type="text" name="username" id="username" required minlength="3" maxlength="20"
+                       placeholder="Choose your username..."
+                       pattern="[a-zA-Z0-9_]+"
+                       style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
+                    3-20 characters, alphanumeric and underscore only
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
                 <label style="display: block; color: var(--text-primary); font-weight: bold; margin-bottom: 8px;">
                     🔒 Password
                 </label>
                 <input type="password" name="password" id="password" required minlength="8"
                        placeholder="Create a secure password..."
                        style="width: 100%; padding: 15px; border: 2px solid var(--border-color); border-radius: 8px; background: var(--content-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">
+                    Minimum 8 characters
+                </div>
             </div>
 
-            <!-- Auto-generated fields (hidden but will show info) -->
-            <input type="hidden" name="private_key" id="private_key">
-            <input type="hidden" name="public_key" id="public_key">
-            <input type="hidden" name="address" id="address">
+            <!-- Bitcoin Key Fields (hidden, will be generated) -->
+            <input type="hidden" name="private_key" id="private_key" required>
+            <input type="hidden" name="public_key" id="public_key" required>
+            <input type="hidden" name="address" id="address" required>
+
+            <!-- Key Generation Section (now automatic) -->
 
             <!-- Generated Keys Display -->
             <div id="generated-keys" style="display: none; background: #E8F5E8; border: 2px solid #4CAF50; padding: 15px; margin-bottom: 20px; border-radius: 8px;">
                 <div style="color: #2E7D32; font-weight: bold; margin-bottom: 10px;">
-                    🔑 Generated Cryptographic Keys
+                    ✅ Cryptographic Keys Generated
                 </div>
                 <div style="margin-bottom: 8px;">
                     <strong>Private Key:</strong>
                     <div id="display-private-key" style="font-family: 'Courier New', monospace; font-size: 11px; word-break: break-all; background: rgba(46, 125, 50, 0.1); padding: 5px; border-radius: 4px; margin-top: 2px;"></div>
                 </div>
                 <div style="margin-bottom: 8px;">
+                    <strong>Public Key:</strong>
+                    <div id="display-public-key" style="font-family: 'Courier New', monospace; font-size: 11px; word-break: break-all; background: rgba(46, 125, 50, 0.1); padding: 5px; border-radius: 4px; margin-top: 2px;"></div>
+                </div>
+                <div style="margin-bottom: 8px;">
                     <strong>Bitcoin Address:</strong>
                     <div id="display-address" style="font-family: 'Courier New', monospace; font-size: 11px; word-break: break-all; background: rgba(46, 125, 50, 0.1); padding: 5px; border-radius: 4px; margin-top: 2px;"></div>
                 </div>
                 <div style="text-align: center; margin: 15px 0;">
-                    <button type="button" id="download-keys" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; margin-right: 10px;">
-                        💾 Download haichan.key
-                    </button>
-                    <button type="button" id="download-pgp" style="background: #2196F3; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">
-                        🔐 Download haichan.pgp
+                    <button type="button" id="download-keys" style="background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">
+                        💾 Download Backup Keys
                     </button>
                 </div>
                 <div style="color: #2E7D32; font-size: 12px; margin-top: 10px;">
-                    ⚠️ <strong>SAVE YOUR KEY FILES!</strong> These are your backup login methods.
+                    ⚠️ <strong>SAVE YOUR PRIVATE KEY!</strong> This is your only way to recover your account.
                 </div>
             </div>
 
             <div style="background: #FFF3CD; border: 2px solid #FFC107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                 <div style="color: #856404; font-size: 13px;">
                     🔒 <strong>Security Notice</strong><br>
-                    • Your password will be salted and hashed with your cryptographic keys<br>
-                    • Keep your private key safe - it's your backup login method<br>
-                    • We cannot recover lost credentials
+                    • Generate your Bitcoin keys using the button above<br>
+                    • Your private key will NEVER be stored on our servers<br>
+                    • Save your private key - it's your only recovery method<br>
+                    • We cannot recover lost keys
                 </div>
             </div>
 
-            <button type="submit" style="width: 100%; background: linear-gradient(135deg, var(--border-color), var(--accent-color)); color: var(--text-primary); border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s ease;">
-                🚀 REGISTER FOR HAICHAN
+            <button type="submit" id="submit-btn" disabled style="width: 100%; background: #999; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: not-allowed; transition: all 0.3s ease;">
+                🔒 Generate Keys First
             </button>
         </form>
 
@@ -135,202 +155,119 @@
 
 
 <script>
-// Auto-generate keys when user enters friend code and password
 document.addEventListener('DOMContentLoaded', function() {
-    const inviteCodeInput = document.getElementById('invite_code');
+    const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
     const privateKeyInput = document.getElementById('private_key');
     const publicKeyInput = document.getElementById('public_key');
     const addressInput = document.getElementById('address');
     const generatedKeysDiv = document.getElementById('generated-keys');
     const displayPrivateKey = document.getElementById('display-private-key');
+    const displayPublicKey = document.getElementById('display-public-key');
     const displayAddress = document.getElementById('display-address');
+    const submitBtn = document.getElementById('submit-btn');
+    let keysGenerated = false;
 
     async function generateKeys() {
-        const inviteCode = inviteCodeInput.value.trim();
+        if (keysGenerated) return;
+
+        const username = usernameInput.value.trim();
         const password = passwordInput.value.trim();
-        
-        if (inviteCode.length >= 8 && password.length >= 8) {
-            try {
-                // Generate deterministic private key from friend code + password
-                const seed = inviteCode + password + 'haichan_salt_2024';
-                const privateKey = await sha256(seed);
-                
-                // Generate public key from private key
-                const publicKey = await sha256(privateKey);
-                
-                // Generate Bitcoin address
-                const address = await generateAddress(publicKey);
-                
-                // Set hidden form fields
-                privateKeyInput.value = privateKey;
-                publicKeyInput.value = publicKey;
-                addressInput.value = address;
-                
-                // Show generated keys
-                displayPrivateKey.textContent = privateKey;
-                displayAddress.textContent = address;
-                generatedKeysDiv.style.display = 'block';
-                
-                // Generate downloadable key file
-                generateKeyFile(privateKey, publicKey, address, inviteCode);
-                
-            } catch (error) {
-                console.error('Key generation failed:', error);
-                generatedKeysDiv.style.display = 'none';
-            }
-        } else {
-            // Hide keys if inputs are incomplete
-            generatedKeysDiv.style.display = 'none';
-            privateKeyInput.value = '';
-            publicKeyInput.value = '';
-            addressInput.value = '';
+
+        if (username.length < 3 || password.length < 8) {
+            return;
+        }
+
+        keysGenerated = true;
+
+        try {
+            // Generate random private key using Web Crypto API
+            const randomBytes = new Uint8Array(32);
+            window.crypto.getRandomValues(randomBytes);
+            const privateKey = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            // Generate public key (simplified - just hash the private key)
+            const publicKey = await sha256(privateKey);
+            
+            // Generate Bitcoin-like address
+            const address = await generateAddress(publicKey);
+            
+            // Set hidden form fields
+            privateKeyInput.value = privateKey;
+            publicKeyInput.value = publicKey;
+            addressInput.value = address;
+            
+            // Show generated keys
+            displayPrivateKey.textContent = privateKey;
+            displayPublicKey.textContent = publicKey;
+            displayAddress.textContent = address;
+            generatedKeysDiv.style.display = 'block';
+            
+            // Enable submit button
+            submitBtn.disabled = false;
+            submitBtn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+            submitBtn.style.cursor = 'pointer';
+            submitBtn.textContent = '🚀 REGISTER FOR HAICHAN';
+            
+        } catch (error) {
+            console.error('Key generation failed:', error);
+            alert('Failed to generate keys. Please try again.');
+            keysGenerated = false;
         }
     }
 
-    // Generate keys when user types
-    inviteCodeInput.addEventListener('input', generateKeys);
+    usernameInput.addEventListener('input', generateKeys);
     passwordInput.addEventListener('input', generateKeys);
-    
-    // Setup download buttons
+
+    // Download keys functionality
     document.getElementById('download-keys').addEventListener('click', function() {
+        const friendCode = document.getElementById('friend_code').value;
+        const username = usernameInput.value;
         const privateKey = privateKeyInput.value;
         const publicKey = publicKeyInput.value;
         const address = addressInput.value;
-        const inviteCode = inviteCodeInput.value;
-        if (privateKey) {
-            downloadKeyFile(privateKey, publicKey, address, inviteCode);
-        }
-    });
-    
-    document.getElementById('download-pgp').addEventListener('click', function() {
-        const privateKey = privateKeyInput.value;
-        const publicKey = publicKeyInput.value;
-        const address = addressInput.value;
-        const inviteCode = inviteCodeInput.value;
-        if (privateKey) {
-            downloadPGPFile(privateKey, publicKey, address, inviteCode);
-        }
-    });
-});
-
-// Generate and auto-trigger download of key files
-function generateKeyFile(privateKey, publicKey, address, inviteCode) {
-    // Files will be available via download buttons - no auto-download to avoid popup blockers
-    console.log('Key files ready for download');
-}
-
-// Download simple key file
-function downloadKeyFile(privateKey, publicKey, address, inviteCode) {
-    const timestamp = new Date().toISOString().split('T')[0];
-    const keyFileContent = `# HAICHAN CRYPTOGRAPHIC KEYS
+        
+        const backupContent = `# HAICHAN BACKUP KEYS
 # Generated: ${new Date().toISOString()}
-# Friend Code: ${inviteCode}
-# 
-# KEEP THIS FILE SECURE - IT'S YOUR BACKUP LOGIN METHOD
-#
+# Username: ${username}
+# Friend Code Used: ${friendCode}
 
-[HAICHAN_KEYS]
 PRIVATE_KEY=${privateKey}
 PUBLIC_KEY=${publicKey}
-BITCOIN_ADDRESS=${address}
-FRIEND_CODE=${inviteCode}
-GENERATED_DATE=${timestamp}
+ADDRESS=${address}
+USERNAME=${username}
 
-[BACKUP_LOGIN_INFO]
-# To login with this file, use the private key in the backup login form
-# Or use the Bitcoin address + your password in the regular login form
-# 
-# Website: https://haichan.org
-# Backup Login: Use PRIVATE_KEY field above
-# Regular Login: Use BITCOIN_ADDRESS + your password
-`;
+# IMPORTANT: Save this file securely!
+# Use your private key for backup login
+# Never share your private key with anyone`;
 
-    const blob = new Blob([keyFileContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'haichan.key';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
+        const blob = new Blob([backupContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `haichan_${username}_backup.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
 
-// Download PGP-style key file
-function downloadPGPFile(privateKey, publicKey, address, inviteCode) {
-    const timestamp = new Date().toISOString();
-    const pgpContent = `-----BEGIN HAICHAN PRIVATE KEY-----
-Version: Haichan Cryptographic System v1.0
-Comment: Generated for friend code ${inviteCode}
-Comment: Date ${timestamp}
-
-${btoa(privateKey).match(/.{1,64}/g).join('\n')}
------END HAICHAN PRIVATE KEY-----
-
------BEGIN HAICHAN PUBLIC KEY-----
-Version: Haichan Cryptographic System v1.0
-Comment: Bitcoin Address ${address}
-
-${btoa(publicKey).match(/.{1,64}/g).join('\n')}
------END HAICHAN PUBLIC KEY-----
-
------BEGIN HAICHAN IDENTITY-----
-FRIEND_CODE: ${inviteCode}
-BITCOIN_ADDRESS: ${address}
-GENERATED: ${timestamp}
-BACKUP_LOGIN: Use private key above in backup login form
-REGULAR_LOGIN: Use Bitcoin address + password in regular login
------END HAICHAN IDENTITY-----
-`;
-
-    const blob = new Blob([pgpContent], { type: 'application/pgp-keys' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'haichan.pgp';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-// SHA-256 implementation that matches PHP hash('sha256', $privateKey)
-async function sha256(message) {
-    const msgBuffer = new TextEncoder().encode(message);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// Generate Bitcoin address using proper Bitcoin algorithm (matching backend)
-async function generateAddress(publicKey) {
-    try {
-        // Always use backend API for consistent address generation
-        const response = await fetch('/auth/generate-address', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                public_key: publicKey
-            })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            return data.address;
-        } else {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to generate address');
-        }
-    } catch (error) {
-        console.error('Address generation error:', error);
-        throw error; // Re-throw to handle in calling code
+    // Helper functions
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
-}
+
+    async function generateAddress(publicKey) {
+        // Simple Bitcoin-like address generation
+        const hash = await sha256(publicKey);
+        return '1' + hash.substring(0, 33);
+    }
+});
 </script>
 
 </body>
 </html>
+

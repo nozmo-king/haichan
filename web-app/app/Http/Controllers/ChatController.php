@@ -87,11 +87,12 @@ class ChatController extends Controller
             return response()->json(['success' => false, 'error' => 'Authentication required'], 401);
         }
         
-        // Validate input (POW disabled)
+        // Validate input with required POW fields
         $validated = $request->validate([
             'message' => 'required|string|max:500|min:1',
-            // 'nonce' => 'required|string',
-            // 'hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
+            'pow_nonce' => 'required|string',
+            'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
+            'pow_challenge_id' => 'required|string',
         ]);
 
         $message = trim($validated['message']);
@@ -102,14 +103,27 @@ class ChatController extends Controller
         }
 
         try {
-            // POW disabled - simplified chat
+            // Validate proof-of-work - chat requires real mining
+            $powValidation = ChatMessage::validateProofOfWork([
+                'message' => $validated['message'],
+                'pow_nonce' => $validated['pow_nonce'] ?? null,
+                'pow_hash' => $validated['pow_hash'] ?? null,
+                'pow_challenge_id' => $validated['pow_challenge_id'] ?? null,
+            ]);
+
+            if (!$powValidation['valid']) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $powValidation['message']
+                ], 400);
+            }
             
             // Get user's display name from room or generate default
             $roomUser = $room->users()->where('user_id', $user->id)->first();
             $displayName = $roomUser?->pivot?->display_name ?? 
                           ($user->username . ' !' . substr(hash('sha256', $user->address), 0, 6));
 
-            // Create the message
+            // Create the message with validated POW
             $message = ChatMessage::create([
                 'chat_room_id' => $room->id,
                 'user_id' => $user->id,
@@ -117,12 +131,11 @@ class ChatController extends Controller
                 'message' => $validated['message'],
                 'message_hash' => hash('sha256', $validated['message']),
                 'ip_hash' => hash('sha256', $request->ip()),
-                // Provide dummy POW values since they're required
-                'pow_hash' => str_repeat('0', 64),
-                'pow_nonce' => 0,
-                'pow_pattern' => 'basic',
-                'pow_points' => 1,
-                'pow_challenge_id' => 'disabled',
+                'pow_hash' => $validated['pow_hash'],
+                'pow_nonce' => $validated['pow_nonce'],
+                'pow_pattern' => $powValidation['pattern'],
+                'pow_points' => $powValidation['points'],
+                'pow_challenge_id' => $validated['pow_challenge_id'],
             ]);
             
             // Update user's last seen time
@@ -186,7 +199,8 @@ class ChatController extends Controller
                     'username' => $message->username ?? $message->user->username ?? $message->user->address ?? 'Anonymous',
                     'created_at' => $message->created_at->format('H:i:s'),
                     'hash_preview' => substr($message->pow_hash ?? '', 0, 8),
-                    'points' => $message->pow_points ?? 1,
+                    'points' => $this->calculatePointsFromHash($message->pow_hash ?? ''),
+                    'pow_hash' => $message->pow_hash ?? '',
                     'pattern' => $message->pow_pattern ?? 'basic',
                 ];
             })
@@ -302,7 +316,16 @@ class ChatController extends Controller
         if (str_starts_with($hash, '21e')) return 5;
         if (str_starts_with($hash, '21')) return 2.5;
         if (str_starts_with($hash, '2')) return 1;
-        return 1;
+        return max(1, floor(64 - strlen(ltrim($hash, '0')) / 4)); // Real calculation based on leading zeros
+    }
+
+    /**
+     * Calculate points from hash for display
+     */
+    private function calculatePointsFromHash(string $hash): int
+    {
+        if (empty($hash)) return 0;
+        return $this->calculatePoints($hash);
     }
 
     /**
@@ -546,7 +569,7 @@ class ChatController extends Controller
             if ($roomSlug === 'sadmin') {
                 $adminRoom = ChatRoom::where('slug', 'sadmin')->first();
                 
-                if ($adminRoom && $user->accumulated_points >= 1000) {
+                if ($adminRoom && $user->total_pow_points >= 1000) {
                     $this->joinUserToRoom($adminRoom, $user);
                     return response()->json([
                         'success' => true,
@@ -584,7 +607,7 @@ class ChatController extends Controller
         
         // /hp command (show total site hashpower)
         if (preg_match('/^\/hp$/', $command)) {
-            $totalSitePoints = \App\Models\BitcoinAuth::sum('accumulated_points') ?? 0;
+            $totalSitePoints = \App\Models\BitcoinAuth::sum('total_pow_points') ?? 0;
             $totalUsers = \App\Models\BitcoinAuth::count();
             $avgPoints = $totalUsers > 0 ? round($totalSitePoints / $totalUsers) : 0;
             
@@ -609,9 +632,9 @@ class ChatController extends Controller
                 ]);
             }
             
-            $targetPoints = $targetUser->accumulated_points ?? 0;
+            $targetPoints = $targetUser->total_pow_points ?? 0;
             $targetRank = $this->calculateRank($targetPoints);
-            $userPoints = $user->accumulated_points ?? 0;
+            $userPoints = $user->total_pow_points ?? 0;
             $userRank = $this->calculateRank($userPoints);
             
             return response()->json([

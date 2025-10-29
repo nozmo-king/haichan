@@ -11,6 +11,9 @@
 </head>
 <body>
 
+<!-- Navigation Toolbar -->
+@include('components.navigation')
+
 <div style="min-height: 100vh; background: var(--primary-bg); color: var(--text-primary); padding: 20px;">
 
     <!-- Header -->

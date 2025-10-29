@@ -19,11 +19,12 @@ class SimpleProofOfWork {
     async acquireProofFor(payload) {
         console.log('🔨 Simple PoW: Getting challenge for', payload);
         
-        // Validate payload
-        if (!payload.target_type || !payload.action || !payload.difficulty) {
-            throw new Error('Invalid payload: missing required fields (target_type, action, difficulty)');
-        }
-        
+                    // Validate payload
+                    // For 'pow_params' target_type, action and difficulty are not required in the initial payload
+                    if (!payload.target_type || 
+                        (payload.target_type !== 'pow_params' && (!payload.action || !payload.difficulty))) {
+                        throw new Error('Invalid payload: missing required fields (target_type, action, difficulty)');
+                    }        
         // 1. Get challenge from server
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
                          document.querySelector('input[name="_token"]')?.value || '';
@@ -32,27 +33,74 @@ class SimpleProofOfWork {
             console.warn('No CSRF token found, request may fail');
         }
         
-        const challengeResponse = await fetch('/api/mining/challenges', {
-            method: 'POST',
+        // Use the actual working endpoint
+        let endpoint = '/api/mining/challenges';
+        let method = 'POST';
+        let body = {
+            board_code: payload.board_code || null,
+            target_type: payload.target_type,
+            target_id: payload.target_id ? String(payload.target_id) : null,
+            action: payload.action || 'create',
+            difficulty: payload.difficulty
+        };
+
+        console.log('🔨 Simple PoW: Requesting challenge from', endpoint, 'with payload', payload);
+        
+        if (!csrfToken && method === 'POST') {
+            console.warn('No CSRF token found, POST request may fail');
+        }
+        
+        const fetchOptions = {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken,
                 'Accept': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
+            }
+        };
+
+        if (method === 'POST') {
+            fetchOptions.body = JSON.stringify(body);
+        }
+
+        const challengeResponse = await fetch(endpoint, fetchOptions);
 
         if (!challengeResponse.ok) {
-            const errorText = await challengeResponse.text();
+            let errorText;
+            try {
+                errorText = await challengeResponse.text();
+            } catch (e) {
+                errorText = 'Network error';
+            }
+            
             console.error('🔨 Simple PoW: Challenge request failed:', challengeResponse.status, errorText);
-            throw new Error('Failed to get challenge: ' + challengeResponse.statusText);
+            
+            // Provide more specific error messages
+            let userFriendlyError = 'Failed to get challenge';
+            if (challengeResponse.status === 401) {
+                userFriendlyError = 'Authentication required - please log in';
+            } else if (challengeResponse.status === 403) {
+                userFriendlyError = 'Access forbidden - check permissions';
+            } else if (challengeResponse.status === 422) {
+                userFriendlyError = 'Invalid request data';
+            } else if (challengeResponse.status >= 500) {
+                userFriendlyError = 'Server error - please try again';
+            }
+            
+            throw new Error(userFriendlyError + ': ' + challengeResponse.statusText);
         }
 
         const challenge = await challengeResponse.json();
         
+        // If requesting PoW parameters, return the challenge directly without 'success' validation
+        if (payload.target_type === 'pow_params') {
+            console.log('🔨 Simple PoW: PoW parameters received', challenge);
+            return challenge;
+        }
+
         if (!challenge.success) {
             console.error('🔨 Simple PoW: Challenge response failed:', challenge);
-            throw new Error('Challenge failed: ' + (challenge.message || 'Unknown error'));
+            throw new Error('Failed to get challenge: ' + (challenge.message || 'Unknown error'));
         }
 
         console.log('🔨 Simple PoW: Challenge received', challenge);
@@ -64,11 +112,12 @@ class SimpleProofOfWork {
         
         console.log('🔨 Simple PoW: Proof found', proof);
 
-        // 3. Return proof with challenge token
+        // 3. Return proof with challenge token (called 'token' in response, not 'challenge_id')
         return {
             nonce: proof.nonce,
             hash: proof.hash,
-            challenge_id: challenge.token
+            challenge_id: challenge.token,  // Backend returns 'token' field
+            op_id: challenge.op_id || null   // May not be present
         };
     }
 
@@ -76,7 +125,7 @@ class SimpleProofOfWork {
         console.log('🔨 Simple PoW: Mining with difficulty', difficulty);
         
         let nonce = 0;
-        const maxAttempts = 1000000; // Prevent infinite loops
+        const maxAttempts = 100000000; // Increased for higher difficulty proofs like 21e8
         
         while (nonce < maxAttempts) {
             const testData = data + ':' + nonce;
@@ -107,10 +156,10 @@ class SimpleMouseoverMiner {
         this.pow = pow;
         this.currentTarget = null;
         this.enabled = true;
-        this.currentDifficulty = '21e8';
+        this.currentDifficulty = '21';
         this.stats = { proofs: 0, points: 0, hashes: 0 };
-        this.setupMouseoverEvents();
-        console.log('🖱️ Mouseover mining: Initialized');
+        this.setupInteractionEvents(); // Updated to handle both mouse and touch
+        console.log('🖱️ Interaction mining: Initialized');
         console.log('🔍 Looking for elements with data-mine-type attribute...');
         
         // Debug: Log mineable elements on page
@@ -131,7 +180,8 @@ class SimpleMouseoverMiner {
     }
 
 
-    setupMouseoverEvents() {
+    setupInteractionEvents() {
+        // Mouse events
         document.addEventListener('mouseover', (e) => {
             if (!this.enabled) return;
             
@@ -147,14 +197,56 @@ class SimpleMouseoverMiner {
                 this.stopMiningWithFeedback(target);
             }
         });
+
+        // Touch events for mobile compatibility
+        document.addEventListener('touchstart', (e) => {
+            if (!this.enabled) return;
+            
+            const target = e.target.closest('[data-mine-type]');
+            if (target && target !== this.currentTarget) {
+                this.startMiningWithFeedback(target);
+            }
+        }, { passive: true }); // Use passive to improve scrolling performance
+
+        document.addEventListener('touchend', (e) => {
+            const target = e.target.closest('[data-mine-type]');
+            // Check if the touch ended on the current target
+            if (target === this.currentTarget) {
+                this.stopMiningWithFeedback(target);
+            }
+        });
+
+        // Optional: Track touch movement for more continuous activity
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+        document.addEventListener('touchmove', (e) => {
+            if (!this.enabled || !this.currentTarget) return;
+            
+            const touch = e.touches[0];
+            if (touch) {
+                const deltaX = Math.abs(touch.clientX - lastTouchX);
+                const deltaY = Math.abs(touch.clientY - lastTouchY);
+                
+                // Consider a touchmove significant if it moves more than a few pixels
+                if (deltaX > 5 || deltaY > 5) {
+                    // Increment mouse_movement_count or similar metric
+                    // For now, just log to indicate activity
+                    // console.log('Touch movement detected on current target');
+                }
+                lastTouchX = touch.clientX;
+                lastTouchY = touch.clientY;
+            }
+        }, { passive: true });
     }
 
     startMiningWithFeedback(target) {
         // Add immediate visual feedback
-        target.classList.add('mouseover-mining');
-        
-        // Add mining cursor effect
-        target.style.cursor = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="36" viewBox="0 0 32 36" fill="none"><path d="M4 4l24 12-12 6-6 12-6-30z" fill="%2300A9A5" stroke="%2390C2E7" stroke-width="2"/><circle cx="16" cy="18" r="3" fill="%2390C2E7"/></svg>\'), crosshair';
+        if (target && target.classList) {
+            target.classList.add('mouseover-mining');
+            
+            // Add mining cursor effect
+            target.style.cursor = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="36" viewBox="0 0 32 36" fill="none"><path d="M4 4l24 12-12 6-6 12-6-30z" fill="%2300A9A5" stroke="%2390C2E7" stroke-width="2"/><circle cx="16" cy="18" r="3" fill="%2390C2E7"/></svg>\'), crosshair';
+        }
         
         // Create mining status indicator
         this.showMiningStatusIndicator(target, 'active');
@@ -165,22 +257,28 @@ class SimpleMouseoverMiner {
 
     stopMiningWithFeedback(target) {
         // Remove visual feedback
-        target.classList.remove('mouseover-mining');
-        target.style.cursor = '';
+        if (target && target.classList) {
+            target.classList.remove('mouseover-mining');
+            target.style.cursor = '';
+        }
         
         // Update status indicator
-        this.showMiningStatusIndicator(target, 'idle');
+        if (target) {
+            this.showMiningStatusIndicator(target, 'idle');
+        }
         
         // Stop actual mining
         this.stopMining();
         
         // Clean up status indicator after delay
-        setTimeout(() => {
-            const indicator = target.querySelector('.mining-status-indicator');
-            if (indicator) {
-                indicator.remove();
-            }
-        }, 2000);
+        if (target) {
+            setTimeout(() => {
+                const indicator = target.querySelector('.mining-status-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            }, 2000);
+        }
     }
 
     showMiningStatusIndicator(target, status) {
@@ -200,6 +298,9 @@ class SimpleMouseoverMiner {
                 break;
             case 'success':
                 content = '<span>💎</span><span>HASH FOUND</span>';
+                break;
+            case 'error':
+                content = '<span>❌</span><span>LOGIN REQUIRED</span>';
                 break;
             case 'idle':
             default:
@@ -248,14 +349,18 @@ class SimpleMouseoverMiner {
                 targetId = null;
             }
 
-            // Use current difficulty from toolbar
+            // Use fixed difficulty for mouseover mining (simpler and works)
+            const difficulty = '21e8';  // Server minimum difficulty for mine actions
+
             const proof = await this.pow.acquireProofFor({
                 board_code: boardCode,
                 target_type: targetType,
                 target_id: targetId,
                 action: 'mine',
-                difficulty: this.currentDifficulty
+                difficulty: difficulty
             });
+            
+            this.currentDifficulty = difficulty;
 
             if (proof) {
                 // Show success status first
@@ -282,14 +387,14 @@ class SimpleMouseoverMiner {
                 
                 // Update mining dashboard activity
                 if (window.MiningDashboard) {
-                    const isLegendary = this.currentDifficulty === '21e8';
+                    const isLegendary = this.currentDifficulty === '21e8'; // Keep for future legendary status
                     const icon = isLegendary ? '💎' : '⚡';
                     const description = `${isLegendary ? 'Legendary' : 'Regular'} hash discovered (${this.currentDifficulty})`;
                     window.MiningDashboard.addActivity(icon, description);
                 }
                 
                 // Show achievement notification for legendary hashes
-                if (this.currentDifficulty === '21e8') {
+                if (this.currentDifficulty === '21e8') { // Keep for future legendary bonus
                     this.showAchievementNotification('Legendary Hash Discovered!', proof.hash);
                 }
             }
@@ -306,23 +411,42 @@ class SimpleMouseoverMiner {
         return points[difficulty] || 0.1;
     }
 
-    async submitRealProof(proof, targetType, targetId, boardCode, difficulty) {
+    async submitRealProof(proof, targetType, targetId, boardCode, difficulty, postDraft, userPubkeyHex) {
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
                              document.querySelector('input[name="_token"]')?.value || '';
             
-            const response = await fetch('/api/proof-submissions', {
+            let endpoint = '';
+            let body = {
+                op_id: proof.op_id, // Assuming op_id is returned from acquireProofFor
+                challenge_id: proof.challenge_id,
+                post_draft: postDraft,
+                proof: {
+                    nonce_u64: proof.nonce,
+                    miner_version: 1, // Assuming miner version 1
+                    timestamp_i64: Math.floor(Date.now() / 1000)
+                },
+                user_pubkey_hex: userPubkeyHex
+            };
+
+            if (targetType === 'thread') {
+                endpoint = '/api/thread.commit';
+            } else if (targetType === 'reply') {
+                endpoint = '/api/reply.commit';
+                body.thread_id = targetId; // For replies, targetId is thread_id
+                // body.parent_id = ... // If parent_id is needed, it should be passed here
+            } else {
+                throw new Error('Unsupported targetType for proof submission');
+            }
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({
-                    challenge_token: proof.challenge_id,
-                    client_nonce: proof.nonce,
-                    hash: proof.hash
-                })
+                body: JSON.stringify(body)
             });
             
             if (response.ok) {
@@ -681,6 +805,31 @@ class SimpleMouseoverMiner {
         }
     }
 
+    generateFallbackPubkey() {
+        // NO DUMMY KEYS ALLOWED - Generate real cryptographic key
+        const privateKey = new Uint8Array(32);
+        crypto.getRandomValues(privateKey);
+        
+        // Convert to hex for secp256k1 key generation
+        const privateKeyHex = Array.from(privateKey, byte => byte.toString(16).padStart(2, '0')).join('');
+        
+        // Generate real public key using secp256k1
+        if (window.secp256k1 && window.secp256k1.derivePublicKey) {
+            const realPubkey = window.secp256k1.derivePublicKey(privateKeyHex);
+            localStorage.setItem('user_pubkey', realPubkey);
+            localStorage.setItem('user_privkey', privateKeyHex);
+            console.log('🔑 Generated REAL cryptographic public key for anonymous mining');
+            
+            this.showAchievementNotification(
+                'Real Mining Key Generated!', 
+                'Cryptographically secure key created'
+            );
+        } else {
+            console.error('❌ Cannot generate real key - secp256k1 library not loaded');
+            throw new Error('Real key generation required - no dummy keys allowed');
+        }
+    }
+
     stopMining() {
         this.currentTarget = null;
     }
@@ -697,59 +846,11 @@ class MiningToolbar {
         this.updateMiningDifficulty();
     }
 
-    createToolbar() {
-        // DEPRECATED: Toolbar functionality removed
-        console.log('ℹ️ Mining toolbar disabled (vestigial component)');
-        return;
-        
-        /* DEPRECATED CODE BELOW - DO NOT RE-ENABLE
-        // Remove any existing toolbar first
-        const existingToolbar = document.getElementById('mining-toolbar');
-        if (existingToolbar) {
-            existingToolbar.remove();
-        }
-        
-        const toolbar = document.createElement('div');
-        toolbar.id = 'mining-toolbar';
-        toolbar.style.cssText = `
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            height: 60px !important;
-            background: linear-gradient(135deg, #708B75, #5a7860) !important;
-            color: #F5F5DC !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            padding: 0 20px !important;
-            font-family: monospace !important;
-            font-size: 12px !important;
-            z-index: 99999 !important;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.3) !important;
-            border-top: 2px solid #9AB87A !important;
-        `;
-
-        toolbar.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <span>⚡ Mining Difficulty: <strong>21e8</strong></span>
-                <span id="power-value">Power: ${this.power}/10</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <span id="mining-stats">Proofs: ${this.stats.proofs} | Points: ${this.stats.points} | Hashes: ${this.stats.hashes}</span>
-                <button id="toggle-mining" style="padding: 5px 10px; background: #4CAF50; border: none; border-radius: 3px; color: white; cursor: pointer;">ON</button>
-            </div>
-        `;
-
-        document.body.appendChild(toolbar);
-        
-        // Add bottom padding to body to prevent toolbar from covering content
-        document.body.style.paddingBottom = '80px';
-        
-        this.setupToolbarEvents();
-        console.log('🎯 Mining toolbar created and added to DOM');
-    }
-
+            createToolbar() {
+                // DEPRECATED: Toolbar functionality removed
+                console.log('ℹ️ Mining toolbar disabled (vestigial component)');
+                return;
+            }
     setupToolbarEvents() {
         const powerValue = document.getElementById('power-value');
         const toggleBtn = document.getElementById('toggle-mining');
@@ -768,15 +869,33 @@ class MiningToolbar {
     }
 
     updateMiningDifficulty() {
-        // All mining uses 21e8 for now
-        this.miner.currentDifficulty = '21e8';
+        // All mining uses easier difficulty for better UX
+        this.miner.currentDifficulty = '21';
     }
 
     updateStats(proofs, points, hashes) {
         this.stats = { proofs, points, hashes };
+        
+        // Update legacy stats element if it exists
         const statsEl = document.getElementById('mining-stats');
         if (statsEl) {
             statsEl.textContent = `Proofs: ${proofs} | Points: ${points.toFixed(1)} | Hashes: ${hashes}`;
+        }
+        
+        // Update bottom toolbar elements (the actual visible ones)
+        const proofsEl = document.getElementById('toolbar-proofs');
+        const pointsEl = document.getElementById('toolbar-points');
+        const hashrateEl = document.getElementById('toolbar-hashrate');
+        const sessionsEl = document.getElementById('toolbar-sessions');
+        
+        if (proofsEl) proofsEl.textContent = proofs;
+        if (pointsEl) pointsEl.textContent = points.toFixed(1);
+        if (sessionsEl) sessionsEl.textContent = this.miner.currentTarget ? 1 : 0;
+        
+        // Calculate hashrate (hashes per second, rough estimate)
+        if (hashrateEl) {
+            const hashrate = hashes > 0 ? Math.floor(hashes / 60) : 0;
+            hashrateEl.textContent = hashrate.toLocaleString() + ' H/s';
         }
     }
 }
@@ -797,20 +916,81 @@ class ReplyFormMiner {
     }
 
     setup() {
-        const replyForm = document.querySelector('.unified-post-form');
+        console.log('🔍 ReplyFormMiner: Starting setup...');
+        console.log('🔍 Current URL:', window.location.pathname);
+        console.log('🔍 Document ready state:', document.readyState);
+        
+        // Check if we're on a page that should have a form
+        const url = window.location.pathname;
+        const isThreadPage = /^\/[a-z]+\/\d+$/.test(url); // matches /gen/1, /tech/5, etc.
+        const isBoardPage = /^\/[a-z]+\/?$/.test(url); // matches /gen, /tech/, etc.
+        
+        // Try to find any post form - reply form or thread creation form
+        let replyForm = document.querySelector('.unified-post-form');
+        
+        if (!replyForm && isBoardPage) {
+            // On board page, look for thread creation form
+            replyForm = document.querySelector('#new-thread-form');
+            console.log('📋 ReplyFormMiner: On board page, checking for thread form');
+        }
+        
+        // Wait for form to exist in DOM
+        console.log('🔍 ReplyFormMiner: Form found?', !!replyForm);
         if (!replyForm) {
-            console.log('No reply form found');
+            console.log('❌ No reply form found with class .unified-post-form');
+            
+            // Only retry if we're on a thread page where we expect a form
+            if (isThreadPage) {
+                console.log('🔄 Retrying on thread page...');
+                setTimeout(() => this.setup(), 2000);
+            } else {
+                console.log('ℹ️ Not on thread page, form not expected');
+            }
             return;
         }
-
+        
+        // Elements may exist but form container might be hidden
         const contentInput = document.getElementById('post-content');
         const submitBtn = document.getElementById('reply-submit-btn');
         const miningStatus = document.getElementById('reply-mining-status');
 
-        if (!contentInput || !submitBtn || !miningStatus) {
-            console.log('Reply form elements missing');
+        console.log('🔍 ReplyFormMiner: Elements found?', {
+            contentInput: !!contentInput,
+            submitBtn: !!submitBtn,
+            miningStatus: !!miningStatus
+        });
+
+        // Even if form is hidden initially, elements should exist
+        // Only fail if they truly don't exist in the DOM at all
+        if (!contentInput || !submitBtn) {
+            console.log('❌ Reply form critical elements missing:', {
+                contentInput: contentInput ? 'found' : 'MISSING',
+                submitBtn: submitBtn ? 'found' : 'MISSING', 
+                miningStatus: miningStatus ? 'found' : 'MISSING'
+            });
+            
+            // Set up observer to retry when form becomes visible
+            console.log('🔄 Setting up form visibility observer...');
+            this.observeFormVisibility(replyForm);
             return;
         }
+
+        // Add hidden fields for post_draft and user_pubkey_hex
+        const postDraftInput = document.createElement('input');
+        postDraftInput.type = 'hidden';
+        postDraftInput.name = 'post_draft';
+        replyForm.appendChild(postDraftInput);
+
+        const userPubkeyHexInput = document.createElement('input');
+        userPubkeyHexInput.type = 'hidden';
+        userPubkeyHexInput.name = 'user_pubkey_hex';
+        userPubkeyHexInput.value = localStorage.getItem('user_pubkey') || ''; // Dynamically get from localStorage
+        replyForm.appendChild(userPubkeyHexInput);
+
+        const opIdInput = document.createElement('input');
+        opIdInput.type = 'hidden';
+        opIdInput.name = 'op_id';
+        replyForm.appendChild(opIdInput);
 
         console.log('🔨 Reply form mining: Setting up');
 
@@ -819,41 +999,96 @@ class ReplyFormMiner {
 
         // Start mining when content is filled
         contentInput.addEventListener('input', () => {
+            console.log('📝 Input detected, content length:', contentInput.value.trim().length);
             clearTimeout(miningTimeout);
             const content = contentInput.value.trim();
             
-            if (content.length >= 5 && !hasProof) {
-                miningTimeout = setTimeout(() => this.startMining(replyForm, miningStatus), 1500);
+            // Reset proof status when content changes significantly
+            hasProof = false;
+            
+            if (content.length >= 5) {
+                console.log('🔄 Content sufficient, starting mining in 1.5 seconds...');
+                if (miningStatus) {
+                    miningStatus.innerHTML = '<span style="color: #9AB87A;">🔄 Preparing to mine...</span>';
+                }
+                miningTimeout = setTimeout(async () => {
+                    try {
+                        await this.startMining(replyForm, miningStatus);
+                        hasProof = true;
+                        console.log('✅ Mining completed successfully');
+                    } catch (error) {
+                        console.error('❌ Mining failed:', error);
+                        hasProof = false;
+                    }
+                }, 1500);
+            } else {
+                if (miningStatus) {
+                    miningStatus.innerHTML = '<span style="color: #6c757d;">💡 Start typing to begin mining...</span>';
+                }
             }
         });
 
         // Form submission handler
         replyForm.addEventListener('submit', async (e) => {
-            const currentHash = replyForm.querySelector('input[name="pow_hash"]').value.trim();
+            const currentHash = replyForm.querySelector('input[name="pow_hash"]')?.value?.trim() || '';
             const content = contentInput.value.trim();
             
             if (content.length >= 5 && !currentHash) {
                 e.preventDefault();
-                miningStatus.innerHTML = '<span style="color: #ffc107;">⛏️ Mining required before submission...</span>';
+                if (miningStatus) {
+                    miningStatus.innerHTML = '<span style="color: #ffc107;">⛏️ Mining required before submission...</span>';
+                }
                 
                 try {
                     await this.startMining(replyForm, miningStatus);
-                    const newHash = replyForm.querySelector('input[name="pow_hash"]').value.trim();
+                    const newHash = replyForm.querySelector('input[name="pow_hash"]')?.value?.trim() || '';
                     
                     if (newHash) {
                         submitBtn.textContent = '⏳ Posting...';
                         submitBtn.disabled = true;
-                        miningStatus.innerHTML = '<span style="color: #28a745;">✅ Submitting...</span>';
+                        if (miningStatus) {
+                            miningStatus.innerHTML = '<span style="color: #28a745;">✅ Submitting...</span>';
+                        }
                         replyForm.submit();
                     } else {
                         throw new Error('Mining failed to produce hash');
                     }
                 } catch (error) {
                     console.error('Mining error:', error);
-                    miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Mining failed: ' + error.message + '</span>';
+                    if (miningStatus) {
+                        miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Mining failed: ' + error.message + '</span>';
+                    }
                 }
             }
         });
+        
+        console.log('✅ Reply form mining setup complete');
+    }
+
+    observeFormVisibility(formElement) {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                    const parentForm = document.getElementById('reply-form');
+                    const isVisible = parentForm && parentForm.style.display !== 'none';
+                    
+                    if (isVisible) {
+                        console.log('🔄 Form became visible, retrying setup...');
+                        observer.disconnect();
+                        setTimeout(() => this.setup(), 200);
+                    }
+                }
+            });
+        });
+
+        // Observe the parent container that controls visibility
+        const parentForm = document.getElementById('reply-form');
+        if (parentForm) {
+            observer.observe(parentForm, { attributes: true, attributeFilter: ['style'] });
+            console.log('👁️ Form visibility observer set up on #reply-form');
+        } else {
+            console.warn('⚠️ Could not find #reply-form for visibility observation');
+        }
     }
 
     async startMining(form, statusElement) {
@@ -861,25 +1096,45 @@ class ReplyFormMiner {
         const content = contentInput.value.trim();
         
         if (content.length < 5) {
-            statusElement.innerHTML = 'Content too short for mining';
+            if (statusElement) {
+                statusElement.innerHTML = 'Content too short for mining';
+            }
             return;
         }
 
+        // Get board and thread from URL - support both /board/thread/id and /board/id formats
+        let boardMatch = window.location.pathname.match(/\/(\w+)\/thread\/(\d+)/);
+        if (!boardMatch) {
+            boardMatch = window.location.pathname.match(/\/(\w+)\/(\d+)$/);
+        }
+        if (!boardMatch) {
+            if (statusElement) {
+                statusElement.innerHTML = '<span style="color: red;">❌ Page URL format error - refresh page</span>';
+            }
+            console.error('URL pattern not recognized:', window.location.pathname);
+            return;
+        }
+        
+        const [, boardCode, threadId] = boardMatch;
+        console.log('🔍 Mining context:', { boardCode, threadId, url: window.location.pathname });
+
         // Create sophisticated loading animation
-        statusElement.innerHTML = `
-            <span style="color: var(--text-mining); display: flex; align-items: center; gap: var(--space-sm);">
-                <div class="mining-loader"></div>
-                <span>Initializing quantum mining...</span>
-            </span>
-        `;
+        if (statusElement) {
+            statusElement.innerHTML = `
+                <span style="color: #9AB87A; display: flex; align-items: center; gap: 8px;">
+                    <div class="mining-loader"></div>
+                    <span>Initializing quantum mining...</span>
+                </span>
+            `;
+        }
 
         // Add progress animation
         let progress = 0;
         const progressInterval = setInterval(() => {
             progress += Math.random() * 15;
-            if (progress < 90) {
+            if (progress < 90 && statusElement) {
                 statusElement.innerHTML = `
-                    <span style="color: var(--text-mining); display: flex; align-items: center; gap: var(--space-sm);">
+                    <span style="color: #9AB87A; display: flex; align-items: center; gap: 8px;">
                         <div class="mining-loader"></div>
                         <span>Mining... ${Math.round(progress)}%</span>
                     </span>
@@ -888,20 +1143,15 @@ class ReplyFormMiner {
         }, 200);
 
         try {
-            // Get board and thread from URL
-            const boardMatch = window.location.pathname.match(/\/(\w+)\/(\d+)$/);
-            if (!boardMatch) {
-                throw new Error('Cannot determine board and thread');
-            }
-            
-            const [, boardCode, threadId] = boardMatch;
-            
+            // Use fixed difficulty for now - simpler and works
+            const difficulty = '21e8';
+
             const proof = await this.pow.acquireProofFor({
                 board_code: boardCode,
                 target_type: 'reply',
                 target_id: threadId,
                 action: 'create',
-                difficulty: '21e8'
+                difficulty: difficulty
             });
 
             // Clear progress interval
@@ -912,18 +1162,30 @@ class ReplyFormMiner {
             form.querySelector('input[name="pow_hash"]').value = proof.hash;
             form.querySelector('input[name="pow_challenge_id"]').value = proof.challenge_id;
             
+            // Store draft and user info for recovery
+            if (form.querySelector('input[name="post_draft"]')) {
+                form.querySelector('input[name="post_draft"]').value = JSON.stringify({ body: content, attachments: [], refs: [] });
+            }
+            
+            if (form.querySelector('input[name="op_id"]') && proof.op_id) {
+                form.querySelector('input[name="op_id"]').value = proof.op_id;
+            }
+            
             // Show success with animation
-            statusElement.innerHTML = `
-                <span style="color: var(--text-accent); display: flex; align-items: center; gap: var(--space-sm);">
-                    <span class="hash-discovery">💎</span>
-                    <span>Quantum hash discovered! Ready to submit.</span>
-                </span>
-            `;
+            if (statusElement) {
+                statusElement.innerHTML = `
+                    <span style="color: #00A9A5; display: flex; align-items: center; gap: 8px;">
+                        <span class="hash-discovery">💎</span>
+                        <span>Quantum hash discovered! Ready to submit.</span>
+                    </span>
+                `;
+            }
             
             // Enable submit button with enhanced styling
             const submitBtn = document.getElementById('reply-submit-btn');
             if (submitBtn) {
                 submitBtn.disabled = false;
+                submitBtn.classList.remove('tui-btn-disabled');
                 submitBtn.style.opacity = '1';
                 submitBtn.textContent = '⚡ Post Reply';
                 submitBtn.classList.add('hash-discovery');
@@ -957,25 +1219,27 @@ class ReplyFormMiner {
                 errorMsg = 'Page URL format error - refresh page';
             }
             
-            statusElement.innerHTML = `
-                <span style="color: var(--text-warning); display: flex; align-items: center; gap: var(--space-sm);">
-                    <span>⚠️</span>
-                    <span>Mining error: ${errorMsg}</span>
-                </span>
-            `;
-            
-            // Auto-retry once after 2 seconds for certain errors
-            if (error.message.includes('Challenge failed') || error.message.includes('Network')) {
-                statusElement.innerHTML += `
-                    <br><span style="color: var(--text-muted); font-size: var(--font-size-xs);">
-                        Auto-retrying in 2 seconds...
+            if (statusElement) {
+                statusElement.innerHTML = `
+                    <span style="color: #dc3545; display: flex; align-items: center; gap: 8px;">
+                        <span>⚠️</span>
+                        <span>Mining error: ${errorMsg}</span>
                     </span>
                 `;
-                
-                setTimeout(() => {
-                    console.log('Auto-retrying mining after error...');
-                    this.startMining(form, statusElement);
-                }, 2000);
+            
+                // Auto-retry once after 2 seconds for certain errors
+                if (error.message.includes('Challenge failed') || error.message.includes('Network')) {
+                    statusElement.innerHTML += `
+                        <br><span style="color: #6c757d; font-size: 11px;">
+                            Auto-retrying in 2 seconds...
+                        </span>
+                    `;
+                    
+                    setTimeout(() => {
+                        console.log('Auto-retrying mining after error...');
+                        this.startMining(form, statusElement);
+                    }, 2000);
+                }
             }
             
             throw error;
@@ -983,12 +1247,87 @@ class ReplyFormMiner {
     }
 }
 
+// Ensure mining CSS animations are available
+if (!document.getElementById('mining-animations')) {
+    const style = document.createElement('style');
+    style.id = 'mining-animations';
+    style.textContent = `
+        .mining-loader {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #9AB87A;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: mining-loader-spin 1s linear infinite;
+        }
+        
+        @keyframes mining-loader-spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hash-discovery {
+            animation: hash-discovery-pulse 0.6s ease-out;
+        }
+        
+        @keyframes hash-discovery-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .mining-status-indicator {
+            background: rgba(112, 139, 117, 0.9);
+            color: #F5F5DC;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // Initialize immediately
 console.log('🔨 Simple PoW: Creating instance...');
 window.simplePoW = new SimpleProofOfWork();
 
-// Initialize reply form mining
-window.replyFormMiner = new ReplyFormMiner(window.simplePoW);
+// Initialize reply form mining when DOM is ready
+function initializeReplyFormMiner() {
+    console.log('🔨 Initializing ReplyFormMiner...');
+    
+    // Ensure simplePoW is available
+    if (!window.simplePoW) {
+        console.log('⏳ Waiting for simplePoW to be available...');
+        setTimeout(initializeReplyFormMiner, 500);
+        return;
+    }
+    
+    try {
+        window.replyFormMiner = new ReplyFormMiner(window.simplePoW);
+        console.log('✅ ReplyFormMiner initialized successfully');
+    } catch (error) {
+        console.error('❌ Failed to initialize ReplyFormMiner:', error);
+        // Retry once after delay
+        setTimeout(() => {
+            try {
+                window.replyFormMiner = new ReplyFormMiner(window.simplePoW);
+                console.log('✅ ReplyFormMiner initialized on retry');
+            } catch (retryError) {
+                console.error('❌ ReplyFormMiner retry failed:', retryError);
+            }
+        }, 2000);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeReplyFormMiner);
+} else {
+    initializeReplyFormMiner();
+}
 
 // Initialize everything when DOM is ready for mouseover mining
 // Only create toolbar if we're not on the mining page
@@ -1016,4 +1355,98 @@ if (!window.location.pathname.includes('/mining')) {
     }
 }
 
+// Mining system diagnostics
+window.MiningDiagnostics = {
+    checkSystem: async function() {
+        console.log('🔍 Running mining system diagnostics...');
+        
+        const results = {
+            userPubkey: !!localStorage.getItem('user_pubkey'),
+            csrfToken: !!document.querySelector('meta[name="csrf-token"]')?.content,
+            simplePoW: !!window.simplePoW,
+            wasmPowMiner: !!window.wasmPowMiner,
+            mouseoverMiner: !!window.mouseoverMiner,
+            replyFormMiner: !!window.replyFormMiner,
+            apiEndpoints: {
+                powParams: false,
+                threadBegin: false,
+                replyBegin: false
+            }
+        };
+        
+        // Test API endpoints
+        try {
+            const powParamsResponse = await fetch('/api/pow.params');
+            results.apiEndpoints.powParams = powParamsResponse.ok;
+        } catch (e) {
+            console.warn('pow.params endpoint test failed:', e);
+        }
+        
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            const testResponse = await fetch('/api/thread.begin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    post_draft: { title: 'test', body: 'test', attachments: [], refs: [] },
+                    client_op_id: 'test-00000000-0000-0000-0000-000000000000',
+                    user_pubkey_hex: localStorage.getItem('user_pubkey') // NO DUMMY FALLBACK - Real key required
+                })
+            });
+            results.apiEndpoints.threadBegin = testResponse.ok || testResponse.status === 422;
+        } catch (e) {
+            console.warn('thread.begin endpoint test failed:', e);
+        }
+        
+        console.table(results);
+        
+        // Generate fix suggestions
+        const fixes = [];
+        if (!results.userPubkey) {
+            fixes.push('Missing user public key - generate real key: window.simplePoW.generateFallbackPubkey()');
+        }
+        if (!results.csrfToken) {
+            fixes.push('Missing CSRF token - ensure meta tag is present in HTML head');
+        }
+        if (!results.simplePoW) {
+            fixes.push('SimpleProofOfWork not initialized - check script loading');
+        }
+        
+        if (fixes.length > 0) {
+            console.log('🔧 Suggested fixes:');
+            fixes.forEach(fix => console.log('  -', fix));
+        } else {
+            console.log('✅ All mining system components appear healthy');
+        }
+        
+        return results;
+    },
+    
+    fixCommonIssues: function() {
+        // Automatically fix common issues
+        if (!localStorage.getItem('user_pubkey')) {
+            // NO DUMMY KEYS - Generate real cryptographic key
+            if (window.simplePoW && window.simplePoW.generateFallbackPubkey) {
+                window.simplePoW.generateFallbackPubkey();
+                console.log('✅ Generated REAL cryptographic public key');
+            } else {
+                console.error('❌ Cannot generate real key - mining system not ready');
+            }
+        }
+        
+        if (!window.simplePoW) {
+            window.simplePoW = new SimpleProofOfWork();
+            console.log('✅ Reinitializing SimpleProofOfWork');
+        }
+        
+        console.log('🔧 Common mining issues fixed - try mining again');
+    }
+};
+
 console.log('🔨 Simple PoW: Ready with reply form mining, mouseover mining and toolbar');
+console.log('🔍 Run MiningDiagnostics.checkSystem() to debug mining issues');
+console.log('🔧 Run MiningDiagnostics.fixCommonIssues() to auto-fix common problems');

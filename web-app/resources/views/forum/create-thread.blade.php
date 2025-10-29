@@ -4,6 +4,7 @@
 
 @section('content')
 <script src="/js/doodle-pow.js"></script>
+<script src="/js/wasm-pow-integration.js" defer></script>
 <div style="max-width: 800px; margin: 40px auto; background: #F5F5DC; border: 2px solid #708B75; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(112, 139, 117, 0.2);">
     <div style="background: linear-gradient(135deg, #708B75, #5a7860); color: #F5F5DC; padding: 20px; text-align: center;">
         <h2 style="margin: 0; font-family: 'Nova Cut', serif; font-size: 24px; letter-spacing: 1px;">
@@ -65,22 +66,17 @@
                 @enderror
             </div>
             
-            <!-- Image Hash Alternative -->
-            <div class="form-group">
-                <label for="image_hash" style="display: block; margin-bottom: 8px; color: #3D315B; font-weight: 600; font-size: 16px;">
-                    #️⃣ OR Use Image Hash from Library
-                </label>
-                <input type="text" name="image_hash" id="image_hash" 
-                       placeholder="Paste a 64-character hash from the image library..."
-                       pattern="[a-fA-F0-9]{64}"
-                       style="width: 100%; padding: 12px 16px; border: 2px solid #708B75; border-radius: 8px; font-size: 14px; font-family: 'Courier New', monospace; background: #FFFACD; transition: all 0.3s ease;">
-                <div style="font-size: 12px; color: #6B7A6B; margin-top: 4px;">
-                    Instead of uploading, use an existing image hash from the <a href="/library" target="_blank" style="color: #708B75; text-decoration: none; font-weight: 600;">Image Library</a>
-                </div>
-                @error('image_hash')
-                    <div style="color: #dc3545; font-size: 14px; margin-top: 4px;">{{ $message }}</div>
-                @enderror
-            </div>
+            <!-- Image Library Picker -->
+            <x-image-picker 
+                name="image_hash" 
+                label="🖼️ OR Choose from Image Library"
+                placeholder="Browse library or enter image hash manually..."
+                pattern="[a-fA-F0-9]{64}"
+                style="font-family: 'Courier New', monospace;"
+            />
+            @error('image_hash')
+                <div style="color: #dc3545; font-size: 14px; margin-top: 4px;">{{ $message }}</div>
+            @enderror
             
             <!-- Anonymous Posting -->
             <div class="form-group">
@@ -197,7 +193,7 @@ const miningStatus = document.getElementById('mining-status');
 let isMining = false;
 let currentProof = null;
 
-// Direct mining function
+// WASM-powered mining function
 async function mineDirectly() {
     if (isMining) return;
     
@@ -215,112 +211,102 @@ async function mineDirectly() {
     isMining = true;
     
     try {
-        console.log('Starting direct mining...');
-        miningStatus.innerHTML = '<span style="color: var(--color-amber-500);">⛏️ Mining proof-of-work...</span>';
+        console.log('🦀 Starting WASM mining...');
+        miningStatus.innerHTML = '<span style="color: var(--color-amber-500);">⛏️ Mining with WASM...</span>';
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span id="submit-emoji">⛏️</span> Mining...';
+        submitBtn.innerHTML = '<span id="submit-emoji">⛏️</span> WASM Mining...';
         
-        // Start mining animation - Enhanced strobe sequence
+        // Start mining animation
         setTimeout(() => {
             if (window.emojiAnimator) {
-                window.emojiAnimator.startAnimation('submit-emoji', ['⛏️', '💎', '⚡', '🔥', '💫', '⭐', '💰', '⛏️'], 120);
+                window.emojiAnimator.startAnimation('submit-emoji', ['⛏️', '🦀', '⚡', '💎', '🔥', '💫', '⭐', '⛏️'], 120);
             }
         }, 100);
         
-        // Get challenge
-        const challengeResp = await fetch('/api/mining/challenges', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({
-                board_code: '{{ $board->code }}',
-                target_type: 'thread',
-                action: 'create',
-                difficulty: '21e8'
-            })
+        // Prepare form data for WASM miner
+        const formData = {
+            title: title,
+            body: content,
+            attachments: [],
+            refs: []
+        };
+        
+        // Use WASM miner
+        currentProof = await window.wasmPowMiner.mineForForm('thread', formData, {
+            difficulty: '21e8',
+            useWasm: true
         });
         
-        const challenge = await challengeResp.json();
-        if (!challenge.success) {
-            throw new Error(challenge.error || 'Challenge request failed');
-        }
+        console.log('✅ WASM mining complete:', currentProof);
         
-        console.log('Challenge received:', challenge.token);
+        // Fill hidden fields
+        document.getElementById('pow_nonce').value = currentProof.nonce;
+        document.getElementById('pow_hash').value = currentProof.hash;
+        document.getElementById('pow_challenge_id').value = currentProof.challenge_id;
         
-        // Mine proof
-        const encoder = new TextEncoder();
-        const challengeData = JSON.stringify(challenge.canonical_payload);
-        let nonce = 0;
-        let found = false;
+        // Enable submit
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span id="submit-emoji">🦀</span> Create Thread';
+        submitBtn.style.background = 'linear-gradient(135deg, var(--ib-border), #5a7860)';
+        submitBtn.style.cursor = 'pointer';
+        submitBtn.style.opacity = '1';
         
-        while (!found) {
-            const data = challengeData + ':' + nonce;
-            const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
-            const hashArray = new Uint8Array(hashBuffer);
-            const hash = Array.from(hashArray).map(b => b.toString(16).padStart(2, '0')).join('');
-            
-            if (hash.startsWith('21e8')) {
-                found = true;
-                currentProof = {
-                    nonce: nonce.toString(),
-                    hash: hash,
-                    challenge_id: challenge.token
-                };
-                
-                console.log('✅ Proof found:', currentProof);
-                
-                // Fill hidden fields
-                document.getElementById('pow_nonce').value = currentProof.nonce;
-                document.getElementById('pow_hash').value = currentProof.hash;
-                document.getElementById('pow_challenge_id').value = currentProof.challenge_id;
-                
-                // Enable submit
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span id="submit-emoji">⚡</span> Create Thread';
-                submitBtn.style.background = 'linear-gradient(135deg, var(--ib-border), #5a7860)';
-                submitBtn.style.cursor = 'pointer';
-                submitBtn.style.opacity = '1';
-                
-                // Success animation - Celebration strobe
-                setTimeout(() => {
-                    if (window.emojiAnimator) {
-                        window.emojiAnimator.startAnimation('submit-emoji', ['⚡', '🎉', '🏆', '⭐', '✨', '💎', '🌟', '🎊'], 150);
-                    }
-                }, 100);
-                
-                miningStatus.innerHTML = '<span style="color: var(--color-green-600);">✅ Mining complete! Ready to post.</span>';
-            }
-            
-            nonce++;
-            
-            // Update UI periodically
-            if (nonce % 1000 === 0) {
-                miningStatus.innerHTML = `<span style="color: var(--color-amber-500);">⛏️ Mining... ${nonce} hashes</span>`;
-                await new Promise(resolve => setTimeout(resolve, 1));
-            }
-        }
-        
-    } catch (error) {
-        console.error('Mining error:', error);
-        miningStatus.innerHTML = '<span style="color: var(--color-red-500);">❌ Mining error - please retry</span>';
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span id="submit-emoji">❌</span> Mining Error';
-        
-        // Error animation - Warning strobe
+        // Success animation
         setTimeout(() => {
             if (window.emojiAnimator) {
-                window.emojiAnimator.startAnimation('submit-emoji', ['❌', '💥', '⚠️', '🔥', '💢', '⛔', '❌'], 200);
+                window.emojiAnimator.startAnimation('submit-emoji', ['🦀', '⚡', '🎉', '🏆', '⭐', '✨', '💎', '🌟'], 150);
             }
         }, 100);
-        submitBtn.style.background = 'var(--color-red-500)';
         
-        // Retry after delay
-        setTimeout(() => {
-            isMining = false;
-            mineDirectly();
-        }, 2000);
+        miningStatus.innerHTML = '<span style="color: var(--color-green-600);">✅ WASM mining complete! Ready to post.</span>';
+        
+    } catch (error) {
+        console.error('WASM mining error:', error);
+        console.log('🔄 Falling back to JavaScript mining...');
+        
+        try {
+            // Fallback to JavaScript mining
+            miningStatus.innerHTML = '<span style="color: var(--color-orange-500);">🔄 Using fallback miner...</span>';
+            
+            currentProof = await window.wasmPowMiner.mineForForm('thread', formData, {
+                difficulty: '21e8',
+                useWasm: false
+            });
+            
+            // Fill hidden fields  
+            document.getElementById('pow_nonce').value = currentProof.nonce;
+            document.getElementById('pow_hash').value = currentProof.hash;
+            document.getElementById('pow_challenge_id').value = currentProof.challenge_id;
+            
+            // Enable submit
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span id="submit-emoji">⚡</span> Create Thread';
+            submitBtn.style.background = 'linear-gradient(135deg, var(--ib-border), #5a7860)';
+            submitBtn.style.cursor = 'pointer';
+            submitBtn.style.opacity = '1';
+            
+            miningStatus.innerHTML = '<span style="color: var(--color-green-600);">✅ Fallback mining complete!</span>';
+            
+        } catch (fallbackError) {
+            console.error('All mining methods failed:', fallbackError);
+            miningStatus.innerHTML = '<span style="color: var(--color-red-500);">❌ Mining failed - please retry</span>';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span id="submit-emoji">❌</span> Mining Error';
+            
+            // Error animation
+            setTimeout(() => {
+                if (window.emojiAnimator) {
+                    window.emojiAnimator.startAnimation('submit-emoji', ['❌', '💥', '⚠️', '🔥', '💢', '⛔', '❌'], 200);
+                }
+            }, 100);
+            submitBtn.style.background = 'var(--color-red-500)';
+            
+            // Retry after delay
+            setTimeout(() => {
+                isMining = false;
+                mineDirectly();
+            }, 3000);
+        }
     }
     
     isMining = false;

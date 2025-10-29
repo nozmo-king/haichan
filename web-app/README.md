@@ -1,90 +1,98 @@
-# haichan - Proof-of-Work (PoW) Implementation
+# Haichan PoW Implementation
 
-This document outlines the setup, building, and testing procedures for the Proof-of-Work (PoW) implementation within the haichan project.
+This document outlines the Proof-of-Work (PoW) implementation for Haichan, including the Rust-based verifier and WASM miner, Laravel API, and associated tooling.
 
-## Project Overview
+## Table of Contents
 
-This project integrates a custom Proof-of-Work system for posting content, leveraging Rust for the core PoW logic (verifier and WebAssembly miner) and Laravel/PHP for the API backend.
+- [Haichan PoW Implementation](#haichan-pow-implementation)
+  - [Table of Contents](#table-of-contents)
+  - [Build and Run Instructions](#build-and-run-instructions)
+    - [Rust Toolchain and wasm-pack](#rust-toolchain-and-wasm-pack)
+    - [Laravel Application](#laravel-application)
+  - [Running Tests](#running-tests)
+    - [Rust Tests](#rust-tests)
+    - [PHPUnit Tests](#phpunit-tests)
+  - [API Examples (cURL)](#api-examples-curl)
+    - [GET /api/pow.params](#get-apipowparams)
+    - [POST /api/thread.begin](#post-apithreadbegin)
+    - [POST /api/thread.commit](#post-apithreadcommit)
+    - [POST /api/reply.begin](#post-apireplybegin)
+    - [POST /api/reply.commit](#post-apireplycommit)
+  - [Golden Test Vectors](#golden-test-vectors)
+  - [Environment Variables](#environment-variables)
 
-## Getting Started
+## Build and Run Instructions
 
-### Prerequisites
+### Rust Toolchain and wasm-pack
 
-*   PHP (8.2+)
-*   Composer
-*   Node.js & npm
-*   Rust & Cargo
-*   wasm-pack
+To build the Rust verifier and WASM miner, you need to have the Rust toolchain and `wasm-pack` installed.
 
-### Installation
+1.  **Install Rust:**
 
-1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-repo/haichan.git
-    cd haichan/web-app
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    source $HOME/.cargo/env
+    rustup target add wasm32-unknown-unknown
     ```
 
-2.  **PHP Dependencies:**
-    ```bash
-    composer install
-    ```
+2.  **Install wasm-pack:**
 
-3.  **JavaScript Dependencies:**
-    ```bash
-    npm install
-    ```
-
-4.  **Rust Toolchain & wasm-pack:**
-    If you don't have Rust and Cargo installed, follow the instructions on [rust-lang.org](https://www.rust-lang.org/tools/install).
-    Then, install `wasm-pack`:
     ```bash
     curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
     ```
 
-5.  **Environment Setup:**
+3.  **Build the WASM miner:**
+
+    ```bash
+    cd pow/miner-wasm
+    wasm-pack build --target web
+    cd ../..
+    ```
+
+### Laravel Application
+
+1.  **Install Composer dependencies:**
+
+    ```bash
+    composer install
+    ```
+
+2.  **Copy environment file:**
+
     ```bash
     cp .env.example .env
+    ```
+
+3.  **Generate application key:**
+
+    ```bash
     php artisan key:generate
     ```
-    Configure your database in `.env`. By default, SQLite is used, but you can switch to MySQL/MariaDB.
 
-6.  **Run Migrations:**
+4.  **Run database migrations:**
+
     ```bash
     php artisan migrate
     ```
 
-## Building and Running
+5.  **Start the Laravel development server:**
 
-### Development Server
+    ```bash
+    php artisan serve
+    ```
 
-To start the Laravel development server, queue listener, log tailer, and Vite development server:
+    The application will be available at `http://127.0.0.1:8000`.
 
-```bash
-composer dev
-```
-
-### Building WebAssembly Miner
-
-To build the WebAssembly module for the PoW miner:
-
-```bash
-cd pow/miner-wasm
-wasm-pack build --target web --out-dir ../../public/pkg
-cd ../../
-```
-
-This will place the `miner-wasm.wasm` and `miner-wasm.js` files in `public/pkg`.
-
-## Testing
+## Running Tests
 
 ### Rust Tests
 
-To run the Rust tests for the `pow-verifier` and `pow-miner-wasm` crates:
+To run the tests for the Rust verifier and WASM miner:
 
 ```bash
-cd pow
-cargo test --workspace
-cd ../
+cd pow/verifier && cargo test
+cd ../miner-wasm && wasm-pack test --headless --chrome
+cd ../..
 ```
 
 ### PHPUnit Tests
@@ -95,83 +103,72 @@ To run the PHPUnit tests for the Laravel application:
 php artisan test
 ```
 
-## API Endpoints (cURL Examples)
+## API Examples (cURL)
 
-Assuming your Laravel development server is running on `http://localhost:8000`.
+Assume `BASE_URL=http://127.0.0.1:8000/api` and `USER_PUBKEY_HEX` is a valid public key.
 
-### 1. Get PoW Parameters
-
-```bash
-curl -X GET http://localhost:8000/api/pow/params
-```
-
-Expected Output:
-```json
-{
-    "mode": "vanity_prefix",
-    "default_prefix": "21e8",
-    "min_miner_version": 1,
-    "suggested_prefix_by_load": "21e8"
-}
-```
-
-### 2. Begin Thread PoW Challenge
+### GET /api/pow.params
 
 ```bash
-curl -X POST http://localhost:8000/api/thread/begin \
+curl -X GET "${BASE_URL}/pow.params"
+```
+
+### POST /api/thread.begin
+
+```bash
+curl -X POST "${BASE_URL}/thread.begin" \
      -H "Content-Type: application/json" \
-     -H "X-Pubkey: <YOUR_PUBLIC_KEY_HEX>" \
-     -d '{ "post_draft": { "title": "My New Thread", "body": "Content of my new thread.", "attachments": [], "refs": [] }, "client_op_id": "$(uuidgen)" }'
+     -d '{ "post_draft": { "title": "My New Thread", "body": "This is the content.", "attachments": [], "refs": [] }, "client_op_id": "$(uuidgen)", "user_pubkey_hex": "<YOUR_PUBKEY_HEX>", "timestamp_i64": $(date +%s) }'
 ```
 
-Replace `<YOUR_PUBLIC_KEY_HEX>` with an actual public key hex string (e.g., `02abcdef1234567890...`).
-
-Expected Output:
-```json
-{
-    "challenge_id": "<UUID>",
-    "required_prefix_hex": "21e8",
-    "challenge_version": 1,
-    "op_id": "<CLIENT_OP_ID>",
-    "expires_at": <TIMESTAMP>,
-    "post_bytes_hash": "<HEX_HASH>"
-}
-```
-
-### 3. Commit Thread PoW Solution
-
-After receiving a challenge, you would use the `miner-wasm` (or a custom miner) to find a `nonce_u64` that satisfies the `required_prefix_hex`.
+### POST /api/thread.commit
 
 ```bash
-curl -X POST http://localhost:8000/api/thread/commit \
+# Replace with actual values from thread.begin response and miner output
+CHALLENGE_ID="<CHALLENGE_ID_FROM_BEGIN>"
+OP_ID="<OP_ID_FROM_BEGIN>"
+NONCE_U64=<NONCE_FROM_MINER>
+MINER_VERSION=1
+TIMESTAMP_I64=$(date +%s)
+SOLVED_HASH_HEX="<SOLVED_HASH_FROM_MINER>"
+
+curl -X POST "${BASE_URL}/thread.commit" \
      -H "Content-Type: application/json" \
-     -H "X-Pubkey: <YOUR_PUBLIC_KEY_HEX>" \
-     -d '{ "op_id": "<CLIENT_OP_ID_FROM_BEGIN>", "challenge_id": "<CHALLENGE_ID_FROM_BEGIN>", "post_draft": { "title": "My New Thread", "body": "Content of my new thread.", "attachments": [], "refs": [] }, "proof": { "nonce_u64": <FOUND_NONCE>, "miner_version": 1, "timestamp_i64": <CURRENT_TIMESTAMP> } }'
+     -d '{ "op_id": "${OP_ID}", "challenge_id": "${CHALLENGE_ID}", "post_draft": { "title": "My New Thread", "body": "This is the content.", "attachments": [], "refs": [] }, "proof": { "nonce_u64": ${NONCE_U64}, "miner_version": ${MINER_VERSION}, "timestamp_i64": ${TIMESTAMP_I64} }, "user_pubkey_hex": "<YOUR_PUBKEY_HEX>" }'
 ```
 
-Replace placeholders with actual values from the `begin` response and your PoW solution.
-
-Expected Output:
-```json
-{
-    "thread_id": "<UUID_OF_NEW_THREAD>"
-}
-```
-
-### 4. Begin Reply PoW Challenge (Symmetrical to Thread)
+### POST /api/reply.begin
 
 ```bash
-curl -X POST http://localhost:8000/api/reply/begin \
+# Replace with an actual thread_id
+THREAD_ID="<EXISTING_THREAD_ID>"
+
+curl -X POST "${BASE_URL}/reply.begin" \
      -H "Content-Type: application/json" \
-     -H "X-Pubkey: <YOUR_PUBLIC_KEY_HEX>" \
-     -d '{ "post_draft": { "title": "Re: My New Thread", "body": "My reply content.", "attachments": [], "refs": [] }, "client_op_id": "$(uuidgen)", "thread_id": "<EXISTING_THREAD_UUID>", "parent_id": "<EXISTING_POST_UUID>" }'
+     -d '{ "post_draft": { "body": "This is a reply.", "attachments": [], "refs": [] }, "client_op_id": "$(uuidgen)", "user_pubkey_hex": "<YOUR_PUBKEY_HEX>", "thread_id": "${THREAD_ID}", "parent_id": null, "timestamp_i64": $(date +%s) }'
 ```
 
-### 5. Commit Reply PoW Solution (Symmetrical to Thread)
+### POST /api/reply.commit
 
 ```bash
-curl -X POST http://localhost:8000/api/reply/commit \
+# Replace with actual values from reply.begin response and miner output
+CHALLENGE_ID="<CHALLENGE_ID_FROM_BEGIN>"
+OP_ID="<OP_ID_FROM_BEGIN>"
+NONCE_U64=<NONCE_FROM_MINER>
+MINER_VERSION=1
+TIMESTAMP_I64=$(date +%s)
+SOLVED_HASH_HEX="<SOLVED_HASH_FROM_MINER>"
+THREAD_ID="<EXISTING_THREAD_ID>"
+
+curl -X POST "${BASE_URL}/reply.commit" \
      -H "Content-Type: application/json" \
-     -H "X-Pubkey: <YOUR_PUBLIC_KEY_HEX>" \
-     -d '{ "op_id": "<CLIENT_OP_ID_FROM_BEGIN>", "challenge_id": "<CHALLENGE_ID_FROM_BEGIN>", "post_draft": { "title": "Re: My New Thread", "body": "My reply content.", "attachments": [], "refs": [] }, "proof": { "nonce_u64": <FOUND_NONCE>, "miner_version": 1, "timestamp_i64": <CURRENT_TIMESTAMP> } }'
+     -d '{ "op_id": "${OP_ID}", "challenge_id": "${CHALLENGE_ID}", "post_draft": { "body": "This is a reply.", "attachments": [], "refs": [] }, "proof": { "nonce_u64": ${NONCE_U64}, "miner_version": ${MINER_VERSION}, "timestamp_i64": ${TIMESTAMP_I64} }, "user_pubkey_hex": "<YOUR_PUBKEY_HEX>", "thread_id": "${THREAD_ID}", "parent_id": null }'
 ```
+
+## Golden Test Vectors
+
+The golden test vectors are located in `pow/vectors/golden_vectors.json`. These vectors are used to verify the correctness of the PoW implementation.
+
+## Environment Variables
+
+See `.env.example` for required environment variables.

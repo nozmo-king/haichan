@@ -147,7 +147,7 @@
             📊 Mining Console
         </h2>
         
-        <div style="background: #000; color: #00ff00; font-family: 'Courier New', monospace; padding: 20px; border-radius: 8px; height: 300px; overflow-y: auto; font-size: 12px;" id="mining-console">
+        <div style="background: #2d5016 !important; color: #ffffff !important; font-family: 'Courier New', monospace; padding: 20px; border-radius: 8px; height: 300px; overflow-y: auto; font-size: 14px; border: 2px solid #7ba05b;" id="mining-console">
             <div>🔨 HAICHAN MINING CONSOLE INITIALIZED</div>
             <div>⚡ Ready for mining operations...</div>
             <div>💎 Find rare patterns for bonus points!</div>
@@ -322,6 +322,9 @@
     </div>
 </div>
 
+<!-- Load PoW mining system -->
+<script src="/js/simple-pow.js"></script>
+
 <script>
 class MiningDashboard {
     constructor() {
@@ -407,6 +410,11 @@ class MiningDashboard {
             this.updateSessionDisplay();
         }, 2000);
         
+        // Refresh user points from server every 10 seconds
+        setInterval(() => {
+            refreshUserStats();
+        }, 10000);
+        
         // Update leaderboard every 30 seconds
         setInterval(() => {
             this.loadLeaderboard();
@@ -436,9 +444,10 @@ class MiningDashboard {
         
         const line = document.createElement('div');
         line.innerHTML = `[${timestamp}] ${prefix} ${message}`;
-        if (type === 'success') line.style.color = '#00ff00';
-        if (type === 'error') line.style.color = '#ff4444';
-        if (type === 'warning') line.style.color = '#ffaa00';
+        if (type === 'success') line.style.color = '#90ee90';
+        if (type === 'error') line.style.color = '#ff6b6b';
+        if (type === 'warning') line.style.color = '#ffd93d';
+        if (type === 'info') line.style.color = '#ffffff';
         
         console.appendChild(line);
         console.scrollTop = console.scrollHeight;
@@ -625,15 +634,48 @@ async function submitMiningProof(proof, targetType, targetId) {
         if (result.success) {
             miningDashboard.logToConsole(`Proof submitted successfully: +${result.points || 0} pts (Total: ${result.total_points})`, 'success');
             
-            // Update displayed stats
-            document.getElementById('user-points').textContent = result.total_points.toLocaleString();
-            document.getElementById('user-level').textContent = result.user_level;
+            // Update displayed stats with animation
+            const pointsEl = document.getElementById('user-points');
+            const levelEl = document.getElementById('user-level');
+            
+            if (pointsEl && result.total_points !== undefined) {
+                pointsEl.textContent = result.total_points.toLocaleString();
+                pointsEl.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => pointsEl.style.animation = '', 500);
+            }
+            
+            if (levelEl && result.user_level !== undefined) {
+                levelEl.textContent = result.user_level;
+            }
+            
+            // Force refresh stats from server
+            await refreshUserStats();
             
         } else {
             miningDashboard.logToConsole(`Proof submission failed: ${result.message}`, 'warning');
         }
     } catch (error) {
         miningDashboard.logToConsole(`Proof submission error: ${error.message}`, 'error');
+    }
+}
+
+// Refresh user stats from API
+async function refreshUserStats() {
+    try {
+        const response = await fetch('/api/mining/stats');
+        const data = await response.json();
+        
+        if (data.success && data.user) {
+            const pointsEl = document.getElementById('user-points');
+            const levelEl = document.getElementById('user-level');
+            
+            if (pointsEl) pointsEl.textContent = data.user.total_points.toLocaleString();
+            if (levelEl) levelEl.textContent = data.user.level;
+            
+            console.log('✅ Stats refreshed:', data.user);
+        }
+    } catch (error) {
+        console.warn('Could not refresh stats:', error.message);
     }
 }
 

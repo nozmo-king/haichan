@@ -375,6 +375,53 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔮 Mining Market Dashboard initializing...');
     
+    // Save user public key to localStorage if authenticated
+    @if(session('bitcoin_auth_user'))
+        const userPublicKey = "{{ session('bitcoin_auth_user')->public_key }}";
+        console.log('DEBUG: BitcoinAuth public_key in Blade:', userPublicKey);
+        if (userPublicKey && userPublicKey !== '') {
+            localStorage.setItem('user_pubkey', userPublicKey);
+            console.log('✅ User public key saved to localStorage:', userPublicKey);
+        } else {
+            console.warn('⚠️ Public key is empty or undefined from session');
+            // Fallback: try to fetch from API
+            fetchUserPublicKey();
+        }
+    @else
+        console.log('🔍 No bitcoin_auth_user session found, trying API fallback');
+        // Try to fetch public key via API if session is not available
+        fetchUserPublicKey();
+    @endif
+
+    // Fallback function to fetch user public key via API
+    async function fetchUserPublicKey() {
+        try {
+            console.log('🔄 Fetching user public key via API...');
+            const response = await fetch('/auth/user-pubkey', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.user_pubkey) {
+                    localStorage.setItem('user_pubkey', data.user_pubkey);
+                    console.log('✅ User public key fetched and saved via API:', data.user_pubkey);
+                } else {
+                    console.warn('⚠️ API returned empty public key');
+                }
+            } else if (response.status === 401) {
+                console.log('🚫 User not authenticated');
+            } else {
+                console.error('❌ Failed to fetch user public key:', response.status);
+            }
+        } catch (error) {
+            console.error('❌ Error fetching user public key:', error);
+        }
+    }
+
     // Magic Numbers Cascade Effect
     function initializeMagicNumbers() {
         const cascade = document.getElementById('numbers-cascade');
@@ -383,6 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
         let numbers = '';
         for (let i = 0; i < 100; i++) {
             const hash = '21e8' + Math.random().toString(16).substring(2, 64);
+            newNumbers += hash + '\n';
             numbers += hash + '\n';
         }
         cascade.textContent = numbers;

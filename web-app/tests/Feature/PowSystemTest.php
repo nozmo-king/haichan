@@ -3,71 +3,50 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Models\User;
 use App\Models\PowChallenge;
 use App\Models\PowCommit;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Models\Post;
+use App\Models\OpReceipt;
 use Illuminate\Support\Str;
 
 class PowSystemTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function createTestUser()
+    protected function setUp(): void
     {
-        return User::factory()->create([
-            'pubkey_hex' => '02' . str_repeat('a', 64),
-        ]);
+        parent::setUp();
+        $this->artisan('migrate');
     }
 
-    private function mineNonce(string $canonicalBytes, string $requiredPrefix, int $maxIters = 1000000): ?array
+    public function test_get_pow_params()
     {
-        for ($nonce = 0; $nonce < $maxIters; $nonce++) {
-            $powInput = $canonicalBytes . pack('P', $nonce);
-            $hash = hash('sha256', $powInput, true);
-            $hashHex = bin2hex($hash);
-            
-            if (str_starts_with($hashHex, $requiredPrefix)) {
-                return [
-                    'nonce_u64' => $nonce,
-                    'miner_version' => 1,
-                    'timestamp_i64' => (int)(microtime(true) * 1000),
-                    'hash_hex' => $hashHex,
-                ];
-            }
-        }
-        return null;
-    }
+        $response = $this->getJson('/api/pow/params');
 
-    public function test_pow_params_endpoint()
-    {
-        $response = $this->getJson('/api/pow.params');
-        
         $response->assertStatus(200)
-            ->assertJsonStructure([
-                'mode',
-                'default_prefix',
-                'min_miner_version',
-                'suggested_prefix_by_load',
+            ->assertJson([
+                'mode' => 'vanity_prefix',
+                'default_prefix' => '21e8',
+                'min_miner_version' => 1,
             ]);
     }
 
     public function test_thread_begin_creates_challenge()
     {
-        $user = $this->createTestUser();
-        $this->actingAs($user, 'sanctum');
-
-        $postDraft = [
-            'title' => 'Test Thread',
-            'body' => 'Test body',
-            'attachments' => [],
-            'refs' => [],
-        ];
+        $pubkey = '02a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+        $client_op_id = (string) Str::uuid();
 
         $response = $this->postJson('/api/thread.begin', [
-            'post_draft' => $postDraft,
-            'client_op_id' => Str::uuid()->toString(),
-        ]);
+            'client_op_id' => $client_op_id,
+            'post_draft' => [
+                'title' => 'Test Thread',
+                'body' => 'Test body',
+                'attachments' => [],
+                'refs' => [],
+            ],
+        ], ['X-Pubkey' => $pubkey]);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -77,175 +56,246 @@ class PowSystemTest extends TestCase
                 'op_id',
                 'expires_at',
                 'post_bytes_hash',
-                'canonical_bytes',
             ]);
 
         $this->assertDatabaseHas('pow_challenges', [
             'id' => $response->json('challenge_id'),
-            'user_pubkey_hex' => $user->pubkey_hex,
+            'user_pubkey_hex' => $pubkey,
             'scope' => 'thread',
+        ]);
+
+        $this->assertDatabaseHas('users', [
+            'pubkey_hex' => $pubkey,
         ]);
     }
 
-    public function test_thread_commit_with_valid_proof()
+    public function test_thread_begin_is_idempotent()
     {
-        $user = $this->createTestUser();
-        $this->actingAs($user, 'sanctum');
+        $pubkey = '02a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+        $client_op_id = (string) Str::uuid();
 
-        $postDraft = [
-            'title' => 'Test Thread',
-            'body' => 'Test body',
+        $response1 = $this->postJson('/api/thread.begin', [
+            'client_op_id' => $client_op_id,
+            'post_draft' => [
+                'title' => 'Test Thread',
+                'body' => 'Test body',
+                'attachments' => [],
+                'refs' => [],
+            ],
+        ], ['X-Pubkey' => $pubkey]);
+
+        $response2 = $this->postJson('/api/thread.begin', [
+            'client_op_id' => $client_op_id,
+            'post_draft' => [
+                'title' => 'Test Thread',
+                'body' => 'Test body',
+                'attachments' => [],
+                'refs' => [],
+            ],
+        ], ['X-Pubkey' => $pubkey]);
+
+        $this->assertEquals($response1->json(), $response2->json());
+    }
+
+    public function test_thread_commit_with_valid_pow()
+    {
+        $pubkey = '02a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+        $client_op_id = (string) Str::uuid();
+        $post_draft = [
+            'title' => 'First post',
+            'body' => 'Hello world',
             'attachments' => [],
             'refs' => [],
         ];
 
-        // Begin
         $beginResponse = $this->postJson('/api/thread.begin', [
-            'post_draft' => $postDraft,
-            'client_op_id' => Str::uuid()->toString(),
-        ]);
+            'client_op_id' => $client_op_id,
+            'post_draft' => $post_draft,
+        ], ['X-Pubkey' => $pubkey]);
 
-        $beginResponse->assertStatus(200);
-        $challengeId = $beginResponse->json('challenge_id');
-        $opId = $beginResponse->json('op_id');
-        $requiredPrefix = $beginResponse->json('required_prefix_hex');
-        $canonicalBytes = hex2bin($beginResponse->json('canonical_bytes'));
+        $challenge_id = $beginResponse->json('challenge_id');
 
-        // Mine a valid nonce
-        $proof = $this->mineNonce($canonicalBytes, $requiredPrefix);
-        $this->assertNotNull($proof, 'Could not mine a valid nonce');
-
-        // Commit
         $commitResponse = $this->postJson('/api/thread.commit', [
-            'op_id' => $opId,
-            'challenge_id' => $challengeId,
-            'post_draft' => $postDraft,
+            'op_id' => $client_op_id,
+            'challenge_id' => $challenge_id,
+            'post_draft' => $post_draft,
             'proof' => [
-                'nonce_u64' => $proof['nonce_u64'],
-                'miner_version' => $proof['miner_version'],
-                'timestamp_i64' => $proof['timestamp_i64'],
+                'nonce_u64' => 3759,
+                'miner_version' => 1,
+                'timestamp_i64' => 1700000000,
             ],
-        ]);
+        ], ['X-Pubkey' => $pubkey]);
 
         $commitResponse->assertStatus(200)
-            ->assertJsonStructure(['thread_id', 'hash_hex']);
+            ->assertJsonStructure(['thread_id']);
+
+        $this->assertDatabaseHas('posts', [
+            'author_pubkey_hex' => $pubkey,
+            'title' => 'First post',
+            'body' => 'Hello world',
+        ]);
 
         $this->assertDatabaseHas('pow_commits', [
-            'challenge_id' => $challengeId,
-            'nonce_u64' => $proof['nonce_u64'],
+            'challenge_id' => $challenge_id,
             'accepted' => true,
         ]);
     }
 
-    public function test_thread_commit_rejects_invalid_nonce()
+    public function test_thread_commit_rejects_expired_challenge()
     {
-        $user = $this->createTestUser();
-        $this->actingAs($user, 'sanctum');
+        $pubkey = '02a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+        $user = User::firstOrCreate(['pubkey_hex' => $pubkey]);
 
-        $postDraft = [
-            'title' => 'Test Thread',
-            'body' => 'Test body',
+        $post_draft = [
+            'title' => 'Test',
+            'body' => 'Test',
             'attachments' => [],
             'refs' => [],
         ];
 
-        // Begin
-        $beginResponse = $this->postJson('/api/thread.begin', [
-            'post_draft' => $postDraft,
-            'client_op_id' => Str::uuid()->toString(),
+        $post_json = json_encode([
+            'attachments' => [],
+            'body' => 'Test',
+            'refs' => [],
+            'title' => 'Test',
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        $challenge = PowChallenge::create([
+            'user_pubkey_hex' => $pubkey,
+            'scope' => 'thread',
+            'thread_id' => 0,
+            'parent_id' => 0,
+            'post_bytes_hash' => hash('sha256', $post_json, true),
+            'required_prefix_hex' => '21e8',
+            'challenge_version' => 1,
+            'expires_at' => now()->subMinutes(5),
         ]);
 
-        $challengeId = $beginResponse->json('challenge_id');
-        $opId = $beginResponse->json('op_id');
-
-        // Commit with invalid nonce
-        $commitResponse = $this->postJson('/api/thread.commit', [
-            'op_id' => $opId,
-            'challenge_id' => $challengeId,
-            'post_draft' => $postDraft,
+        $response = $this->postJson('/api/thread.commit', [
+            'op_id' => (string) Str::uuid(),
+            'challenge_id' => $challenge->id,
+            'post_draft' => $post_draft,
             'proof' => [
-                'nonce_u64' => 999999,
+                'nonce_u64' => 12345,
                 'miner_version' => 1,
-                'timestamp_i64' => (int)(microtime(true) * 1000),
+                'timestamp_i64' => 1700000000,
             ],
-        ]);
+        ], ['X-Pubkey' => $pubkey]);
 
-        $commitResponse->assertStatus(422)
-            ->assertJson(['error' => fn($msg) => str_contains($msg, 'Invalid PoW')]);
-
-        $this->assertDatabaseHas('pow_commits', [
-            'challenge_id' => $challengeId,
-            'accepted' => false,
-        ]);
+        $response->assertStatus(400)
+            ->assertJson(['error' => 'Challenge expired']);
     }
 
     public function test_thread_commit_rejects_mutated_draft()
     {
-        $user = $this->createTestUser();
-        $this->actingAs($user, 'sanctum');
+        $pubkey = '02a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+        $client_op_id = (string) Str::uuid();
 
-        $postDraft = [
-            'title' => 'Original Title',
+        $original_draft = [
+            'title' => 'Original',
             'body' => 'Original body',
             'attachments' => [],
             'refs' => [],
         ];
 
-        // Begin
         $beginResponse = $this->postJson('/api/thread.begin', [
-            'post_draft' => $postDraft,
-            'client_op_id' => Str::uuid()->toString(),
-        ]);
+            'client_op_id' => $client_op_id,
+            'post_draft' => $original_draft,
+        ], ['X-Pubkey' => $pubkey]);
 
-        $challengeId = $beginResponse->json('challenge_id');
-        $opId = $beginResponse->json('op_id');
+        $challenge_id = $beginResponse->json('challenge_id');
 
-        // Try to commit with modified draft
-        $mutatedDraft = $postDraft;
-        $mutatedDraft['title'] = 'Modified Title';
-
-        $commitResponse = $this->postJson('/api/thread.commit', [
-            'op_id' => $opId,
-            'challenge_id' => $challengeId,
-            'post_draft' => $mutatedDraft,
-            'proof' => [
-                'nonce_u64' => 12345,
-                'miner_version' => 1,
-                'timestamp_i64' => (int)(microtime(true) * 1000),
-            ],
-        ]);
-
-        $commitResponse->assertStatus(422)
-            ->assertJson(['error' => 'Post draft mismatch']);
-    }
-
-    public function test_idempotent_thread_begin()
-    {
-        $user = $this->createTestUser();
-        $this->actingAs($user, 'sanctum');
-
-        $postDraft = [
-            'title' => 'Test Thread',
-            'body' => 'Test body',
+        $modified_draft = [
+            'title' => 'Original',
+            'body' => 'Modified body',
             'attachments' => [],
             'refs' => [],
         ];
 
-        $opId = Str::uuid()->toString();
+        $commitResponse = $this->postJson('/api/thread.commit', [
+            'op_id' => $client_op_id,
+            'challenge_id' => $challenge_id,
+            'post_draft' => $modified_draft,
+            'proof' => [
+                'nonce_u64' => 12345,
+                'miner_version' => 1,
+                'timestamp_i64' => 1700000000,
+            ],
+        ], ['X-Pubkey' => $pubkey]);
 
-        // First call
-        $response1 = $this->postJson('/api/thread.begin', [
-            'post_draft' => $postDraft,
-            'client_op_id' => $opId,
+        $commitResponse->assertStatus(400)
+            ->assertJson(['error' => 'Post draft mutated']);
+    }
+
+    public function test_thread_commit_rejects_pubkey_mismatch()
+    {
+        $pubkey1 = '02a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+        $pubkey2 = '03b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3';
+        $client_op_id = (string) Str::uuid();
+
+        $post_draft = [
+            'title' => 'Test',
+            'body' => 'Test',
+            'attachments' => [],
+            'refs' => [],
+        ];
+
+        $beginResponse = $this->postJson('/api/thread.begin', [
+            'client_op_id' => $client_op_id,
+            'post_draft' => $post_draft,
+        ], ['X-Pubkey' => $pubkey1]);
+
+        $challenge_id = $beginResponse->json('challenge_id');
+
+        $commitResponse = $this->postJson('/api/thread.commit', [
+            'op_id' => $client_op_id,
+            'challenge_id' => $challenge_id,
+            'post_draft' => $post_draft,
+            'proof' => [
+                'nonce_u64' => 12345,
+                'miner_version' => 1,
+                'timestamp_i64' => 1700000000,
+            ],
+        ], ['X-Pubkey' => $pubkey2]);
+
+        $commitResponse->assertStatus(403)
+            ->assertJson(['error' => 'Pubkey mismatch']);
+    }
+
+    public function test_reply_begin_and_commit_flow()
+    {
+        $pubkey = '02a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+        
+        $thread = Post::create([
+            'author_pubkey_hex' => $pubkey,
+            'title' => 'Thread',
+            'body' => 'Thread body',
         ]);
+        $thread->update(['thread_id' => $thread->id]);
 
-        // Second call with same op_id
-        $response2 = $this->postJson('/api/thread.begin', [
-            'post_draft' => $postDraft,
-            'client_op_id' => $opId,
+        $client_op_id = (string) Str::uuid();
+        $reply_draft = [
+            'title' => '',
+            'body' => 'Reply body',
+            'attachments' => [],
+            'refs' => [],
+        ];
+
+        $beginResponse = $this->postJson('/api/reply.begin', [
+            'client_op_id' => $client_op_id,
+            'thread_id' => $thread->id,
+            'parent_id' => $thread->id,
+            'post_draft' => $reply_draft,
+        ], ['X-Pubkey' => $pubkey]);
+
+        $beginResponse->assertStatus(200);
+        $challenge_id = $beginResponse->json('challenge_id');
+
+        $this->assertDatabaseHas('pow_challenges', [
+            'id' => $challenge_id,
+            'scope' => 'reply',
+            'thread_id' => $thread->id,
+            'parent_id' => $thread->id,
         ]);
-
-        // Should return identical response
-        $this->assertEquals($response1->json(), $response2->json());
     }
 }

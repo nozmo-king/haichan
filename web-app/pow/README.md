@@ -1,103 +1,57 @@
-# Haichan Stable PoW Posting System
+# Haichan PoW System v1
 
-Proof-of-Work based posting system for Haichan using SHA-256 vanity prefix mining.
+Stable proof-of-work posting system for haichan with Rust verifier, WASM miner, and Laravel API.
 
 ## Architecture
 
-- **Language**: Rust (verifier lib + WASM miner), Laravel/PHP (API), SQLite
-- **PoW Algorithm**: SHA-256
-- **Validity Rule (v1 "21e8 mode")**: `hex(sha256(input)).starts_with(required_prefix_hex)`
-- **Default Prefix**: `21e8` (difficulty scales by prefix length: `0021e8`, `000021e8`, etc.)
-- **Challenge TTL**: 60 seconds
-- **Server Verify Budget**: ≤5ms
+- **Verifier**: Rust library (`pow/verifier`) for canonical byte encoding and PoW verification
+- **WASM Miner**: Rust WASM module (`pow/miner-wasm`) for client-side mining
+- **API**: Laravel/PHP controllers (`app/Http/Controllers/Api/PowController.php`)
+- **Database**: SQLite with migrations for challenges, commits, and op receipts
 
-## Data Model
+## PoW Algorithm (v1 "21e8 mode")
 
-### Tables
+### Validity Rule
+```
+hex(sha256(input)).starts_with(required_prefix_hex)
+```
 
-#### `users`
-- `id`: Primary key
-- `pubkey_hex`: Unique secp256k1 public key (66 chars)
-- `created_at`: Timestamp
+Default prefix: `21e8` (difficulty scales by length: `0021e8`, `000021e8`, etc.)
 
-#### `posts`
-- `id`: Primary key
-- `thread_id`: Nullable, references thread
-- `parent_id`: Nullable, references parent post
-- `author_pubkey_hex`: Author's public key
-- `title`: Post title
-- `body`: Post content
-- `attachments_json`: JSON array of attachments
-- `created_at`: Timestamp
-
-#### `pow_challenges`
-- `id`: UUID primary key
-- `user_pubkey_hex`: Challenge owner
-- `scope`: ENUM('thread', 'reply')
-- `thread_id`: Nullable
-- `parent_id`: Nullable
-- `post_bytes_hash`: BLOB(32) - SHA-256 of post data
-- `required_prefix_hex`: Required hash prefix
-- `challenge_version`: INT (currently 1)
-- `expires_at`: Expiration timestamp
-- `created_at`: Timestamp
-
-#### `pow_commits`
-- `id`: UUID primary key
-- `challenge_id`: Foreign key to challenges
-- `nonce_u64`: Submitted nonce
-- `miner_version`: Miner version number
-- `timestamp_i64`: Mining timestamp
-- `solved_hash_hex`: Resulting hash (CHAR 64)
-- `accepted`: BOOLEAN
-- `reject_reason`: TEXT, nullable
-- `solve_time_ms`: INT, nullable
-- `created_at`: Timestamp
-
-#### `op_receipts`
-- `client_op_id`: UUID primary key (idempotency key)
-- `result_json`: Cached response TEXT
-- `created_at`: Timestamp
-
-## Canonical Byte Encoding (v1)
-
+### Canonical Bytes Encoding (v1)
 ```
 bytes = concat(
-  prefix="HC1",                    // 3 bytes
-  user_pubkey_hex,                 // 66 bytes (hex string)
-  scope,                           // 1 byte: 't' or 'r'
-  thread_id|0,                     // 8 bytes: u64 little-endian
-  parent_id|0,                     // 8 bytes: u64 little-endian
-  timestamp_i64,                   // 8 bytes: i64 little-endian
-  sha256(post_json_minified)       // 32 bytes
+  "HC1",                          // 3 bytes: prefix
+  user_pubkey_hex,                // 66 bytes: secp256k1 pubkey
+  scope,                          // 1 byte: 't' or 'r'
+  thread_id (u64 LE),             // 8 bytes
+  parent_id (u64 LE),             // 8 bytes
+  timestamp_i64 (i64 LE),         // 8 bytes
+  sha256(post_json_minified)      // 32 bytes: post hash
 )
 ```
 
-### Post JSON Minified Format
-
+### Post JSON Minification
 ```json
 {"attachments":[],"body":"...","refs":[],"title":"..."}
 ```
+Keys sorted alphabetically, UTF-8, no extra whitespace.
 
-Keys are sorted alphabetically, UTF-8 encoded, with no extra whitespace.
-
-## PoW Input (v1)
-
+### PoW Input
 ```
-input = concat(canonical_bytes, extra_data="", nonce_u64_le)
+input = concat(canonical_bytes, nonce_u64_le)
 digest = sha256(input)
 valid iff hex(digest).starts_with(required_prefix_hex)
 ```
 
-## HTTP API
+## API Endpoints
 
-### Public Endpoints
+### Get PoW Parameters
+```
+GET /api/pow/params
+```
 
-#### `GET /api/pow.params`
-
-Returns current PoW parameters.
-
-**Response:**
+Response:
 ```json
 {
   "mode": "vanity_prefix",
@@ -107,201 +61,102 @@ Returns current PoW parameters.
 }
 ```
 
-### Protected Endpoints (requires auth:sanctum)
+### Thread Creation Flow
 
-#### `POST /api/thread.begin`
+#### 1. Begin Challenge
+```
+POST /api/pow/thread/begin
+Authorization: Bearer <token>
+Content-Type: application/json
 
-Initiate thread creation and receive PoW challenge.
-
-**Request:**
-```json
 {
+  "client_op_id": "550e8400-e29b-41d4-a716-446655440000",
   "post_draft": {
-    "title": "Thread Title",
-    "body": "Thread content",
+    "title": "My First Thread",
+    "body": "Hello, haichan!",
     "attachments": [],
     "refs": []
-  },
-  "client_op_id": "uuid-v4"
-}
-```
-
-**Response:**
-```json
-{
-  "challenge_id": "uuid",
-  "required_prefix_hex": "21e8",
-  "challenge_version": 1,
-  "op_id": "uuid",
-  "expires_at": "2024-01-01T00:01:00+00:00",
-  "post_bytes_hash": "hex",
-  "canonical_bytes": "hex"
-}
-```
-
-#### `POST /api/thread.commit`
-
-Submit PoW proof and create thread.
-
-**Request:**
-```json
-{
-  "op_id": "uuid",
-  "challenge_id": "uuid",
-  "post_draft": { /* same as begin */ },
-  "proof": {
-    "nonce_u64": 12345,
-    "miner_version": 1,
-    "timestamp_i64": 1700000000000
   }
 }
 ```
 
-**Response:**
+Response:
 ```json
 {
-  "thread_id": 42,
-  "hash_hex": "21e8abc..."
+  "challenge_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "required_prefix_hex": "21e8",
+  "challenge_version": 1,
+  "op_id": "550e8400-e29b-41d4-a716-446655440000",
+  "expires_at": "2024-11-14T10:15:30Z",
+  "post_bytes_hash": "a3c4f..."
 }
 ```
 
-#### `POST /api/reply.begin`
+#### 2. Mine PoW (Client-Side)
+Use WASM miner to find valid nonce.
 
-Initiate reply creation (symmetric to thread.begin).
+#### 3. Commit Thread
+```
+POST /api/pow/thread/commit
+Authorization: Bearer <token>
+Content-Type: application/json
 
-**Request:**
-```json
 {
-  "thread_id": 42,
-  "parent_id": 100,
-  "post_draft": { /* ... */ },
-  "client_op_id": "uuid"
+  "op_id": "550e8400-e29b-41d4-a716-446655440000",
+  "challenge_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "post_draft": {
+    "title": "My First Thread",
+    "body": "Hello, haichan!",
+    "attachments": [],
+    "refs": []
+  },
+  "proof": {
+    "nonce_u64": 3759,
+    "miner_version": 1,
+    "timestamp_i64": 1700000000
+  }
 }
 ```
 
-#### `POST /api/reply.commit`
-
-Submit reply proof (symmetric to thread.commit).
-
-## Rules
-
-1. **Server Authority**: Server builds canonical bytes and `post_bytes_hash`; client must echo identical `post_draft` between begin and commit or request is rejected.
-
-2. **Idempotency**: Use `client_op_id` for idempotent operations.
-
-3. **Difficulty Control**: Server alone chooses `required_prefix_hex` per user/load; client never infers difficulty.
-
-4. **Telemetry**: System logs `miner_version`, `solve_time_ms`, `reject_reason`, and `solved_hash_hex`.
+Response:
+```json
+{
+  "thread_id": 42
+}
+```
 
 ## Test Vectors
 
-Five golden test vectors are included in `/pow/vectors/test_vectors_v1.json`:
+Golden test vectors in `pow/vectors/v1_test_vectors_solved.json`:
 
-1. **valid_thread_21e8**: Solvable case with prefix '21e8'
-2. **valid_reply_0021e8**: Solvable case with harder prefix '0021e8'
-3. **invalid_wrong_prefix**: Nonce produces wrong prefix
-4. **invalid_mutated_draft**: Post draft modified between begin/commit
-5. **invalid_expired_challenge**: Challenge TTL exceeded
-
-## Repository Layout
-
-```
-/pow/
-  verifier/           # Rust library + tests
-    src/
-      lib.rs
-      encoder.rs
-      verifier.rs
-    Cargo.toml
-  miner-wasm/         # Rust + wasm-bindgen
-    src/
-      lib.rs
-    Cargo.toml
-  vectors/            # JSON test vectors
-    test_vectors_v1.json
-/app/Http/Controllers/
-  PowController.php
-/routes/
-  api.php
-/database/migrations/
-  2025_10_22_create_pow_tables.php
-/tests/Feature/
-  PowSystemTest.php
-```
+1. **solvable_21e8_thread**: Valid thread with nonce 3759
+2. **solvable_0021e8_reply**: Valid reply with harder difficulty (nonce 3266874)
+3. **negative_wrong_prefix**: Invalid - hash doesn't match prefix
+4. **negative_mutated_draft**: Invalid - post draft changed
+5. **negative_expired_challenge**: Invalid - challenge TTL exceeded
 
 ## Building
 
 ### Rust Verifier
-
 ```bash
 cd pow/verifier
 cargo test --release
-cargo run --release --bin generate_vectors
+cargo run --release --bin populate_vectors
 ```
 
 ### WASM Miner
-
 ```bash
 cd pow/miner-wasm
-wasm-pack build --target web --release
+cargo build --target wasm32-unknown-unknown --release
+wasm-bindgen ../target/wasm32-unknown-unknown/release/pow_miner_wasm.wasm \
+  --out-dir pkg --target web
 ```
 
-Output: `pkg/haichan_miner_wasm_bg.wasm`
-
-### PHP Tests
-
+### Laravel Migrations
 ```bash
-php artisan migrate:fresh
-php artisan test --filter PowSystemTest
+php artisan migrate
 ```
 
-## CI Gates
+## License
 
-GitHub Actions workflow runs:
-- Rust tests (verifier + WASM)
-- PHPUnit tests
-- Vector validation
-
-Fails on any vector mismatch.
-
-## Usage Example (cURL)
-
-```bash
-# 1. Get params
-curl -X GET http://localhost/api/pow.params
-
-# 2. Begin thread
-curl -X POST http://localhost/api/thread.begin \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "post_draft": {
-      "title": "Hello",
-      "body": "World",
-      "attachments": [],
-      "refs": []
-    },
-    "client_op_id": "'$(uuidgen)'"
-  }'
-
-# 3. Mine nonce (use WASM miner)
-
-# 4. Commit
-curl -X POST http://localhost/api/thread.commit \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "op_id": "$OP_ID",
-    "challenge_id": "$CHALLENGE_ID",
-    "post_draft": { ... },
-    "proof": {
-      "nonce_u64": 12345,
-      "miner_version": 1,
-      "timestamp_i64": 1700000000000
-    }
-  }'
-```
-
-## Versioning
-
-**V1 Compatibility**: Never break v1. Add new fields only with defaults. Future versions (v2, v3...) can add fields to canonical bytes and be validated separately.
+MIT

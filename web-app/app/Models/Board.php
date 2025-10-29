@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 
 class Board extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'code', 'name', 'description', 'active', 'total_pow_points', 'pow_submissions_count', 'last_pow_at',
         'total_pow', 'daily_pow', 'weekly_pow', 'activity_score', 'display_order', 'shift_metadata', 'last_pow_update',

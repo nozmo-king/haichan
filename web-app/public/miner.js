@@ -1,19 +1,22 @@
-import init, { begin_mine, verify_local } from './miner-wasm.js';
+import init, { begin_mine, verify_local } from './wasm/pow_miner_wasm.js';
 
-let wasmInitialized = false;
+let wasm_initialized = false;
 
 async function ensureWasmInitialized() {
-    if (!wasmInitialized) {
-        await init();
-        wasmInitialized = true;
+    if (!wasm_initialized) {
+        try {
+            await init('/wasm/pow_miner_wasm_bg.wasm');
+            wasm_initialized = true;
+            console.log('✅ WASM miner initialized successfully');
+        } catch (error) {
+            console.error('❌ WASM initialization failed:', error);
+            throw new Error('WASM mining module failed to load: ' + error.message);
+        }
     }
 }
 
 export async function beginMine(challengeBytes, requiredPrefixHex, maxIters) {
     await ensureWasmInitialized();
-    // challengeBytes is a Uint8Array
-    // requiredPrefixHex is a string
-    // maxIters is a number
     const result = begin_mine(new Uint8Array(challengeBytes), requiredPrefixHex, maxIters);
     if (result) {
         return { nonce_u64: result[0], solved_hash_hex: result[1] };
@@ -22,10 +25,7 @@ export async function beginMine(challengeBytes, requiredPrefixHex, maxIters) {
     }
 }
 
-export async function verifyLocal(canonicalBytes, nonceU64, requiredPrefixHex) {
+export async function verifyLocal(inputBytes, requiredPrefixHex, nonce_u64) {
     await ensureWasmInitialized();
-    // canonicalBytes is a Uint8Array
-    // nonceU64 is a number
-    // requiredPrefixHex is a string
-    return verify_local(new Uint8Array(canonicalBytes), nonceU64, requiredPrefixHex);
+    return verify_local(new Uint8Array(inputBytes), requiredPrefixHex, nonce_u64);
 }

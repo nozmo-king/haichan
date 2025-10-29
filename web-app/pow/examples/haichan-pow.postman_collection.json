@@ -1,0 +1,222 @@
+{
+  "info": {
+    "name": "HaiChan PoW System",
+    "description": "Complete API collection for HaiChan Proof-of-Work posting system",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "api_token", 
+      "value": "your-token-here",
+      "type": "string"
+    },
+    {
+      "key": "challenge_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "op_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "PoW Parameters",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/pow.params",
+          "host": ["{{base_url}}"],
+          "path": ["api", "pow.params"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Thread Begin",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "  const response = pm.response.json();",
+              "  pm.collectionVariables.set('challenge_id', response.challenge_id);",
+              "  pm.collectionVariables.set('op_id', response.op_id);",
+              "  console.log('Challenge ID:', response.challenge_id);",
+              "  console.log('Required Prefix:', response.required_prefix_hex);",
+              "  console.log('Canonical Bytes:', response.canonical_bytes);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_token}}"
+          },
+          {
+            "key": "Content-Type", 
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"post_draft\": {\n    \"title\": \"Hello HaiChan!\",\n    \"body\": \"This is a test thread created via PoW mining.\",\n    \"attachments\": [],\n    \"refs\": []\n  },\n  \"client_op_id\": \"{{$randomUUID}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/thread.begin",
+          "host": ["{{base_url}}"],
+          "path": ["api", "thread.begin"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Thread Commit",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"op_id\": \"{{op_id}}\",\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"post_draft\": {\n    \"title\": \"Hello HaiChan!\",\n    \"body\": \"This is a test thread created via PoW mining.\",\n    \"attachments\": [],\n    \"refs\": []\n  },\n  \"proof\": {\n    \"nonce_u64\": 29942,\n    \"miner_version\": 1,\n    \"timestamp_i64\": 1640995200000\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/thread.commit",
+          "host": ["{{base_url}}"],
+          "path": ["api", "thread.commit"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Reply Begin",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"thread_id\": 42,\n  \"parent_id\": 100,\n  \"post_draft\": {\n    \"title\": \"\",\n    \"body\": \"This is a reply with PoW proof.\",\n    \"attachments\": [\"image.jpg\"],\n    \"refs\": [\">>1\", \">>2\"]\n  },\n  \"client_op_id\": \"{{$randomUUID}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/reply.begin",
+          "host": ["{{base_url}}"],
+          "path": ["api", "reply.begin"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Reply Commit",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"op_id\": \"example-reply-op-id\",\n  \"challenge_id\": \"example-reply-challenge-id\",\n  \"post_draft\": {\n    \"title\": \"\",\n    \"body\": \"This is a reply with PoW proof.\",\n    \"attachments\": [\"image.jpg\"],\n    \"refs\": [\">>1\", \">>2\"]\n  },\n  \"proof\": {\n    \"nonce_u64\": 354,\n    \"miner_version\": 1,\n    \"timestamp_i64\": 1641000000000\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/reply.commit",
+          "host": ["{{base_url}}"],
+          "path": ["api", "reply.commit"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Invalid Proof - Wrong Nonce",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"op_id\": \"{{op_id}}\",\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"post_draft\": {\n    \"title\": \"Hello HaiChan!\",\n    \"body\": \"This is a test thread created via PoW mining.\",\n    \"attachments\": [],\n    \"refs\": []\n  },\n  \"proof\": {\n    \"nonce_u64\": 999999,\n    \"miner_version\": 1,\n    \"timestamp_i64\": 1640995200000\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/thread.commit",
+          "host": ["{{base_url}}"],
+          "path": ["api", "thread.commit"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Invalid Proof - Mutated Draft",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{api_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"op_id\": \"{{op_id}}\",\n  \"challenge_id\": \"{{challenge_id}}\",\n  \"post_draft\": {\n    \"title\": \"Modified Title\",\n    \"body\": \"Modified content - this should fail\",\n    \"attachments\": [],\n    \"refs\": []\n  },\n  \"proof\": {\n    \"nonce_u64\": 123456,\n    \"miner_version\": 1,\n    \"timestamp_i64\": 1640995200000\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/thread.commit",
+          "host": ["{{base_url}}"],
+          "path": ["api", "thread.commit"]
+        }
+      },
+      "response": []
+    }
+  ]
+}

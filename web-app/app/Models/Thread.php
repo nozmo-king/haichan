@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Thread extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'board_id', 'title', 'content', 'user_id', 'author_name',
         'image_path', 'image_filename', 'image_original_name', 'image_size',
@@ -70,7 +72,7 @@ class Thread extends Model
         // Real-time calculation of all PoW for this thread
         $threadPoW = ProofOfWork::where('thread_id', $this->id)->sum('points');
         $bumpScore = $this->bump_score ?? 0;
-        $threadCreatePoW = $this->pow_difficulty ?? 1;
+        $threadCreatePoW = $this->pow_difficulty ?? 0; // Use 0 instead of 1 for no-PoW threads
 
         return $threadPoW + $bumpScore + $threadCreatePoW;
     }
@@ -243,5 +245,23 @@ class Thread extends Model
                 $thread->save();
             }
         });
+    }
+
+    /**
+     * Generate tripcode from bitcoin address and username
+     */
+    public function getTripcode()
+    {
+        if (!$this->bitcoinUser) {
+            return null;
+        }
+
+        $username = $this->bitcoinUser->username ?? 'Anon';
+        $address = $this->bitcoinUser->bitcoin_address;
+        
+        // Create tripcode: hash(username + address) and take first 8 chars
+        $tripcode = substr(hash('sha256', $username . $address), 0, 8);
+        
+        return $username . '!' . $tripcode;
     }
 }

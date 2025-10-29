@@ -33,7 +33,7 @@
                     </div>
                     <div style="display: flex; gap: 30px; color: #F5F5DC; font-size: 14px;">
                         <div>
-                            <strong>⚡ Points:</strong> {{ number_format($user->accumulated_points ?? 0) }}
+                            <strong>⚡ Points:</strong> {{ number_format($user->total_pow_points ?? 0) }}
                         </div>
                         <div>
                             <strong>📅 Joined:</strong> {{ $user->created_at->format('M j, Y') }}
@@ -104,54 +104,117 @@
         @endif
     </div>
 
-    <!-- Personal 21e8 Mining -->
+    <!-- Personal 21e8 Achievements -->
     <div style="margin-top: 30px; background: #F5F5DC; border: 2px solid #708B75; border-radius: 12px; padding: 30px; box-shadow: 0 4px 16px rgba(112, 139, 117, 0.1);">
         <h2 style="margin: 0 0 25px 0; color: #3D315B; font-family: 'Nova Cut', serif; font-size: 24px; text-align: center;">
-            ⛏️ Personal 21e8
+            ⛏️ Personal 21e8 Achievements
         </h2>
         
-        @if($user->personal_21e8_hash)
-            <!-- User has found their 21e8 -->
-            <div style="background: linear-gradient(135deg, #FFD700, #FFA500); border-radius: 8px; padding: 20px; text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 15px;">🏆</div>
-                <h3 style="color: #1a1a1a; margin: 0 0 10px 0;">21e8 FOUND!</h3>
-                <div style="font-family: monospace; font-size: 14px; color: #1a1a1a; word-break: break-all; margin-bottom: 10px;">
-                    {{ $user->personal_21e8_hash }}
-                </div>
-                <div style="color: #1a1a1a; font-size: 13px;">
-                    <div>Found on: {{ $user->personal_21e8_found_at->format('M j, Y g:i A') }}</div>
-                    <div>Mining time: {{ number_format($user->personal_21e8_mining_time, 2) }}s</div>
-                    <div>Total hashes: {{ number_format($user->personal_21e8_total_hashes) }}</div>
-                </div>
-            </div>
-        @else
-            <!-- User hasn't found their 21e8 yet -->
-            <div style="text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 15px;">💎</div>
-                <p style="color: #6B7A6B; font-size: 16px; margin-bottom: 20px;">
-                    This user hasn't discovered their personal 21e8 yet
-                </p>
-                @if(session('bitcoin_auth_id') && session('bitcoin_auth_id') == $user->id)
-                    <button onclick="startPersonalMining()" id="mine-button" style="padding: 12px 30px; background: linear-gradient(135deg, #708B75, #5a7860); color: #F5F5DC; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">
-                        Start Mining Your 21e8
-                    </button>
+        @php
+            $achievements = \App\Models\Personal21e8Achievement::where('user_id', $user->id)
+                ->orderBy('found_at', 'asc')
+                ->get();
+            $levels = \App\Models\Personal21e8Achievement::getLevels();
+            $hasAny = $achievements->count() > 0;
+            $currentLevel = $hasAny ? $achievements->last()->level : null;
+            $nextLevel = $currentLevel ? \App\Models\Personal21e8Achievement::getNextLevel($currentLevel) : '21e8';
+        @endphp
+        
+        <!-- Achievement Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+            @foreach($levels as $levelName => $levelData)
+                @php
+                    $achievement = $achievements->firstWhere('level', $levelName);
+                    $isUnlocked = $achievement !== null;
                     
-                    <!-- Mining Progress (hidden by default) -->
-                    <div id="mining-progress" style="display: none; margin-top: 20px;">
-                        <div style="font-size: 14px; color: #6B7A6B; margin-bottom: 10px;">Mining in progress...</div>
-                        <div id="hash-display" style="font-family: monospace; font-size: 12px; color: #999; margin-bottom: 10px; word-break: break-all;"></div>
-                        <div style="display: flex; justify-content: center; gap: 30px;">
-                            <div>
-                                <div id="hashrate" style="font-size: 20px; font-weight: bold; color: #708B75;">0 H/s</div>
-                                <div style="font-size: 12px; color: #6B7A6B;">Hashrate</div>
-                            </div>
-                            <div>
-                                <div id="total-hashes" style="font-size: 20px; font-weight: bold; color: #708B75;">0</div>
-                                <div style="font-size: 12px; color: #6B7A6B;">Hashes</div>
+                    // Different colors/emojis for each level
+                    $levelEmojis = [
+                        '21e8' => ['locked' => '💎', 'unlocked' => '💎', 'color' => '#00CED1'],
+                        '21e80' => ['locked' => '💠', 'unlocked' => '💠', 'color' => '#4169E1'],
+                        '21e800' => ['locked' => '🔷', 'unlocked' => '🔷', 'color' => '#9370DB'],
+                        '21e8000' => ['locked' => '🔶', 'unlocked' => '🔶', 'color' => '#FF8C00'],
+                        '21e80000' => ['locked' => '♦️', 'unlocked' => '♦️', 'color' => '#FFD700'],
+                    ];
+                    $levelEmoji = $levelEmojis[$levelName] ?? ['locked' => '💎', 'unlocked' => '🏆', 'color' => '#808080'];
+                @endphp
+                <div style="background: {{ $isUnlocked ? 'linear-gradient(135deg, #FFD700, #FFA500)' : 'linear-gradient(135deg, #f0f0f0, #e0e0e0)' }}; border-radius: 8px; padding: 15px; text-align: center; position: relative; {{ $isUnlocked ? 'box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);' : '' }}">
+                    @if($isUnlocked)
+                        <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.2); color: #fff; padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">
+                            🔒
+                        </div>
+                    @endif
+                    
+                    <div style="font-size: 32px; margin-bottom: 8px; {{ !$isUnlocked ? 'filter: grayscale(100%) opacity(0.4);' : '' }}">
+                        {{ $isUnlocked ? $levelEmoji['unlocked'] : $levelEmoji['locked'] }}
+                    </div>
+                    <div style="font-weight: bold; font-size: 16px; color: {{ $isUnlocked ? '#1a1a1a' : '#999' }}; margin-bottom: 5px;">
+                        {{ $levelName }}
+                    </div>
+                    <div style="font-size: 11px; color: {{ $isUnlocked ? '#1a1a1a' : '#999' }}; margin-bottom: 8px;">
+                        {{ number_format($levelData['points']) }} points
+                    </div>
+                    
+                    @if($isUnlocked)
+                        <div style="background: rgba(0,0,0,0.1); border-radius: 4px; padding: 6px; margin-top: 8px;">
+                            <div style="font-family: monospace; font-size: 9px; color: #1a1a1a; word-break: break-all;">
+                                {{ substr($achievement->hash, 0, 16) }}...
                             </div>
                         </div>
+                        <div style="font-size: 9px; color: #1a1a1a; margin-top: 5px;">
+                            {{ $achievement->found_at->format('M j, Y') }}
+                        </div>
+                    @else
+                        <div style="font-size: 10px; color: #999; margin-top: 8px;">
+                            Not found yet
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+        
+        <!-- Mining Interface -->
+        @if(session('bitcoin_auth_id') && session('bitcoin_auth_id') == $user->id)
+            <div style="background: rgba(112, 139, 117, 0.1); border-radius: 8px; padding: 20px; text-align: center;">
+                @if($nextLevel)
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-size: 14px; color: #6B7A6B; margin-bottom: 5px;">
+                            Next Target:
+                        </div>
+                        <div style="font-size: 24px; font-weight: bold; color: #708B75;">
+                            {{ $nextLevel }}
+                        </div>
+                        <div style="font-size: 12px; color: #6B7A6B;">
+                            Worth {{ $levels[$nextLevel]['points'] }} points
+                        </div>
+                    </div>
+                    
+                    <button onclick="startPersonalMining()" id="mine-button" style="padding: 12px 30px; background: linear-gradient(135deg, #708B75, #5a7860); color: #F5F5DC; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                        Mine {{ $nextLevel }}
+                    </button>
+                @else
+                    <div style="font-size: 18px; color: #708B75; font-weight: bold;">
+                        🎉 All Levels Completed!
+                    </div>
+                    <div style="font-size: 14px; color: #6B7A6B; margin-top: 10px;">
+                        You've found all personal 21e8 achievements!
                     </div>
                 @endif
+                
+                <!-- Mining Progress (hidden by default) -->
+                <div id="mining-progress" style="display: none; margin-top: 20px;">
+                    <div style="font-size: 14px; color: #6B7A6B; margin-bottom: 5px;">Mining for {{ $nextLevel }}...</div>
+                    <div id="hash-display" style="font-family: monospace; font-size: 11px; color: #999; margin-bottom: 10px; word-break: break-all;"></div>
+                    <div style="display: flex; justify-content: center; gap: 30px;">
+                        <div>
+                            <div id="hashrate" style="font-size: 20px; font-weight: bold; color: #708B75;">0 H/s</div>
+                            <div style="font-size: 12px; color: #6B7A6B;">Hashrate</div>
+                        </div>
+                        <div>
+                            <div id="total-hashes" style="font-size: 20px; font-weight: bold; color: #708B75;">0</div>
+                            <div style="font-size: 12px; color: #6B7A6B;">Hashes</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         @endif
     </div>
@@ -199,13 +262,15 @@ div[style*="overflow-y: auto"]::-webkit-scrollbar-thumb:hover {
 
 @if(session('bitcoin_auth_id') && session('bitcoin_auth_id') == $user->id)
 <script>
-// Personal 21e8 Mining
+// Personal 21e8 Mining - Progressive Levels
 const userData = {
     id: {{ $user->id }},
     username: '{{ $user->username }}',
     publicKey: '{{ $user->public_key }}',
     address: '{{ $user->address }}'
 };
+
+const currentLevel = '{{ $nextLevel ?? "" }}';
 
 let isMining = false;
 let miningWorker = null;
@@ -223,6 +288,11 @@ const miningTarget = generatePersonalTarget();
 async function startPersonalMining() {
     if (isMining) return;
     
+    if (!currentLevel) {
+        alert('You have completed all 21e8 levels! Congratulations!');
+        return;
+    }
+    
     isMining = true;
     startTime = Date.now();
     totalHashes = 0;
@@ -230,6 +300,7 @@ async function startPersonalMining() {
     const button = document.getElementById('mine-button');
     button.textContent = 'Stop Mining';
     button.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+    button.onclick = stopMining;
     
     document.getElementById('mining-progress').style.display = 'block';
     
@@ -266,15 +337,19 @@ async function mine() {
         totalHashes++;
         nonce++;
         
-        // Update display every 100 hashes
-        if (totalHashes % 100 === 0) {
+        // Update display every 25 hashes
+        if (totalHashes % 25 === 0) {
             document.getElementById('hash-display').textContent = hash;
         }
         
-        // Check for 21e8 (8 leading zeros)
-        if (hash.startsWith('00000000')) {
+        // ONLY check for the NEXT level you need (not any level)
+        let foundLevel = null;
+        
+        // Only accept the current target level
+        if (currentLevel && hash.startsWith(currentLevel)) {
+            foundLevel = currentLevel;
             // SUCCESS!
-            await handleSuccess(hash, nonce);
+            await handleSuccess(hash, nonce, foundLevel);
             stopMining();
             return;
         }
@@ -295,12 +370,25 @@ function stopMining() {
     }
     
     const button = document.getElementById('mine-button');
-    button.textContent = 'Start Mining Your 21e8';
+    button.textContent = currentLevel ? 'Mine ' + currentLevel : 'Start Mining';
     button.style.background = 'linear-gradient(135deg, #708B75, #5a7860)';
+    button.onclick = startPersonalMining;
 }
 
-async function handleSuccess(hash, nonce) {
+async function handleSuccess(hash, nonce, foundLevel) {
     const miningTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    
+    // Show immediate success message
+    alert('🏆 SUCCESS! You found ' + foundLevel + '!\n\nHash: ' + hash + '\n\nThis will be LOCKED to your account permanently.');
+    
+    console.log('Submitting:', {
+        hash: hash,
+        nonce: nonce,
+        target: miningTarget,
+        hashes: totalHashes,
+        time: parseFloat(miningTime),
+        level: foundLevel
+    });
     
     // Submit to server
     try {
@@ -312,20 +400,29 @@ async function handleSuccess(hash, nonce) {
             },
             body: JSON.stringify({
                 hash: hash,
-                nonce: nonce,
+                nonce: parseInt(nonce),
                 target: miningTarget,
-                hashes: totalHashes,
-                time: miningTime
+                hashes: parseInt(totalHashes),
+                time: parseFloat(miningTime)
             })
         });
         
+        const data = await response.json();
+        
         if (response.ok) {
-            // Reload page to show the found hash
+            // Show level-up message
+            if (data.next_level) {
+                alert('Level locked! Next challenge: ' + data.next_level);
+            }
+            // Reload page to show the new achievement
             window.location.reload();
+        } else {
+            console.error('Server error:', data);
+            alert('Error: ' + (data.error || data.message || 'Failed to save achievement'));
         }
     } catch (error) {
-        console.error('Failed to submit 21e8:', error);
-        alert('Found 21e8 but failed to save. Please try again.');
+        console.error('Failed to submit achievement:', error);
+        alert('Found ' + foundLevel + ' but failed to save. Please try again.');
     }
 }
 </script>

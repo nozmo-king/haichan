@@ -1,0 +1,72 @@
+name: PoW System CI
+
+on:
+  push:
+    branches: [ main, push-clean ]
+    paths:
+      - 'pow/**'
+      - '.github/workflows/pow-ci.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'pow/**'
+
+jobs:
+  test-rust:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        target: wasm32-unknown-unknown
+        override: true
+        components: rustfmt, clippy
+        
+    - name: Cache Cargo dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          pow/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('pow/**/Cargo.lock') }}
+        
+    - name: Install wasm-pack
+      run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        
+    - name: Test verifier library
+      run: |
+        cd pow/verifier
+        cargo test --verbose
+        cargo clippy -- -D warnings
+        cargo fmt -- --check
+        
+    - name: Test WASM miner
+      run: |
+        cd pow/miner-wasm  
+        cargo test --verbose
+        cargo clippy -- -D warnings
+        cargo fmt -- --check
+        
+    - name: Validate test vectors
+      run: |
+        cd pow/verifier
+        cargo run --bin populate_vectors --verbose
+        
+    - name: Build WASM package
+      run: |
+        cd pow/miner-wasm
+        wasm-pack build --target web --out-dir ../../public/wasm
+        
+    - name: Upload WASM artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: miner-wasm-${{ github.sha }}
+        path: public/wasm/
+        retention-days: 30

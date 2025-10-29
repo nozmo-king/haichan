@@ -95,7 +95,8 @@ window.authModule = {
             return {
                 user_id: challengeData.user_id,
                 challenge: challengeData.challenge,
-                signature: signatureHex
+                signature: signatureHex,
+                public_key: publicKeyHex // Include public key in return
             };
 
         } catch (error) {
@@ -104,44 +105,41 @@ window.authModule = {
         }
     },
 
-    submitLogin(authData, csrfToken) {
+    async submitLogin(authData, csrfToken) { // Make it async
         try {
-            console.log('Submitting login form with data:', authData);
+            console.log('Submitting cryptographic login with data:', authData);
 
-            // Create and submit form
-            const loginForm = document.createElement('form');
-            loginForm.method = 'POST';
-            loginForm.action = '/login';
-
-            const fields = {
-                '_token': csrfToken,
-                'user_id': authData.user_id,
-                'challenge': authData.challenge,
-                'signature': authData.signature
-            };
-
-            Object.entries(fields).forEach(([name, value]) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = name;
-                input.value = value;
-                loginForm.appendChild(input);
+            const response = await fetch('/login/cryptographic', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    public_key: authData.public_key, // Use the public_key from authData
+                    signature: authData.signature,
+                    message: authData.challenge // The challenge is the message that was signed
+                })
             });
 
-            document.body.appendChild(loginForm);
+            const responseData = await response.json();
 
-            // Add a timeout fallback in case form submission hangs
-            setTimeout(() => {
-                if (document.body.contains(loginForm)) {
-                    console.error('Form submission appears to have failed - removing form');
-                    loginForm.remove();
-                    throw new Error('Login form submission timed out');
+            if (response.ok && responseData.success) {
+                console.log('Cryptographic login successful:', responseData.message);
+                // Save user_pubkey to localStorage
+                if (responseData.user_pubkey) {
+                    localStorage.setItem('user_pubkey', responseData.user_pubkey);
+                    console.log('✅ User public key saved to localStorage:', responseData.user_pubkey);
                 }
-            }, 10000);
-
-            loginForm.submit();
+                // Redirect to dashboard
+                window.location.href = '/';
+            } else {
+                const errorMessage = responseData.message || 'Cryptographic login failed.';
+                console.error('Cryptographic login failed:', errorMessage);
+                throw new Error(errorMessage);
+            }
         } catch (error) {
-            console.error('Error submitting login form:', error);
+            console.error('Error during cryptographic login:', error);
             throw error;
         }
     }

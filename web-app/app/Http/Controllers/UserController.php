@@ -72,6 +72,7 @@ class UserController extends Controller
         $stats = [
             'posts' => \DB::table('posts')->where('user_id', $user->id)->count(),
             'threads' => \DB::table('threads')->where('user_id', $user->id)->count(),
+            'messages' => \DB::table('posts')->where('user_id', $user->id)->count(),
             'pow_points' => $user->total_pow_points ?? 0,
             'level' => $user->level ?? 1,
         ];
