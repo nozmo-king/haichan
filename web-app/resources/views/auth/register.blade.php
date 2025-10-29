@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Register - Haichan</title>
     <link rel="stylesheet" href="/css/haichan.css">
-    <link rel="stylesheet" href="/css/themes.css">
+    @vite(['resources/css/themes.css'])
     <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -88,7 +88,7 @@
             </div>
 
             <!-- Bitcoin Key Fields (hidden, will be generated) -->
-            <input type="hidden" name="private_key" id="private_key" required>
+            
             <input type="hidden" name="public_key" id="public_key" required>
             <input type="hidden" name="address" id="address" required>
 
@@ -132,7 +132,7 @@
             </div>
 
             <button type="submit" id="submit-btn" disabled style="width: 100%; background: #999; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: not-allowed; transition: all 0.3s ease;">
-                🔒 Generate Keys First
+                🔒 Enter username (3+ chars) & password (8+ chars)
             </button>
         </form>
 
@@ -156,9 +156,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Page loaded. Using native browser crypto...');
+    
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
-    const privateKeyInput = document.getElementById('private_key');
     const publicKeyInput = document.getElementById('public_key');
     const addressInput = document.getElementById('address');
     const generatedKeysDiv = document.getElementById('generated-keys');
@@ -167,6 +168,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const displayAddress = document.getElementById('display-address');
     const submitBtn = document.getElementById('submit-btn');
     let keysGenerated = false;
+    let generatedPrivateKey;
+
+    // Base58 encoding for Bitcoin addresses
+    const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    
+    function base58encode(buffer) {
+        let digits = [0];
+        for (let i = 0; i < buffer.length; i++) {
+            let carry = buffer[i];
+            for (let j = 0; j < digits.length; j++) {
+                carry += digits[j] << 8;
+                digits[j] = carry % 58;
+                carry = (carry / 58) | 0;
+            }
+            while (carry) {
+                digits.push(carry % 58);
+                carry = (carry / 58) | 0;
+            }
+        }
+        for (let i = 0; i < buffer.length && buffer[i] === 0; i++) {
+            digits.push(0);
+        }
+        return digits.reverse().map(digit => BASE58[digit]).join('');
+    }
+
+    function hexToBytes(hex) {
+        const bytes = [];
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes.push(parseInt(hex.substr(i, 2), 16));
+        }
+        return new Uint8Array(bytes);
+    }
+
+    async function sha256(data) {
+        const buffer = typeof data === 'string' ? new TextEncoder().encode(data) : data;
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+        return Array.from(new Uint8Array(hashBuffer))
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+    }
+
+    // Simple RIPEMD160 fallback (not cryptographically secure, but functional for demo)
+    function ripemd160Mock(hexString) {
+        // For demo purposes, use first 40 chars of SHA256
+        return hexString.substring(0, 40);
+    }
 
     async function generateKeys() {
         if (keysGenerated) return;
@@ -174,33 +221,64 @@ document.addEventListener('DOMContentLoaded', function() {
         const username = usernameInput.value.trim();
         const password = passwordInput.value.trim();
 
+        console.log('Attempting key generation with username:', username.length, 'chars, password:', password.length, 'chars');
+
         if (username.length < 3 || password.length < 8) {
+            // Update button text to show what's needed
+            let buttonText = '🔒 Need: ';
+            if (username.length < 3) buttonText += 'Username (3+ chars) ';
+            if (password.length < 8) buttonText += 'Password (8+ chars)';
+            submitBtn.textContent = buttonText;
             return;
         }
 
+        console.log('Starting key generation...');
         keysGenerated = true;
 
         try {
-            // Generate random private key using Web Crypto API
-            const randomBytes = new Uint8Array(32);
-            window.crypto.getRandomValues(randomBytes);
-            const privateKey = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+            // Generate a random 32-byte private key
+            const privateKeyArray = new Uint8Array(32);
+            crypto.getRandomValues(privateKeyArray);
             
-            // Generate public key (simplified - just hash the private key)
-            const publicKey = await sha256(privateKey);
+            // Convert to hex
+            const privateKeyHex = Array.from(privateKeyArray)
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
             
-            // Generate Bitcoin-like address
-            const address = await generateAddress(publicKey);
-            
+            // Create WIF format private key (Bitcoin mainnet)
+            const privateKeyWithPrefix = '80' + privateKeyHex;
+            const checksum1 = await sha256(hexToBytes(privateKeyWithPrefix));
+            const checksum2 = (await sha256(hexToBytes(checksum1))).substr(0, 8);
+            const privateKeyWithChecksum = privateKeyWithPrefix + checksum2;
+            generatedPrivateKey = base58encode(hexToBytes(privateKeyWithChecksum));
+
+            // Generate mock public key (32 bytes = 64 hex chars)
+            const mockPublicKey = new Uint8Array(32);
+            crypto.getRandomValues(mockPublicKey);
+            const publicKeyHex = Array.from(mockPublicKey).map(b => b.toString(16).padStart(2, '0')).join('');
+
+            // Generate Bitcoin address using simplified approach
+            const publicKeyHash1 = await sha256(publicKeyHex);
+            const publicKeyHash = ripemd160Mock(publicKeyHash1);
+            const addressPayload = '00' + publicKeyHash;
+            const addressChecksum1 = await sha256(hexToBytes(addressPayload));
+            const addressChecksum2 = (await sha256(hexToBytes(addressChecksum1))).substr(0, 8);
+            const addressWithChecksum = addressPayload + addressChecksum2;
+            const bitcoinAddress = base58encode(hexToBytes(addressWithChecksum));
+
             // Set hidden form fields
-            privateKeyInput.value = privateKey;
-            publicKeyInput.value = publicKey;
-            addressInput.value = address;
+            publicKeyInput.value = publicKeyHex;
+            addressInput.value = bitcoinAddress;
+            
+            console.log('Keys generated successfully!');
+            console.log('Private Key (WIF):', generatedPrivateKey);
+            console.log('Public Key:', publicKeyHex);
+            console.log('Bitcoin Address:', bitcoinAddress);
             
             // Show generated keys
-            displayPrivateKey.textContent = privateKey;
-            displayPublicKey.textContent = publicKey;
-            displayAddress.textContent = address;
+            displayPrivateKey.textContent = generatedPrivateKey;
+            displayPublicKey.textContent = publicKeyHex;
+            displayAddress.textContent = bitcoinAddress;
             generatedKeysDiv.style.display = 'block';
             
             // Enable submit button
@@ -208,6 +286,8 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
             submitBtn.style.cursor = 'pointer';
             submitBtn.textContent = '🚀 REGISTER FOR HAICHAN';
+            
+            console.log('Submit button enabled!');
             
         } catch (error) {
             console.error('Key generation failed:', error);
@@ -223,7 +303,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('download-keys').addEventListener('click', function() {
         const friendCode = document.getElementById('friend_code').value;
         const username = usernameInput.value;
-        const privateKey = privateKeyInput.value;
         const publicKey = publicKeyInput.value;
         const address = addressInput.value;
         
@@ -232,14 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
 # Username: ${username}
 # Friend Code Used: ${friendCode}
 
-PRIVATE_KEY=${privateKey}
-PUBLIC_KEY=${publicKey}
-ADDRESS=${address}
-USERNAME=${username}
-
-# IMPORTANT: Save this file securely!
-# Use your private key for backup login
-# Never share your private key with anyone`;
+PRIVATE_KEY=${generatedPrivateKey}\nPUBLIC_KEY=${publicKey}\nADDRESS=${address}\nUSERNAME=${username}\n\n# IMPORTANT: Save this file securely!\n# Use your private key for backup login\n# Never share your private key with anyone`;
 
         const blob = new Blob([backupContent], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
@@ -251,20 +323,6 @@ USERNAME=${username}
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     });
-
-    // Helper functions
-    async function sha256(message) {
-        const msgBuffer = new TextEncoder().encode(message);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-
-    async function generateAddress(publicKey) {
-        // Simple Bitcoin-like address generation
-        const hash = await sha256(publicKey);
-        return '1' + hash.substring(0, 33);
-    }
 });
 </script>
 

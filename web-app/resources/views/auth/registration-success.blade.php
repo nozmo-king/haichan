@@ -204,7 +204,7 @@
             </div>
             <div class="credential-line">
                 <span class="credential-label">PRIVATE KEY:</span>
-                <span class="credential-value">{{ $privateKey }}</span>
+                <span class="credential-value">⚠️ PRIVATE KEY NEVER STORED ON SERVER - CHECK YOUR DOWNLOADS</span>
             </div>
             <div class="credential-line">
                 <span class="credential-label">YOUR INVITE CODE:</span>
