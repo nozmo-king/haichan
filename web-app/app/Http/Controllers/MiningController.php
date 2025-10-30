@@ -22,10 +22,6 @@ class MiningController extends Controller
         $this->pointCalculationService = $pointCalculationService;
     }
 
-    public function index()
-    {
-        return view('mining.index');
-    }
 
     /**
      * Submit mining proof and award points properly
@@ -175,6 +171,44 @@ class MiningController extends Controller
                 'message' => 'Mining proof failed: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Show mining dashboard
+     */
+    public function dashboard()
+    {
+        $userId = session('bitcoin_auth_id');
+        $user = $userId ? BitcoinAuth::find($userId) : null;
+        
+        // Get boards
+        $boards = \App\Models\Board::all();
+        
+        // Get mining stats
+        $totalProofs = ProofOfWork::count();
+        $totalMiners = ProofOfWork::distinct('user_id')->whereNotNull('user_id')->count('user_id');
+        $recentProofs = ProofOfWork::orderBy('created_at', 'desc')->take(20)->get();
+        
+        // Active sessions (last 15 minutes)
+        $activeSessions = ProofOfWork::where('created_at', '>', now()->subMinutes(15))
+            ->distinct('user_id')
+            ->whereNotNull('user_id')
+            ->count('user_id');
+        
+        // Top miners (by points)
+        $topMiners = BitcoinAuth::orderBy('total_pow_points', 'desc')
+            ->take(10)
+            ->get();
+        
+        // Recent threads (if needed)
+        $recentThreads = \App\Models\Thread::orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
+        
+        return view('mining-market-dashboard', compact(
+            'user', 'boards', 'totalProofs', 'totalMiners', 
+            'recentProofs', 'activeSessions', 'topMiners', 'recentThreads'
+        ));
     }
 
     /**

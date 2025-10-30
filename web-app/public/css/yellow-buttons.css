@@ -1,0 +1,38 @@
+/**
+ * FORCE PINK/TAN ON GREEN
+ */
+
+/* EVERY POSSIBLE BUTTON SELECTOR */
+button,
+button *,
+.btn,
+.btn *,
+input[type="submit"],
+input[type="submit"] *,
+input[type="button"],
+input[type="button"] *,
+.board-box,
+.board-box *,
+a.board-box,
+a.board-box *,
+a[style*="background"],
+a[style*="background"] *,
+div[style*="background"] a,
+div[style*="background"] a * {
+    color: #D4AC7A !important;
+    fill: #D4AC7A !important;
+}
+
+/* Force on hover too */
+button:hover,
+button:hover *,
+.btn:hover,
+.btn:hover *,
+.board-box:hover,
+.board-box:hover *,
+a[style*="background"]:hover,
+a[style*="background"]:hover * {
+    color: #D4AC7A !important;
+}
+
+/* JavaScript enforcement */

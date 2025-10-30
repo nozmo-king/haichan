@@ -6,6 +6,17 @@
 class SimpleProofOfWork {
     constructor() {
         console.log('🔨 Simple PoW: Initialized');
+        
+        // Mining state tracking
+        this.isMining = false;
+        this.currentHashrate = 0;
+        this.totalHashes = 0;
+        this.startTime = null;
+        this.miningStats = {
+            totalProofs: 0,
+            sessionProofs: 0,
+            sessionStartTime: Date.now()
+        };
     }
 
     async sha256(text) {
@@ -124,6 +135,11 @@ class SimpleProofOfWork {
     async mine(data, difficulty) {
         console.log('🔨 Simple PoW: Mining with difficulty', difficulty);
         
+        // Start mining state tracking
+        this.isMining = true;
+        this.startTime = Date.now();
+        this.totalHashes = 0;
+        
         let nonce = 0;
         const maxAttempts = 100000000; // Increased for higher difficulty proofs like 21e8
         
@@ -133,20 +149,84 @@ class SimpleProofOfWork {
             
             if (hash.toLowerCase().startsWith(difficulty.toLowerCase())) {
                 console.log('🔨 Simple PoW: Found valid hash after', nonce, 'attempts');
+                
+                // End mining state tracking
+                this.isMining = false;
+                this.miningStats.totalProofs++;
+                this.miningStats.sessionProofs++;
+                
+                // Notify toolbar of completed mining
+                this.notifyMiningComplete();
+                
                 return { nonce, hash };
             }
             
             nonce++;
+            this.totalHashes = nonce;
             
             // Update progress every 10000 hashes
             if (nonce % 10000 === 0) {
-                console.log('🔨 Simple PoW: Progress -', nonce, 'hashes attempted');
+                // Calculate current hashrate
+                const elapsed = (Date.now() - this.startTime) / 1000;
+                this.currentHashrate = Math.round(nonce / elapsed);
+                
+                console.log('🔨 Simple PoW: Progress -', nonce, 'hashes attempted,', this.currentHashrate, 'H/s');
+                
+                // Notify toolbar of mining progress
+                this.notifyMiningProgress();
+                
                 // Allow UI to update
                 await new Promise(resolve => setTimeout(resolve, 1));
             }
         }
         
+        // Mining failed - reset state
+        this.isMining = false;
+        this.currentHashrate = 0;
+        this.notifyMiningComplete();
+        
         throw new Error('Mining failed: Max attempts reached');
+    }
+    
+    // Notify toolbar of mining progress
+    notifyMiningProgress() {
+        if (window.HaichanState) {
+            window.HaichanState.setState('mining.isActive', this.isMining);
+            window.HaichanState.setState('mining.hashrate', this.currentHashrate);
+            window.HaichanState.setState('mining.totalHashes', this.totalHashes);
+        }
+        
+        // Also dispatch custom event for toolbar
+        window.dispatchEvent(new CustomEvent('mining:progress', {
+            detail: {
+                isActive: this.isMining,
+                hashrate: this.currentHashrate,
+                totalHashes: this.totalHashes,
+                sessionProofs: this.miningStats.sessionProofs
+            }
+        }));
+    }
+    
+    // Notify toolbar when mining completes
+    notifyMiningComplete() {
+        if (window.HaichanState) {
+            window.HaichanState.setState('mining.isActive', false);
+            window.HaichanState.setState('mining.hashrate', 0);
+            window.HaichanState.setState('mining.stats.totalProofs', this.miningStats.totalProofs);
+            window.HaichanState.setState('mining.stats.sessionProofs', this.miningStats.sessionProofs);
+        }
+        
+        // Dispatch completion event
+        window.dispatchEvent(new CustomEvent('mining:complete', {
+            detail: {
+                totalProofs: this.miningStats.totalProofs,
+                sessionProofs: this.miningStats.sessionProofs,
+                lastHashrate: this.currentHashrate
+            }
+        }));
+        
+        // Reset current hashrate after completion
+        this.currentHashrate = 0;
     }
 }
 
@@ -370,7 +450,7 @@ class SimpleMouseoverMiner {
                 this.showSubtleEffect(element);
                 
                 // Submit proof
-                await this.submitRealProof(proof, targetType, targetId, boardCode, this.currentDifficulty);
+                await this.submitRealProof(proof, targetType, targetId, boardCode, this.currentDifficulty, {}, localStorage.getItem('user_pubkey'));
                 
                 // Update stats with animations
                 const oldStats = { ...this.stats };
@@ -381,9 +461,7 @@ class SimpleMouseoverMiner {
                 // Animate stat changes
                 this.animateStatChanges(oldStats, this.stats);
                 
-                if (window.miningToolbar) {
-                    window.miningToolbar.updateStats(this.stats.proofs, this.stats.points, this.stats.hashes);
-                }
+
                 
                 // Update mining dashboard activity
                 if (window.MiningDashboard) {
@@ -416,28 +494,12 @@ class SimpleMouseoverMiner {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
                              document.querySelector('input[name="_token"]')?.value || '';
             
-            let endpoint = '';
-            let body = {
-                op_id: proof.op_id, // Assuming op_id is returned from acquireProofFor
-                challenge_id: proof.challenge_id,
-                post_draft: postDraft,
-                proof: {
-                    nonce_u64: proof.nonce,
-                    miner_version: 1, // Assuming miner version 1
-                    timestamp_i64: Math.floor(Date.now() / 1000)
-                },
-                user_pubkey_hex: userPubkeyHex
+            const endpoint = '/api/mining/submit-proof';
+            const body = {
+                challenge_token: proof.challenge_id,
+                client_nonce: proof.nonce,
+                hash: proof.hash,
             };
-
-            if (targetType === 'thread') {
-                endpoint = '/api/thread.commit';
-            } else if (targetType === 'reply') {
-                endpoint = '/api/reply.commit';
-                body.thread_id = targetId; // For replies, targetId is thread_id
-                // body.parent_id = ... // If parent_id is needed, it should be passed here
-            } else {
-                throw new Error('Unsupported targetType for proof submission');
-            }
 
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -836,69 +898,7 @@ class SimpleMouseoverMiner {
 }
 
 // Mining toolbar class
-class MiningToolbar {
-    constructor(miner) {
-        this.miner = miner;
-        this.power = 5; // 1-10 scale
-        this.stats = { proofs: 0, points: 0, hashes: 0 };
-        // DISABLED: Toolbar removed as vestigial component
-        // this.createToolbar();
-        this.updateMiningDifficulty();
-    }
 
-            createToolbar() {
-                // DEPRECATED: Toolbar functionality removed
-                console.log('ℹ️ Mining toolbar disabled (vestigial component)');
-                return;
-            }
-    setupToolbarEvents() {
-        const powerValue = document.getElementById('power-value');
-        const toggleBtn = document.getElementById('toggle-mining');
-
-        toggleBtn.addEventListener('click', () => {
-            if (this.miner.enabled) {
-                this.miner.enabled = false;
-                toggleBtn.textContent = 'OFF';
-                toggleBtn.style.background = '#f44336';
-            } else {
-                this.miner.enabled = true;
-                toggleBtn.textContent = 'ON';
-                toggleBtn.style.background = '#4CAF50';
-            }
-        });
-    }
-
-    updateMiningDifficulty() {
-        // All mining uses easier difficulty for better UX
-        this.miner.currentDifficulty = '21';
-    }
-
-    updateStats(proofs, points, hashes) {
-        this.stats = { proofs, points, hashes };
-        
-        // Update legacy stats element if it exists
-        const statsEl = document.getElementById('mining-stats');
-        if (statsEl) {
-            statsEl.textContent = `Proofs: ${proofs} | Points: ${points.toFixed(1)} | Hashes: ${hashes}`;
-        }
-        
-        // Update bottom toolbar elements (the actual visible ones)
-        const proofsEl = document.getElementById('toolbar-proofs');
-        const pointsEl = document.getElementById('toolbar-points');
-        const hashrateEl = document.getElementById('toolbar-hashrate');
-        const sessionsEl = document.getElementById('toolbar-sessions');
-        
-        if (proofsEl) proofsEl.textContent = proofs;
-        if (pointsEl) pointsEl.textContent = points.toFixed(1);
-        if (sessionsEl) sessionsEl.textContent = this.miner.currentTarget ? 1 : 0;
-        
-        // Calculate hashrate (hashes per second, rough estimate)
-        if (hashrateEl) {
-            const hashrate = hashes > 0 ? Math.floor(hashes / 60) : 0;
-            hashrateEl.textContent = hashrate.toLocaleString() + ' H/s';
-        }
-    }
-}
 
 // Reply Form PoW Handler - auto-initialize
 class ReplyFormMiner {
@@ -1030,11 +1030,21 @@ class ReplyFormMiner {
 
         // Form submission handler
         replyForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Always prevent default form submission
+
             const currentHash = replyForm.querySelector('input[name="pow_hash"]')?.value?.trim() || '';
             const content = contentInput.value.trim();
-            
-            if (content.length >= 5 && !currentHash) {
-                e.preventDefault();
+            const submitBtn = document.getElementById('reply-submit-btn');
+            const miningStatus = document.getElementById('reply-mining-status');
+
+            if (content.length < 5) {
+                if (miningStatus) {
+                    miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Content too short</span>';
+                }
+                return;
+            }
+
+            if (!currentHash) {
                 if (miningStatus) {
                     miningStatus.innerHTML = '<span style="color: #ffc107;">⛏️ Mining required before submission...</span>';
                 }
@@ -1043,14 +1053,7 @@ class ReplyFormMiner {
                     await this.startMining(replyForm, miningStatus);
                     const newHash = replyForm.querySelector('input[name="pow_hash"]')?.value?.trim() || '';
                     
-                    if (newHash) {
-                        submitBtn.textContent = '⏳ Posting...';
-                        submitBtn.disabled = true;
-                        if (miningStatus) {
-                            miningStatus.innerHTML = '<span style="color: #28a745;">✅ Submitting...</span>';
-                        }
-                        replyForm.submit();
-                    } else {
+                    if (!newHash) {
                         throw new Error('Mining failed to produce hash');
                     }
                 } catch (error) {
@@ -1058,9 +1061,60 @@ class ReplyFormMiner {
                     if (miningStatus) {
                         miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Mining failed: ' + error.message + '</span>';
                     }
+                    return;
                 }
             }
-        });
+
+            // Proceed with submission via fetch
+            submitBtn.textContent = '⏳ Posting...';
+            submitBtn.disabled = true;
+            if (miningStatus) {
+                miningStatus.innerHTML = '<span style="color: #28a745;">✅ Submitting...</span>';
+            }
+
+            try {
+                const formData = new FormData(replyForm);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+                const response = await fetch(replyForm.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    // Success - redirect to the new post or reload
+                    if (response.redirected) {
+                        window.location.href = response.url;
+                    } else {
+                        // If not redirected, assume it's a successful API response and reload
+                        window.location.reload();
+                    }
+                } else {
+                    const errorData = await response.json();
+                    console.error('Form submission failed:', errorData);
+                    alert('Reply submission failed: ' + (errorData.message || 'Unknown error'));
+
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '⚡ Post Reply';
+                    if (miningStatus) {
+                        miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Submission failed</span>';
+                    }
+                }
+            } catch (error) {
+                console.error('Network error during submission:', error);
+                alert('Network error occurred. Please try again.');
+
+                submitBtn.disabled = false;
+                submitBtn.textContent = '⚡ Post Reply';
+                if (miningStatus) {
+                    miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Network error</span>';
+                }
+            }
+        }); // Added missing closing brace here
         
         console.log('✅ Reply form mining setup complete');
     }
@@ -1335,7 +1389,6 @@ if (!window.location.pathname.includes('/mining')) {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             window.mouseoverMiner = new SimpleMouseoverMiner(window.simplePoW);
-            window.miningToolbar = new MiningToolbar(window.mouseoverMiner);
             
             // Dispatch ready event for toolbar
             if (typeof window.CustomEvent === 'function') {
@@ -1344,7 +1397,6 @@ if (!window.location.pathname.includes('/mining')) {
         });
     } else {
         window.mouseoverMiner = new SimpleMouseoverMiner(window.simplePoW);
-        window.miningToolbar = new MiningToolbar(window.mouseoverMiner);
         
         // Dispatch ready event for toolbar immediately
         setTimeout(() => {

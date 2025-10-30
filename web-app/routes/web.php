@@ -145,6 +145,7 @@ Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logou
 // Registration routes (public)
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
 Route::post('/register/validate-friend-code', [AuthController::class, 'validateFriendCode'])->name('auth.validate.friend.code');
+Route::post('/api/friend-codes/validate', [AuthController::class, 'validateFriendCode'])->name('api.friend-codes.validate');
 Route::get('/register/{friendCode}', [AuthController::class, 'showRegister'])->name('auth.register');
 Route::post('/register', [AuthController::class, 'register'])->name('auth.register.store');
 
@@ -152,8 +153,9 @@ Route::post('/register', [AuthController::class, 'register'])->name('auth.regist
 Route::get('/image/thread/{id}', [App\Http\Controllers\ForumController::class, 'serveThreadImage'])->name('thread.image');
 Route::get('/image/post/{id}', [App\Http\Controllers\ForumController::class, 'servePostImage'])->name('post.image');
 
-// Mining dashboard - public access  
-Route::get('/mining', [App\Http\Controllers\MiningController::class, 'index'])->name('mining.dashboard');
+// Mining dashboard - public access (shooting range)
+Route::get('/mining', [App\Http\Controllers\MiningController::class, 'dashboard'])->name('mining.dashboard');
+
 Route::post('/api/mining/submit-proof', [App\Http\Controllers\MiningController::class, 'submitMiningProof'])->name('mining.submit');
 Route::get('/api/mining/stats', [App\Http\Controllers\MiningController::class, 'getStats'])->name('mining.stats');
 
@@ -282,7 +284,7 @@ Route::middleware('bitcoin.auth')->group(function () {
     Route::prefix('chat')->name('chat.')->group(function () {
         Route::get('/', [App\Http\Controllers\ChatController::class, 'index'])->name('index');
         Route::get('/{room}', [App\Http\Controllers\ChatController::class, 'show'])->name('room');
-        Route::post('/{room}/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send');
+        Route::post('/{room}/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
         Route::get('/{room}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('messages');
         Route::post('/{room}/join', [App\Http\Controllers\ChatController::class, 'joinRoom'])->name('join');
         Route::post('/{room}/leave', [App\Http\Controllers\ChatController::class, 'leaveRoom'])->name('leave');
@@ -342,6 +344,7 @@ Route::middleware('bitcoin.auth')->group(function () {
         // Forum Moderation
         Route::get('/forum', [App\Http\Controllers\AdminController::class, 'forum'])->name('forum');
         Route::post('/threads/{id}/pin', [App\Http\Controllers\AdminController::class, 'pinThread'])->name('threads.pin');
+        Route::post('/threads/{id}/unpin', [App\Http\Controllers\AdminController::class, 'unpinThread'])->name('threads.unpin');
         Route::post('/threads/{id}/lock', [App\Http\Controllers\AdminController::class, 'lockThread'])->name('threads.lock');
         Route::delete('/threads/{id}/delete', [App\Http\Controllers\AdminController::class, 'deleteThread'])->name('threads.delete');
         Route::delete('/posts/{id}/delete', [App\Http\Controllers\AdminController::class, 'deletePost'])->name('posts.delete');

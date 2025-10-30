@@ -3,7 +3,7 @@
 @endphp
 
 <div class="header">
-    <h1><a href="/">Home</a></h1>
+    <h1><a href="/" style="font-family: 'Nova Cut', serif; color: #9AB87A; text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000;">📻 Haichan ⚡<br><span style="font-size: 12px; color: #9AB87A; text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000;">PoW Imageboard • β版</span></a></h1>
     <nav class="main-navigation">
         <div class="nav-section">
             <!-- Boards Dropdown -->
@@ -29,6 +29,9 @@
                 <a href="/{{ $board->code }}/catalog" class="nav-link">📑 Catalog</a>
             @endif
             <a href="/mining" class="nav-link">⛏️ Mining</a>
+            <a href="/shop" class="nav-link">🛒 Shop</a>
+            <a href="/chat" class="nav-link">💬 Chat</a>
+            <a href="/stats" class="nav-link">📊 Stats</a>
             <a href="/rules" class="nav-link">📜 Rules</a>
             <a href="/faq" class="nav-link">❓ FAQ</a>
             
@@ -42,16 +45,19 @@
 <style>
 /* Navigation Styling */
 .header {
-    background: linear-gradient(135deg, #708B75, #5A7B5F);
+    background: #F5F5DC !important;
+    background-color: #F5F5DC !important;
     padding: 12px 20px;
-    border-bottom: 2px solid #4A6B4F;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-bottom: 3px solid #9AB87A !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    text-align: center;
 }
 
 .header h1 {
     margin: 0;
     display: inline-block;
     margin-right: 30px;
+    text-align: center;
 }
 
 .header h1 a {
@@ -65,33 +71,57 @@
 .main-navigation {
     display: inline-flex;
     align-items: center;
-    gap: 20px;
+    gap: 10px;
     flex-wrap: wrap;
+    justify-content: center;
 }
 
 .nav-section {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 5px;
 }
 
 .nav-link {
-    color: #F5F5DC !important;
-    text-decoration: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    font-size: 11pt;
+    background: #F5F5DC !important;
+    color: #000000 !important;
+    border: 2px solid #8B4513 !important;
+    border-radius: 4px !important;
+    padding: 4px 8px !important;
+    margin: 2px !important;
+    font-size: 9pt !important;
+    font-weight: bold !important;
+    font-family: 'Courier New', monospace !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    text-decoration: none !important;
+    display: inline-block !important;
     white-space: nowrap;
-    border: 1px solid transparent;
 }
 
 .nav-link:hover {
-    background: rgba(245, 245, 220, 0.1);
-    border-color: rgba(245, 245, 220, 0.3);
-    color: #F5F5DC !important;
-    text-shadow: 0 0 5px currentColor;
+    background: #FFFACD !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+    color: #000000 !important;
+    border-color: #CD853F !important;
+}
+
+/* ULTIMATE NUCLEAR override for nav button colors - MUST BE BLACK */
+.header .nav-link,
+.header .nav-link *,
+.header .nav-link:hover,
+.header .nav-link:hover *,
+.header .dropdown-trigger,
+.header .dropdown-trigger *,
+.header .dropdown-trigger:hover,
+.header .dropdown-trigger:hover *,
+.main-navigation .nav-link,
+.main-navigation .nav-link *,
+.main-navigation .nav-link:hover,
+.main-navigation .nav-link:hover * {
+    color: #000000 !important;
 }
 
 .nav-link.current-board {
@@ -158,11 +188,12 @@
     position: absolute;
     top: 100%;
     left: 0;
-    background: #F5F5DC;
-    border: 2px solid #708B75;
-    border-radius: 6px;
+    background: var(--primary-bg) !important;
+    background-image: var(--crosshatch) !important;
+    border: 3px solid var(--border-color) !important;
+    border-radius: 12px;
     min-width: 280px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
     z-index: 1000;
     display: none;
     margin-top: 4px;
@@ -255,9 +286,10 @@
     }
     
     .main-navigation {
+        background: #F5F5DC !important;
         gap: 10px;
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
     }
     
     .nav-section {

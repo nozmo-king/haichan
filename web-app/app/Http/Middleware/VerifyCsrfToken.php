@@ -12,6 +12,7 @@ class VerifyCsrfToken extends Middleware
      * @var array
      */
     protected $except = [
-        //
+        // Chat endpoints don't use CSRF tokens (use PoW authentication instead)
+        'chat/*/send',
     ];
 }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Haichan - Anonymous Discussion</title>
     <link rel="stylesheet" href="/css/haichan.css">
-    <link rel="stylesheet" href="/css/themes.css">
+    @vite(['resources/css/themes.css'])
     <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
     <style>
         .glow-text {

@@ -3,6 +3,8 @@
 
 class PersistentToolbar {
     constructor() {
+        console.log('🔧 PersistentToolbar constructor called');
+        
         this.element = null;
         this.state = window.HaichanState;
         this.miningDisplay = null;
@@ -15,7 +17,7 @@ class PersistentToolbar {
         
         // Initialize with safe defaults if HaichanState is not available
         if (!this.state) {
-            console.warn('HaichanState not found, creating minimal state manager');
+            console.warn('⚠️ HaichanState not found, creating minimal state manager');
             this.state = {
                 getState: (path) => {
                     if (path === 'mining') return { isActive: false, hashrate: 0, totalHashes: 0 };
@@ -29,12 +31,22 @@ class PersistentToolbar {
                 toggleMiniDash: () => {},
                 toggleAnonymousMode: () => {}
             };
+        } else {
+            console.log('✅ HaichanState found and connected');
         }
         
-        this.init();
+        try {
+            this.init();
+            this.checkForPointsUpdate();
+            console.log('✅ PersistentToolbar constructor completed successfully');
+        } catch (error) {
+            console.error('❌ Error in PersistentToolbar constructor:', error);
+            throw error;
+        }
     }
     
     init() {
+        console.log('🔧 Initializing toolbar components...');
         this.createToolbar();
         this.bindEvents();
         this.startUpdates();
@@ -42,14 +54,21 @@ class PersistentToolbar {
     }
     
     createToolbar() {
+        console.log('🏗️ Creating toolbar element...');
+        
         // Remove existing toolbar if present
         const existing = document.getElementById('haichan-persistent-toolbar');
-        if (existing) existing.remove();
+        if (existing) {
+            console.log('♻️ Removing existing toolbar');
+            existing.remove();
+        }
         
         // Create toolbar element
         this.element = document.createElement('div');
         this.element.id = 'haichan-persistent-toolbar';
         this.element.className = 'persistent-toolbar';
+        
+        console.log('📝 Created toolbar element:', this.element);
         
         this.element.innerHTML = `
             <div class="toolbar-section toolbar-left">
@@ -60,15 +79,14 @@ class PersistentToolbar {
                 </div>
             </div>
             
-            <div class="toolbar-section toolbar-center">
-                <div class="mining-display">
-                    <span class="mining-status">⛏️</span>
-                    <span class="mining-hashrate">0 H/s</span>
-                    <span class="mining-total">0 total PoW</span>
-                </div>
-            </div>
-            
             <div class="toolbar-section toolbar-right">
+                <div class="mining-summary">
+                    <span class="mining-proofs">Proofs: 0</span>
+                    <span class="mining-separator">•</span>
+                    <span class="mining-points">Points: 0.0</span>
+                    <span class="mining-separator">•</span>
+                    <span class="mining-hashes">Hashes: 0 H/s</span>
+                </div>
                 <button class="toolbar-btn recent-threads-toggle" title="Recent Threads">
                     📋 <span class="recent-count">0</span>
                 </button>
@@ -88,52 +106,114 @@ class PersistentToolbar {
         `;
         
         // Cache button references
-        this.miningDisplay = this.element.querySelector('.mining-display');
         this.chatButton = this.element.querySelector('.chat-toggle');
         this.anonymousToggle = this.element.querySelector('.anonymous-toggle');
         this.usernameElement = this.element.querySelector('#toolbar-username');
         this.diamondElement = this.element.querySelector('#toolbar-diamond');
         this.recentThreadsBtn = this.element.querySelector('.recent-threads-toggle');
         
+        console.log('🔍 Cached toolbar element references:', {
+            chatButton: !!this.chatButton,
+            anonymousToggle: !!this.anonymousToggle,
+            usernameElement: !!this.usernameElement,
+            diamondElement: !!this.diamondElement,
+            recentThreadsBtn: !!this.recentThreadsBtn
+        });
+        
         // Add styles
         this.addStyles();
         
         // Append to body
+        console.log('📌 Appending toolbar to document body...');
         document.body.appendChild(this.element);
+        
+        // Verify it was added
+        const addedElement = document.getElementById('haichan-persistent-toolbar');
+        console.log('✅ Toolbar appended successfully:', !!addedElement);
+        
+        if (addedElement) {
+            const computedStyle = getComputedStyle(addedElement);
+            console.log('🎨 Toolbar styles applied:', {
+                position: computedStyle.position,
+                bottom: computedStyle.bottom,
+                display: computedStyle.display,
+                zIndex: computedStyle.zIndex
+            });
+            
+            // Force display if hidden
+            if (computedStyle.display === 'none') {
+                console.warn('⚠️ Toolbar hidden, forcing display');
+                addedElement.style.display = 'flex';
+            }
+            
+            // Force position if not fixed
+            if (computedStyle.position !== 'fixed') {
+                console.warn('⚠️ Toolbar not fixed, forcing position');
+                addedElement.style.position = 'fixed';
+                addedElement.style.bottom = '0';
+                addedElement.style.left = '0';
+                addedElement.style.right = '0';
+                addedElement.style.zIndex = '1000';
+            }
+        }
         
         // Start periodic hashrate updates
         this.startHashrateTracking();
     }
     
     addStyles() {
-        if (document.getElementById('persistent-toolbar-styles')) return;
+        if (document.getElementById('persistent-toolbar-styles')) {
+            console.log('📝 Toolbar styles already exist');
+            return;
+        }
         
+        console.log('🎨 Adding toolbar styles...');
         const styles = document.createElement('style');
         styles.id = 'persistent-toolbar-styles';
         styles.textContent = `
+            /* Define CSS variables in case they're missing */
+            :root {
+                --space-xs: 3px;
+                --space-sm: 6px;
+                --space-md: 10px;
+                --space-lg: 16px;
+                --text-primary: #333;
+                --text-secondary: #666;
+                --bg-primary: #F5F5DC;
+                --bg-secondary: #E5E5D0;
+                --accent-primary: #55c294;
+                --border-primary: #708B75;
+            }
+            
             .persistent-toolbar {
                 position: fixed;
                 bottom: 0;
                 left: 0;
                 right: 0;
                 height: 48px;
-                background: var(--bg-secondary);
-                border-top: 2px solid var(--border-primary);
+                background: #F5F5DC;
+                background-image: 
+                    repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+                    repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+                    repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+                    repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+                    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+                border-top: 2px solid #708B75;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 0 var(--space-md);
+                padding: 0 10px;
                 z-index: 1000;
-                font-family: 'Berkeley Mono', 'JetBrains Mono', monospace;
+                font-family: 'Nova Cut', serif, sans-serif;
                 font-size: 12px;
-                box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+                box-shadow: 0 -2px 8px rgba(112, 139, 117, 0.2);
                 backdrop-filter: blur(8px);
             }
             
             .toolbar-section {
                 display: flex;
                 align-items: center;
-                gap: var(--space-sm);
+                gap: 6px;
             }
             
             .toolbar-left {
@@ -152,17 +232,21 @@ class PersistentToolbar {
             .user-display {
                 display: flex;
                 align-items: center;
-                gap: var(--space-sm);
+                gap: 6px;
             }
             
             .username-glow {
-                color: #9AB87A;
+                color: #00FF00;
                 font-weight: 700;
                 text-shadow:
-                    0 0 5px #9AB87A,
-                    0 0 10px #9AB87A,
-                    0 0 15px #9AB87A,
-                    0 0 20px #9AB87A;
+                    -1px -1px 0 #000000,
+                    1px -1px 0 #000000,
+                    -1px 1px 0 #000000,
+                    1px 1px 0 #000000,
+                    0 0 5px #00FF00,
+                    0 0 10px #00FF00,
+                    0 0 15px #00FF00,
+                    0 0 20px #00FF00;
                 animation: glow-pulse 2s ease-in-out infinite alternate;
                 font-size: 14px;
                 text-decoration: none;
@@ -288,12 +372,47 @@ class PersistentToolbar {
                 50% { transform: scale(1.2) rotate(90deg); }
             }
 
-            .mining-display {
+            .mining-summary {
                 display: flex;
                 align-items: center;
-                gap: var(--space-xs);
-                color: var(--text-mining);
+                gap: 3px;
+                color: #9AB87A;
                 font-weight: 600;
+                background: rgba(154, 184, 122, 0.1);
+                padding: 4px 8px;
+                border-radius: 4px;
+                border: 1px solid #9AB87A;
+                font-family: 'Courier New', monospace;
+                font-size: 11px;
+                margin-right: 10px; /* Add some space between mining info and buttons */
+            }
+            
+            .mining-proofs, .mining-points, .mining-hashes {
+                color: #9AB87A;
+            }
+            
+            .mining-separator {
+                color: #6B7A6B;
+                opacity: 0.5;
+                margin: 0 4px;
+            }
+            
+            .mining-hashrate {
+                color: #9AB87A;
+                font-weight: bold;
+            }
+            
+            .mining-total {
+                color: #708B75;
+            }
+            
+            .mining-session {
+                color: #3498db;
+            }
+            
+            .mining-difficulty {
+                color: #6B7A6B;
+                font-size: 10px;
             }
             
             .mining-status {
@@ -308,17 +427,23 @@ class PersistentToolbar {
             .site-stats {
                 display: flex;
                 align-items: center;
-                gap: var(--space-sm);
-                color: var(--text-secondary);
+                gap: 6px;
+                color: #666;
                 font-size: 11px;
             }
             
             .toolbar-btn {
-                background: transparent;
-                border: 1px solid var(--border-subtle);
+                background: #55c294;
+                background-image: 
+                    repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+                    repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+                    repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+                    repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+                    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+                border: 1px solid #4ab584;
                 border-radius: 4px;
-                padding: var(--space-xs) var(--space-sm);
-                color: var(--text-secondary);
+                padding: 3px 6px;
+                color: #D4AC7A;
                 font-size: 14px;
                 cursor: pointer;
                 transition: all 0.2s ease;
@@ -331,22 +456,22 @@ class PersistentToolbar {
             }
             
             .toolbar-btn:hover {
-                background: var(--accent-hover);
-                border-color: var(--border-accent);
-                color: var(--text-primary);
+                background: #4ab584;
+                border-color: #4ab584;
+                color: #fff;
             }
             
             .toolbar-btn.active {
-                background: var(--accent-primary);
+                background: #55c294;
                 color: white;
-                border-color: var(--accent-primary);
+                border-color: #55c294;
             }
             
             .chat-badge {
                 position: absolute;
                 top: -4px;
                 right: -4px;
-                background: var(--text-error);
+                background: #dc3545;
                 color: white;
                 border-radius: 50%;
                 width: 16px;
@@ -367,7 +492,7 @@ class PersistentToolbar {
                 position: absolute;
                 top: -4px;
                 right: -4px;
-                background: var(--accent-primary);
+                background: #55c294;
                 color: white;
                 border-radius: 50%;
                 width: 16px;
@@ -400,6 +525,38 @@ class PersistentToolbar {
                 padding-bottom: 48px;
             }
             
+            /* Fake dithering effect for all images */
+            img:not(.no-dither) {
+                filter: contrast(1.15) saturate(0.85);
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: crisp-edges;
+                position: relative;
+            }
+            
+            img:not(.no-dither)::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-image: 
+                    repeating-linear-gradient(0deg, transparent 0px, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+                    repeating-linear-gradient(90deg, transparent 0px, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px);
+                pointer-events: none;
+                mix-blend-mode: overlay;
+                opacity: 0.6;
+            }
+            
+            /* Dithering for thread images */
+            .post-image img,
+            .thread-image img,
+            .attachment img {
+                filter: contrast(1.15) saturate(0.85);
+                image-rendering: -webkit-optimize-contrast;
+                image-rendering: crisp-edges;
+            }
+            
             /* Anonymous mode styling */
             .anonymous-mode .persistent-toolbar {
                 filter: invert(1) hue-rotate(180deg);
@@ -420,48 +577,104 @@ class PersistentToolbar {
     }
     
     bindEvents() {
+        console.log('🔗 Binding toolbar events...');
+        
         // Username click to view profile
         const usernameLink = this.element.querySelector('#toolbar-username');
         if (usernameLink) {
+            console.log('👤 Binding username link event');
             usernameLink.addEventListener('click', (e) => {
                 e.preventDefault();
+                console.log('👤 Username link clicked', { currentUserId: this.currentUserId });
+                
                 if (this.currentUserId) {
+                    console.log('🏠 Navigating to profile:', `/user/${this.currentUserId}`);
                     window.location.href = `/user/${this.currentUserId}`;
                 } else {
-                    window.location.href = '/user/profile';
+                    console.log('🔐 No user ID, redirecting to login');
+                    window.location.href = '/auth/login';
                 }
             });
+        } else {
+            console.warn('⚠️ Username link element not found');
         }
         
         // Edit profile button
-        this.element.querySelector('.edit-profile').addEventListener('click', () => {
-            window.location.href = '/user/profile/edit';
-        });
+        const editBtn = this.element.querySelector('.edit-profile');
+        if (editBtn) {
+            console.log('✏️ Binding edit profile button event');
+            editBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('✏️ Edit profile clicked');
+                window.location.href = '/user/profile/edit';
+            });
+        } else {
+            console.warn('⚠️ Edit profile button not found');
+        }
         
         // Recent threads toggle
-        this.recentThreadsBtn.addEventListener('click', () => {
-            this.toggleRecentThreads();
-        });
+        if (this.recentThreadsBtn) {
+            console.log('📋 Binding recent threads button event');
+            this.recentThreadsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('📋 Recent threads clicked');
+                this.toggleRecentThreads();
+            });
+        } else {
+            console.warn('⚠️ Recent threads button not found');
+        }
         
         // Chat toggle
-        this.chatButton.addEventListener('click', () => {
-            this.state.toggleChat();
-        });
+        if (this.chatButton) {
+            console.log('💬 Binding chat button event');
+            this.chatButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('💬 Chat toggle clicked');
+                this.state.toggleChat();
+            });
+        } else {
+            console.warn('⚠️ Chat button not found');
+        }
         
         // Mini dashboard toggle
-        this.element.querySelector('.mini-dash-toggle').addEventListener('click', () => {
-            this.state.toggleMiniDash();
-        });
+        const miniDashBtn = this.element.querySelector('.mini-dash-toggle');
+        if (miniDashBtn) {
+            console.log('📊 Binding mini dashboard button event');
+            miniDashBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('📊 Mini dashboard toggle clicked');
+                this.state.toggleMiniDash();
+            });
+        } else {
+            console.warn('⚠️ Mini dashboard button not found');
+        }
         
         // Anonymous mode toggle
-        this.anonymousToggle.addEventListener('click', () => {
-            this.state.toggleAnonymousMode();
-        });
+        if (this.anonymousToggle) {
+            console.log('🎭 Binding anonymous toggle button event');
+            this.anonymousToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('🎭 Anonymous mode toggle clicked');
+                this.state.toggleAnonymousMode();
+            });
+        } else {
+            console.warn('⚠️ Anonymous toggle button not found');
+        }
         
         // Logout button
-        this.element.querySelector('.logout-btn').addEventListener('click', () => {
-            this.logout();
-        });
+        const logoutBtn = this.element.querySelector('.logout-btn');
+        if (logoutBtn) {
+            console.log('🚪 Binding logout button event');
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('🚪 Logout button clicked');
+                this.logout();
+            });
+        } else {
+            console.warn('⚠️ Logout button not found');
+        }
+        
+        console.log('✅ All toolbar events bound successfully');
         
         // State listeners
         this.state.on('state:change', (data) => {
@@ -471,24 +684,60 @@ class PersistentToolbar {
                 this.updateDisplay();
             }
         });
+
+        // Listen for PoW success events to immediately refresh points
+        window.addEventListener('pow:success', (event) => {
+            console.log('🎯 PoW success detected, refreshing user data', event.detail);
+            this.loadUserData();
+        });
+
+        // Also listen for generic point updates
+        window.addEventListener('points:updated', (event) => {
+            console.log('💎 Points updated, refreshing toolbar', event.detail);
+            if (event.detail && event.detail.total_points !== undefined) {
+                // Immediately update the display with new points
+                this.updatePointsDisplay(event.detail.total_points, event.detail.points_awarded);
+            } else {
+                this.loadUserData();
+            }
+        });
+        
+        // Listen for mining progress events from SimplePow
+        window.addEventListener('mining:progress', (event) => {
+            console.log('⛏️ Mining progress event:', event.detail);
+            this.updateDisplay();
+        });
+        
+        window.addEventListener('mining:complete', (event) => {
+            console.log('⛏️ Mining complete event:', event.detail);
+            this.updateDisplay();
+            
+            // Refresh user data to get updated points
+            setTimeout(() => this.loadUserData(), 1000);
+        });
     }
     
     startUpdates() {
+        console.log('🚀 Starting toolbar updates...');
+        
         // Load user data immediately
         this.loadUserData();
         
         // Update display immediately
         this.updateDisplay();
         
-        // Set up periodic updates
+        // Set up periodic updates every second
         setInterval(() => {
             this.updateHashrateDisplay();
         }, 1000);
         
-        // Load user data every 30 seconds
+        // Refresh user data every 30 seconds
         setInterval(() => {
+            console.log('🔄 Refreshing user data (30s interval)');
             this.loadUserData();
         }, 30000);
+        
+        console.log('✅ Toolbar update intervals set up');
     }
     
     updateDisplay() {
@@ -496,30 +745,24 @@ class PersistentToolbar {
         const chat = this.state.getState('chat') || {};
         const ui = this.state.getState('ui') || {};
         
+        console.log('🔄 Updating toolbar display', {
+            mining: mining,
+            chat: chat,
+            ui: ui
+        });
+        
         // Update mining display
-        const hashrateEl = this.element.querySelector('.mining-hashrate');
-        const totalEl = this.element.querySelector('.mining-total');
-        const statusEl = this.element.querySelector('.mining-status');
+        const hashesEl = this.element.querySelector('.mining-hashes');
         
-        if (hashrateEl && statusEl) {
-            if (mining.isActive) {
-                hashrateEl.textContent = `${mining.hashrate || 0} H/s`;
-                statusEl.textContent = '⛏️';
-                statusEl.style.animation = 'mining-pulse 2s infinite';
-            } else {
-                hashrateEl.textContent = '0 H/s';
-                statusEl.textContent = '⏸️';
-                statusEl.style.animation = 'none';
-            }
-        }
-        
-        if (totalEl) {
-            // Check if we have user-specific total PoW, otherwise use mining total
-            if (this.userTotalPow !== undefined) {
-                totalEl.textContent = `${this.userTotalPow} total PoW`;
-            } else {
-                totalEl.textContent = `${mining.totalHashes || 0} total PoW`;
-            }
+        if (hashesEl) {
+            const hashText = mining.isActive 
+                ? `Hashes: ${mining.hashrate || 0} H/s` 
+                : 'Hashes: 0 H/s';
+                
+            console.log('⛏️ Setting hash display:', hashText);
+            hashesEl.textContent = hashText;
+        } else {
+            console.warn('⚠️ .mining-hashes element not found');
         }
         
         // Update chat badge
@@ -544,33 +787,24 @@ class PersistentToolbar {
     }
     
     updateHashrateDisplay() {
-        // Track real mining activity from various sources
+        // Get mining state directly from SimplePow
         let totalHashrate = 0;
         let totalHashes = 0;
         let isActive = false;
         
-        // Check for mining activity from different systems
-        if (window.currentMiner && window.currentMiner.hashCount) {
-            totalHashes += window.currentMiner.hashCount;
-            isActive = true;
-        }
-        
-        if (window.simplePow) {
-            if (window.simplePow.currentHashrate) {
-                totalHashrate += window.simplePow.currentHashrate;
-            }
-            if (window.simplePow.totalHashes) {
-                totalHashes += window.simplePow.totalHashes;
-            }
-        }
-        
-        // Check for any active mining workers
-        if (window.miningWorkers && window.miningWorkers.length > 0) {
-            window.miningWorkers.forEach(worker => {
-                if (worker.hashrate) totalHashrate += worker.hashrate;
-                if (worker.totalHashes) totalHashes += worker.totalHashes;
-                if (worker.isRunning) isActive = true;
+        if (window.simplePoW) {
+            totalHashrate = window.simplePoW.currentHashrate || 0;
+            totalHashes = window.simplePoW.totalHashes || 0;
+            isActive = window.simplePoW.isMining || false;
+            
+            console.log('⛏️ SimplePow state:', {
+                hashrate: totalHashrate,
+                totalHashes: totalHashes,
+                isActive: isActive,
+                sessionProofs: window.simplePoW.miningStats?.sessionProofs || 0
             });
+        } else {
+            console.log('⛏️ SimplePow not available');
         }
         
         // Update global state
@@ -603,32 +837,43 @@ class PersistentToolbar {
     }
     
     async loadUserData() {
+        console.log('🔍 Loading user data from API...');
+        
         try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '';
+            
+            console.log('📡 Making API request to /api/user/toolbar-data');
+            console.log('🔐 CSRF Token:', csrfToken ? 'Present' : 'Missing');
+
             const response = await fetch('/api/user/toolbar-data', {
                 credentials: 'include',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken // Add CSRF token here
                 }
+            });
+            
+            console.log('📡 API Response:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok
             });
             
             if (response.ok) {
                 const data = await response.json();
-                console.log('User data loaded:', data);
+                console.log('✅ User data loaded:', data);
                 this.updateUserDisplay(data);
+            } else if (response.status === 401) {
+                console.log('👤 User not authenticated, showing anonymous state');
+                this.showAnonymousState();
             } else {
-                console.error('Failed to load user data:', response.status);
-                // Hide username element if not authenticated
-                if (this.usernameElement) {
-                    this.usernameElement.style.display = 'none';
-                }
+                console.error('❌ Failed to load user data:', response.status, await response.text());
+                this.showErrorState();
             }
         } catch (error) {
-            console.error('Failed to load user data for toolbar:', error);
-            // Hide username element on error
-            if (this.usernameElement) {
-                this.usernameElement.style.display = 'none';
-            }
+            console.error('❌ Network error loading user data:', error);
+            this.showErrorState();
         }
     }
     
@@ -654,13 +899,22 @@ class PersistentToolbar {
         
         // Update 21e8 diamond color based on achievement level
         if (this.diamondElement) {
+            console.log('💎 Updating diamond display', { 
+                personal_21e8_level: userData.personal_21e8_level,
+                element: this.diamondElement 
+            });
+            
             if (userData.personal_21e8_level) {
                 this.diamondElement.className = `diamond-color level-${userData.personal_21e8_level}`;
                 this.diamondElement.title = `Personal 21e8 Achievement: ${userData.personal_21e8_level}`;
+                console.log('💎 Diamond updated to level:', userData.personal_21e8_level);
             } else {
                 this.diamondElement.className = 'diamond-color';
                 this.diamondElement.title = 'No Personal 21e8 Achievement yet';
+                console.log('💎 Diamond shows no achievement');
             }
+        } else {
+            console.warn('⚠️ Diamond element not found');
         }
         
         // Update recent threads count
@@ -671,13 +925,46 @@ class PersistentToolbar {
             }
         }
         
-        // Update total PoW points
+        // Update total PoW points and proofs
         if (userData.total_pow_points !== undefined) {
             this.userTotalPow = userData.total_pow_points;
-            const totalEl = this.element.querySelector('.mining-total');
-            if (totalEl) {
-                totalEl.textContent = `${userData.total_pow_points} total PoW`;
+            const pointsEl = this.element.querySelector('.mining-points');
+            if (pointsEl) {
+                pointsEl.textContent = `Points: ${userData.total_pow_points.toFixed(1)}`;
             }
+            const proofsEl = this.element.querySelector('.mining-proofs');
+            if (proofsEl) {
+                // Assuming 'total_pow_points' can also represent 'proofs' if a specific 'total_proofs' is not available.
+                // If a separate 'total_proofs' field exists in userData, it should be used here instead.
+                proofsEl.textContent = `Proofs: ${Math.floor(userData.total_pow_points)}`; 
+            }
+        }
+    }
+    
+    updatePointsDisplay(totalPoints, pointsAwarded = null) {
+        this.userTotalPow = totalPoints;
+        const pointsEl = this.element.querySelector('.mining-points');
+        if (pointsEl) {
+            pointsEl.textContent = `Points: ${totalPoints.toFixed(1)}`;
+            
+            // Add visual feedback for new points
+            if (pointsAwarded && pointsAwarded > 0) {
+                pointsEl.style.color = '#FFD700';
+                pointsEl.style.textShadow = '0 0 8px #FFD700';
+                pointsEl.style.transform = 'scale(1.1)';
+                
+                // Reset after animation
+                setTimeout(() => {
+                    pointsEl.style.color = '';
+                    pointsEl.style.textShadow = '';
+                    pointsEl.style.transform = '';
+                }, 1500);
+            }
+        }
+        
+        const proofsEl = this.element.querySelector('.mining-proofs');
+        if (proofsEl) {
+            proofsEl.textContent = `Proofs: ${Math.floor(totalPoints)}`;
         }
     }
     
@@ -860,6 +1147,52 @@ class PersistentToolbar {
         }
     }
     
+    showAnonymousState() {
+        console.log('👤 Setting up anonymous toolbar state');
+        
+        if (this.usernameElement) {
+            this.usernameElement.textContent = 'Anonymous';
+            this.usernameElement.className = 'username-glow username-link';
+            this.usernameElement.style.color = '#9AB87A';
+            this.usernameElement.style.cursor = 'default';
+            this.usernameElement.style.pointerEvents = 'none';
+        }
+        
+        // Update points display for anonymous users
+        const pointsEl = this.element.querySelector('.mining-points');
+        if (pointsEl) {
+            pointsEl.textContent = 'Points: 0.0';
+        }
+        
+        const proofsEl = this.element.querySelector('.mining-proofs');
+        if (proofsEl) {
+            proofsEl.textContent = 'Proofs: 0';
+        }
+        
+        this.hideAuthenticatedFeatures();
+    }
+    
+    showErrorState() {
+        console.log('❌ Setting up error toolbar state');
+        
+        if (this.usernameElement) {
+            this.usernameElement.textContent = 'Error';
+            this.usernameElement.style.color = '#ff6b6b';
+            this.usernameElement.style.cursor = 'default';
+            this.usernameElement.style.pointerEvents = 'none';
+        }
+        
+        const pointsEl = this.element.querySelector('.mining-points');
+        if (pointsEl) {
+            pointsEl.textContent = 'Points: --';
+        }
+        
+        const proofsEl = this.element.querySelector('.mining-proofs');
+        if (proofsEl) {
+            proofsEl.textContent = 'Proofs: --';
+        }
+    }
+
     hideAuthenticatedFeatures() {
         // Hide buttons that require authentication
         const editBtn = this.element.querySelector('.edit-profile');
@@ -869,17 +1202,49 @@ class PersistentToolbar {
         if (editBtn) editBtn.style.display = 'none';
         if (logoutBtn) logoutBtn.style.display = 'none';
         if (recentThreadsBtn) recentThreadsBtn.style.display = 'none';
+    }
+
+    checkForPointsUpdate() {
+        // Check for flash session data indicating points were just awarded
+        const pointsAwarded = this.getFlashData('points_awarded');
+        const totalPoints = this.getFlashData('total_points');
         
-        // Make username not clickable for anonymous users
-        if (this.usernameElement) {
-            this.usernameElement.style.cursor = 'default';
-            this.usernameElement.style.pointerEvents = 'none';
+        if (pointsAwarded && totalPoints) {
+            console.log('📊 Points update detected from session', { pointsAwarded, totalPoints });
+            
+            // Dispatch custom event to update UI immediately
+            window.dispatchEvent(new CustomEvent('points:updated', {
+                detail: {
+                    points_awarded: parseFloat(pointsAwarded),
+                    total_points: parseFloat(totalPoints)
+                }
+            }));
+            
+            // Clear the flash data so it doesn't trigger again
+            this.clearFlashData('points_awarded');
+            this.clearFlashData('total_points');
+        }
+    }
+
+    getFlashData(key) {
+        const metaTag = document.querySelector(`meta[name="flash-${key}"]`);
+        return metaTag ? metaTag.getAttribute('content') : null;
+    }
+
+    clearFlashData(key) {
+        const metaTag = document.querySelector(`meta[name="flash-${key}"]`);
+        if (metaTag) {
+            metaTag.remove();
         }
     }
 }
 
 // Initialize when DOM is ready with error handling
 function initializeToolbar() {
+    console.log('🔧 Attempting to initialize Haichan Toolbar...');
+    console.log('📊 HaichanState available:', !!window.HaichanState);
+    console.log('📋 DOM ready state:', document.readyState);
+    
     try {
         if (!window.HaichanToolbar) {
             window.HaichanToolbar = new PersistentToolbar();
@@ -887,6 +1252,10 @@ function initializeToolbar() {
         }
     } catch (error) {
         console.error('❌ Failed to initialize Haichan Toolbar:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack
+        });
         // Retry after 1 second
         setTimeout(initializeToolbar, 1000);
     }

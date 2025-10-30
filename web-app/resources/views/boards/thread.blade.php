@@ -4,7 +4,7 @@
 
 @section('content')
 <div style="text-align: center; margin: 10px 0;">
-    <h1>/{{ $board->code }}/ - {{ $board->name }}</h1>
+    <h1 style="font-family: 'Nova Cut', serif; font-size: 28px; color: #FF69B4; text-shadow: -1px -1px 0 #C1418A, 1px -1px 0 #C1418A, -1px 1px 0 #C1418A, 1px 1px 0 #C1418A;">/{{ $board->code }}/ - {{ $board->name }}</h1>
     <p style="font-size: 12px; color: var(--ib-text-muted);">{{ $board->description }}</p>
 </div>
 
@@ -43,6 +43,14 @@
             <span style="color: var(--ib-accent); font-weight: bold;">[⚡{{ number_format($thread->accumulated_points, 1) }}]</span>
         @endif
         <button onclick="toggleQuickReply()" id="quick-reply-btn" class="tui-btn tui-btn-sm" style="margin-left: 10px;">💬 Reply</button>
+        @if(session('bitcoin_auth_user') && session('bitcoin_auth_user')->is_admin)
+            <form method="POST" action="{{ $thread->sticky ? route('admin.threads.unpin', $thread->id) : route('admin.threads.pin', $thread->id) }}" style="display: inline-block; margin-left: 8px;">
+                @csrf
+                <button type="submit" class="tui-btn {{ $thread->sticky ? 'tui-btn-warning' : 'tui-btn-secondary' }} tui-btn-sm">
+                    {{ $thread->sticky ? '📌 Unpin' : '📍 Pin' }}
+                </button>
+            </form>
+        @endif
         @if(session('bitcoin_auth_id') && ($thread->user_id === session('bitcoin_auth_id') || (session('bitcoin_auth_user') && (session('bitcoin_auth_user')->is_admin || session('bitcoin_auth_user')->is_moderator))))
             <form method="POST" action="{{ route('threads.delete.user', $thread->id) }}" style="display: inline-block; margin-left: 8px;" onsubmit="return confirm('Delete this thread?');">
                 @csrf
@@ -64,7 +72,7 @@
     
     <div class="post-content">
         <strong>{{ $thread->title ?: 'No Subject' }}</strong><br>
-        {{ $thread->content }}
+        {!! nl2br(e($thread->content)) !!}
     </div>
     
     <div style="clear: both;"></div>
@@ -111,7 +119,7 @@
     @endif
     
     <div class="post-content">
-        {{ $post->content }}
+        {!! nl2br(e($post->content)) !!}
     </div>
     
     <div style="clear: both;"></div>
@@ -393,6 +401,6 @@ document.addEventListener('DOMContentLoaded', function() {
 @endsection
 
 @section('scripts')
-<script src="/js/simple-pow.js?v={{ time() }}"></script>
+
 @endsection
 

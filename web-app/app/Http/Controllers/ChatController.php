@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ChatRoom;
 use App\Models\ChatMessage;
+use App\Services\ChallengeVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -12,9 +13,14 @@ use Illuminate\Validation\ValidationException;
 
 class ChatController extends Controller
 {
-    public function __construct()
+    protected $verifier;
+
+    public function __construct(ChallengeVerifier $verifier)
     {
-        // Middleware is handled by route groups in web.php
+        $this->verifier = $verifier;
+        
+        // Disable CSRF verification for sendMessage
+        $this->middleware('web')->except(['sendMessage']);
     }
 
     /**
@@ -103,20 +109,26 @@ class ChatController extends Controller
         }
 
         try {
-            // Validate proof-of-work - chat requires real mining
-            $powValidation = ChatMessage::validateProofOfWork([
-                'message' => $validated['message'],
-                'pow_nonce' => $validated['pow_nonce'] ?? null,
-                'pow_hash' => $validated['pow_hash'] ?? null,
-                'pow_challenge_id' => $validated['pow_challenge_id'] ?? null,
-            ]);
+            // Validate proof-of-work using the centralized challenge verifier
+            $powValidation = $this->verifier->verifyChallenge(
+                $validated['pow_challenge_id'],
+                $validated['pow_nonce'],
+                $validated['pow_hash']
+            );
 
             if (!$powValidation['valid']) {
                 return response()->json([
                     'success' => false,
-                    'error' => $powValidation['message']
+                    'error' => $powValidation['error'] ?? 'Invalid proof of work'
                 ], 400);
             }
+            
+            // Consume the challenge so it can't be reused
+            $this->verifier->consumeChallenge($validated['pow_challenge_id']);
+            
+            // Determine pattern and points from hash
+            $pattern = $this->getPatternFromHash($validated['pow_hash']);
+            $points = $this->calculatePoints($validated['pow_hash']);
             
             // Get user's display name from room or generate default
             $roomUser = $room->users()->where('user_id', $user->id)->first();
@@ -133,8 +145,8 @@ class ChatController extends Controller
                 'ip_hash' => hash('sha256', $request->ip()),
                 'pow_hash' => $validated['pow_hash'],
                 'pow_nonce' => $validated['pow_nonce'],
-                'pow_pattern' => $powValidation['pattern'],
-                'pow_points' => $powValidation['points'],
+                'pow_pattern' => $pattern,
+                'pow_points' => $points,
                 'pow_challenge_id' => $validated['pow_challenge_id'],
             ]);
             
@@ -193,10 +205,28 @@ class ChatController extends Controller
         return response()->json([
             'success' => true,
             'messages' => $messages->map(function ($message) {
+                // Get user's 21e8 diamond color
+                $diamondColor = null;
+                if ($message->user && $message->user->personal_21e8_hash) {
+                    $hash = strtolower($message->user->personal_21e8_hash);
+                    if (str_starts_with($hash, '21e80000')) {
+                        $diamondColor = '#FF1493'; // Hot pink for 21e80000
+                    } elseif (str_starts_with($hash, '21e8000')) {
+                        $diamondColor = '#FF00FF'; // Magenta for 21e8000
+                    } elseif (str_starts_with($hash, '21e800')) {
+                        $diamondColor = '#9370DB'; // Purple for 21e800
+                    } elseif (str_starts_with($hash, '21e80')) {
+                        $diamondColor = '#4169E1'; // Royal blue for 21e80
+                    } elseif (str_starts_with($hash, '21e8')) {
+                        $diamondColor = '#00CED1'; // Dark turquoise for 21e8
+                    }
+                }
+                
                 return [
                     'id' => $message->id,
                     'message' => $message->message,
                     'username' => $message->username ?? $message->user->username ?? $message->user->address ?? 'Anonymous',
+                    'diamond_color' => $diamondColor,
                     'created_at' => $message->created_at->format('H:i:s'),
                     'hash_preview' => substr($message->pow_hash ?? '', 0, 8),
                     'points' => $this->calculatePointsFromHash($message->pow_hash ?? ''),

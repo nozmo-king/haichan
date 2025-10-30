@@ -38,8 +38,8 @@ Route::prefix('pow')->group(function () {
     Route::post('/reply/commit', [PowController::class, 'replyCommit']);
 });
 
-// User toolbar data endpoints
-Route::prefix('user')->group(function () {
+// User toolbar data endpoints (with session support for web integration)
+Route::prefix('user')->middleware(['web'])->group(function () {
     Route::get('/toolbar-data', [UserToolbarController::class, 'getToolbarData']);
     Route::get('/recent-threads', [UserToolbarController::class, 'getRecentThreads']);
 });

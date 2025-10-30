@@ -36,10 +36,34 @@
             <div id="chat-messages" style="height: 400px; padding: 20px; overflow-y: auto; background: #FFFACD; border: 1px solid #708B75; border-radius: 5px;">
                 @if(count($messages) > 0)
                     @foreach($messages as $message)
+                        @php
+                            $diamondColor = null;
+                            $diamondEmoji = '';
+                            if ($message->user && $message->user->personal_21e8_hash) {
+                                $hash = strtolower($message->user->personal_21e8_hash);
+                                if (str_starts_with($hash, '21e80000')) {
+                                    $diamondColor = '#FF1493';
+                                    $diamondEmoji = '💎 ';
+                                } elseif (str_starts_with($hash, '21e8000')) {
+                                    $diamondColor = '#FF00FF';
+                                    $diamondEmoji = '💎 ';
+                                } elseif (str_starts_with($hash, '21e800')) {
+                                    $diamondColor = '#9370DB';
+                                    $diamondEmoji = '💎 ';
+                                } elseif (str_starts_with($hash, '21e80')) {
+                                    $diamondColor = '#4169E1';
+                                    $diamondEmoji = '💎 ';
+                                } elseif (str_starts_with($hash, '21e8')) {
+                                    $diamondColor = '#00CED1';
+                                    $diamondEmoji = '💎 ';
+                                }
+                            }
+                            $usernameColor = $diamondColor ?? '#6B7A6B';
+                        @endphp
                         <div style="margin-bottom: 15px; padding: 10px; background: #F5F5DC; border-radius: 5px; border-left: 3px solid #708B75;">
-                            <div style="font-size: 11px; color: #6B7A6B; margin-bottom: 5px;">
-                                <strong>{{ $message->username ?? $message->user->username ?? 'Anonymous' }}</strong>
-                                <span style="margin-left: 10px;">{{ $message->created_at->format('H:i:s') }}</span>
+                            <div style="font-size: 11px; margin-bottom: 5px;">
+                                <strong style="color: {{ $usernameColor }};">{{ $diamondEmoji }}{{ $message->username ?? $message->user->username ?? 'Anonymous' }}</strong>
+                                <span style="margin-left: 10px; color: #6B7A6B;">{{ $message->created_at->format('H:i:s') }}</span>
                             </div>
                             <div style="color: #3D315B;">{{ $message->message }}</div>
                         </div>
@@ -68,6 +92,7 @@
     </div>
 </div>
 
+<script src="/js/simple-pow.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('chat-form');
@@ -103,19 +128,57 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 50);
         
         try {
-            // Send message without POW
+            // First mine PoW for the message
+            statusDiv.innerHTML = '<span id="status-emoji">⛏️</span> Mining proof-of-work...';
+            
+            if (!window.simplePoW) {
+                throw new Error('PoW system not available');
+            }
+            
+            const proof = await window.simplePoW.acquireProofFor({
+                target_type: 'chat_message',
+                action: 'send',
+                difficulty: '21e8',
+                board_code: null,
+                target_id: '{{ $room->id }}'
+            });
+            
+            statusDiv.innerHTML = '<span id="status-emoji">📤</span> Sending message...';
+            
+            console.log('🚀 Attempting to send chat message...');
+            console.log('📍 URL:', `/chat/{{ $room->slug }}/send`);
+            
+            // Get CSRF token from meta tag
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            console.log('🔑 Using CSRF token:', csrfToken.substring(0, 20) + '...');
+            
+            // Send message with POW
             const response = await fetch(`/chat/{{ $room->slug }}/send`, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({
-                    message: message
+                    message: message,
+                    pow_nonce: String(proof.nonce),
+                    pow_hash: proof.hash,
+                    pow_challenge_id: proof.challenge_id
                 })
             });
             
-            const result = await response.json();
+            let result;
+            try {
+                const responseText = await response.text();
+                console.log('Chat response:', responseText);
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('Failed to parse response:', parseError);
+                throw new Error('Server returned invalid response: ' + parseError.message);
+            }
             
             if (result.success) {
                 messageInput.value = '';
@@ -172,8 +235,12 @@ document.addEventListener('DOMContentLoaded', function() {
         messageDiv.style.cssText = 'margin-bottom: 15px; padding: 10px; background: #F5F5DC; border-radius: 5px; border-left: 3px solid #708B75;';
         
         const headerDiv = document.createElement('div');
-        headerDiv.style.cssText = 'font-size: 11px; color: #6B7A6B; margin-bottom: 5px;';
-        headerDiv.innerHTML = `<strong>${message.username}</strong> <span style="margin-left: 10px;">${message.created_at}</span>`;
+        headerDiv.style.cssText = 'font-size: 11px; margin-bottom: 5px;';
+        
+        // Apply diamond color to username if available
+        const usernameColor = message.diamond_color || '#6B7A6B';
+        const diamondEmoji = message.diamond_color ? '💎 ' : '';
+        headerDiv.innerHTML = `<strong style="color: ${usernameColor};">${diamondEmoji}${message.username}</strong> <span style="margin-left: 10px; color: #6B7A6B;">${message.created_at}</span>`;
         
         const contentDiv = document.createElement('div');
         contentDiv.style.cssText = 'color: #3D315B;';

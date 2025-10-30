@@ -16,7 +16,17 @@ class StatsController extends Controller
     public function index()
     {
         $stats = $this->calculateBasicStats();
-        return view('stats', compact('stats'));
+        
+        // Get boards for the mining positions section
+        $boards = \App\Models\Board::all();
+        
+        // Get recent threads for the mining positions section
+        $recentThreads = \App\Models\Thread::with(['board', 'bitcoinUser'])
+            ->orderBy('created_at', 'desc')
+            ->take(10)
+            ->get();
+
+        return view('stats', compact('stats', 'boards', 'recentThreads'));
     }
 
     public function brainStats()

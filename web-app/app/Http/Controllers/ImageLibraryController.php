@@ -9,7 +9,7 @@ class ImageLibraryController extends Controller
 {
     public function index()
     {
-        $images = ImageLibrary::getShiftingLibrary(50);
+        $images = ImageLibrary::getImagesByPow(50);
 
         return view('image-library.index', compact('images'));
     }

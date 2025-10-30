@@ -15,33 +15,53 @@ class UserToolbarController extends Controller
     public function getToolbarData(Request $request)
     {
         $userId = session('bitcoin_auth_id');
+        \Log::info('Toolbar API: Session data', [
+            'bitcoin_auth_id' => $userId,
+            'session_id' => session()->getId(),
+            'all_session' => session()->all()
+        ]);
         
         if (!$userId) {
             // Try to get from Sanctum token if session not available
             $authUser = $request->user();
             if ($authUser) {
                 $userId = $authUser->id;
+                \Log::info('Toolbar API: Using Sanctum auth', ['user_id' => $userId]);
             }
         }
         
         if (!$userId) {
+            \Log::info('Toolbar API: No authentication found');
             return response()->json(['error' => 'Not authenticated'], 401);
         }
 
         $user = BitcoinAuth::find($userId);
         if (!$user) {
+            \Log::error('Toolbar API: User not found', ['user_id' => $userId]);
             return response()->json(['error' => 'User not found'], 404);
         }
+        
+        \Log::info('Toolbar API: User found', [
+            'user_id' => $user->id,
+            'username' => $user->username,
+            'total_pow_points' => $user->total_pow_points
+        ]);
 
         // Get the user's highest 21e8 achievement level
         $personal21e8Level = null;
         if ($user->personal_21e8_hash) {
-            $levels = Personal21e8Achievement::getLevels();
-            foreach ($levels as $level => $config) {
-                $requiredZeros = $config['zeros'];
-                if (substr($user->personal_21e8_hash, 0, $requiredZeros) === str_repeat('0', $requiredZeros)) {
-                    $personal21e8Level = $level;
-                }
+            $hash = strtolower($user->personal_21e8_hash);
+            // Check from highest to lowest level
+            if (str_starts_with($hash, '21e80000')) {
+                $personal21e8Level = '21e80000';
+            } elseif (str_starts_with($hash, '21e8000')) {
+                $personal21e8Level = '21e8000';
+            } elseif (str_starts_with($hash, '21e800')) {
+                $personal21e8Level = '21e800';
+            } elseif (str_starts_with($hash, '21e80')) {
+                $personal21e8Level = '21e80';
+            } elseif (str_starts_with($hash, '21e8')) {
+                $personal21e8Level = '21e8';
             }
         }
 

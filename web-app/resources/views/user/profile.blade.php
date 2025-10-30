@@ -104,10 +104,10 @@
         @endif
     </div>
 
-    <!-- Personal 21e8 Achievements -->
+    <!-- Personal 21e8 Diamonds -->
     <div style="margin-top: 30px; background: #F5F5DC; border: 2px solid #708B75; border-radius: 12px; padding: 30px; box-shadow: 0 4px 16px rgba(112, 139, 117, 0.1);">
         <h2 style="margin: 0 0 25px 0; color: #3D315B; font-family: 'Nova Cut', serif; font-size: 24px; text-align: center;">
-            ⛏️ Personal 21e8 Achievements
+            💎 Personal 21e8 Diamonds
         </h2>
         
         @php
@@ -262,7 +262,7 @@ div[style*="overflow-y: auto"]::-webkit-scrollbar-thumb:hover {
 
 @if(session('bitcoin_auth_id') && session('bitcoin_auth_id') == $user->id)
 <script>
-// Personal 21e8 Mining - Progressive Levels
+// Personal 21e8 Diamonds - Progressive Levels
 const userData = {
     id: {{ $user->id }},
     username: '{{ $user->username }}',

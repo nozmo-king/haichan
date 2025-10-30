@@ -7,14 +7,14 @@
 
 @layer base {
     :root {
-        /* === WARM EARTHY PALETTE UPDATE === */
-        --forest-dark: #043915;     /* Deep forest base */
-        --forest-mid: #4C763B;      /* Rich forest */
-        --forest-light: #B0CE88;    /* Sage green */
-        --earth: #4C763B;           /* Earth tone consistency */
-        --cream: #FFFD8F;           /* Warm cream highlight */
-        --gold: #FFFD8F;            /* Gold as warm cream */
-        --sage: #B0CE88;            /* Natural sage */
+        /* === TAN GRAINY PALETTE === */
+        --tan-dark: #8b6f47;        /* Dark tan */
+        --tan-mid: #b8975c;         /* Mid tan */
+        --tan-light: #d4b896;       /* Light tan */
+        --earth: #a68447;           /* Earth brown */
+        --cream: #f4e5d3;           /* Cream text */
+        --gold: #d4af37;            /* Gold accents */
+        --brown: #6b4423;           /* Rich brown */
     }
     
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -23,16 +23,16 @@
         font-family: 'Courier New', monospace;
         font-size: 14px;
         line-height: 1.5;
-        color: var(--cream);
+        color: #2c1810;
         background: 
-            /* Warm organic earth gradient */
-            radial-gradient(circle at 20% 20%, rgba(176, 206, 136, 0.12) 0%, transparent 60%),
-            radial-gradient(circle at 80% 80%, rgba(255, 253, 143, 0.08) 0%, transparent 50%),
+            /* Tan grainy texture */
+            url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"><defs><filter id="noise"><feTurbulence baseFrequency="0.9" numOctaves="4" result="noise" seed="2"/><feColorMatrix in="noise" type="saturate" values="0"/></filter></defs><rect width="100" height="100" filter="url(%23noise)" opacity="0.4"/></svg>'),
             linear-gradient(135deg, 
-                var(--forest-dark) 0%, 
-                #032611 25%, 
-                rgba(76, 118, 59, 0.9) 75%, 
-                rgba(76, 118, 59, 0.7) 100%
+                #d4b896 0%,
+                #c9a876 25%, 
+                #b8975c 50%,
+                #a68447 75%,
+                #947233 100%
             );
         background-attachment: fixed;
     }
@@ -43,13 +43,13 @@
     }
     
     a {
-        color: var(--sage);
+        color: var(--brown);
         text-decoration: none;
         font-weight: 600;
     }
     
     a:hover {
-        color: var(--cream);
+        color: var(--gold);
         text-decoration: underline;
     }
 }
@@ -57,52 +57,52 @@
 @layer components {
     /* Posts & Threads */
     .post, .thread, .postarea {
-        background: rgba(76, 118, 59, 0.85);
-        border: 3px solid var(--sage);
-        border-left: 6px solid var(--cream);
+        background: rgba(212, 184, 150, 0.95);
+        border: 3px solid var(--tan-dark);
+        border-left: 6px solid var(--brown);
         @apply p-4 my-4;
-        box-shadow: 4px 4px 0 rgba(4, 57, 21, 0.3);
-        color: var(--cream);
+        box-shadow: 4px 4px 0 rgba(107, 68, 35, 0.3);
+        color: var(--brown);
     }
     
     /* Forms */
     input, textarea, select {
         @apply w-full p-2;
-        border: 2px solid var(--sage);
-        background: rgba(255, 253, 143, 0.08);
-        color: var(--cream);
+        border: 2px solid var(--tan-dark);
+        background: rgba(244, 229, 211, 0.9);
+        color: var(--brown);
         font-family: inherit;
     }
     
     input:focus, textarea:focus {
         @apply outline-none;
-        border-color: var(--cream);
-        box-shadow: 0 0 0 3px rgba(255, 253, 143, 0.2);
-        background: rgba(255, 253, 143, 0.12);
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.3);
+        background: rgba(244, 229, 211, 1);
     }
     
     /* Buttons */
     button, input[type="submit"], .btn {
-        @apply px-5 py-2 font-bold uppercase cursor-pointer;
-        border: 3px solid var(--sage);
-        background: var(--sage);
-        color: var(--forest-dark) !important;
-        box-shadow: 3px 3px 0 rgba(4, 57, 21, 0.3);
-        font-family: inherit;
-        letter-spacing: 0.5px;
-    }
+    color: #fafa0b;
+    @apply px-5 py-2 font-bold uppercase cursor-pointer;
+    border: 3px solid var(--tan-dark);
+    background: var(--tan-dark);
+    box-shadow: 3px 3px #6b442366;
+    font-family: inherit;
+    letter-spacing: 0.5px;
+}
     
-    button:hover, .btn:hover {
-        background: var(--cream);
-        border-color: var(--cream);
-        color: var(--forest-dark) !important;
-        transform: translate(-1px, -1px);
-        box-shadow: 4px 4px 0 rgba(4, 57, 21, 0.4);
-    }
+button:hover, .btn:hover {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #fafa0b;
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px #6b442380;
+}
     
     /* Navigation */
     .nav-links {
-        @apply bg-white border-3 border-[#708B75] p-3 my-4 text-center;
+        @apply bg-white border-3 border-[#708B75] p-2 my-4 text-center;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     
@@ -116,7 +116,7 @@
     
     /* Boards */
     .board-card, .board-header {
-        @apply bg-white border-3 border-[#708B75] p-5 my-4;
+        @apply bg-white border-3 border-[#708B75] p-3 my-4;
         box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
     }
     
@@ -137,6 +137,12 @@
     .border-3 { border-width: 3px; }
     .border-4 { border-width: 4px; }
     .border-l-8 { border-left-width: 8px; }
+    
+    /* Global 1px black border for major blocks and interactive elements */
+    .post, .thread, .nav-links, .board-card, .board-header, .tui-window,
+    input, textarea, select, button, a {
+        border: 1px solid black !important;
+    }
     
     /* Admin Post Styles */
     .admin-post {

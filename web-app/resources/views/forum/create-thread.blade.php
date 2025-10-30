@@ -5,18 +5,12 @@
 @section('content')
 <script src="/js/doodle-pow.js"></script>
 <script src="/js/wasm-pow-integration.js" defer></script>
-<div style="max-width: 800px; margin: 40px auto; background: #F5F5DC; border: 2px solid #708B75; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 32px rgba(112, 139, 117, 0.2);">
-    <div style="background: linear-gradient(135deg, #708B75, #5a7860); color: #F5F5DC; padding: 20px; text-align: center;">
-        <h2 style="margin: 0; font-family: 'Nova Cut', serif; font-size: 24px; letter-spacing: 1px;">
+<div style="max-width: 700px; margin: 20px auto; background: linear-gradient(135deg, #D2B48C, #FFC0CB); border: 1px solid #708B75; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 16px rgba(112, 139, 117, 0.2);">
+    <div style="padding: 20px;">
+        <h2 style="margin: 0 0 20px 0; font-family: 'Nova Cut', serif; font-size: 22px; letter-spacing: 1px; text-align: center; color: #3D315B;">
             🌱 Create New Thread in /{{ $board->code }}/
         </h2>
-        <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">
-            Share your thoughts with proof-of-work ⚡
-        </p>
-    </div>
-    
-    <div style="padding: 30px;">
-        <form action="{{ $board->code === 'ddl' ? '/ddl/create' : route('board.create.store', $board->code) }}" method="POST" enctype="multipart/form-data" id="thread-form" style="display: flex; flex-direction: column; gap: 20px;">
+        <form action="{{ $board->code === 'ddl' ? '/ddl/create' : route('board.create.store', $board->code) }}" method="POST" enctype="multipart/form-data" id="thread-form" style="display: flex; flex-direction: column; gap: 15px;">
             @csrf
             
             <!-- Title Field -->

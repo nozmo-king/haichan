@@ -7,6 +7,9 @@ use App\Models\InviteCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use BitWasp\Bitcoin\Key\PrivateKeyFactory;
+use BitWasp\Bitcoin\Bitcoin;
+use BitWasp\Bitcoin\Network\NetworkFactory;
 
 class AuthController extends Controller
 {
@@ -45,12 +48,16 @@ class AuthController extends Controller
     public function backupLogin(Request $request)
     {
         $request->validate([
-            'private_key' => 'required|string|size:64'
+            'private_key' => 'required|string'
         ]);
 
-        // Generate public key from private key (client should do this)
-        $privateKey = $request->private_key;
-        $publicKey = hash('sha256', $privateKey);
+        try {
+            Bitcoin::setNetwork(NetworkFactory::bitcoin());
+            $privateKey = PrivateKeyFactory::fromWif($request->private_key);
+            $publicKey = $privateKey->getPublicKey()->getHex();
+        } catch (\Exception $e) {
+            return back()->withErrors(['private_key' => 'Invalid private key format.']);
+        }
         
         // Find user by public key
         $user = BitcoinAuth::where('public_key', $publicKey)->first();
@@ -226,9 +233,9 @@ class AuthController extends Controller
         $request->validate([
             'friend_code' => 'required|string',
             'username' => 'required|string|min:3|max:20|unique:bitcoin_auth,username|regex:/^[a-zA-Z0-9_]+$/',
+            'password' => 'required|string|min:8',
             'public_key' => 'required|string|size:64',
             'address' => 'required|string|min:26',
-            'private_key' => 'required|string|size:64', // Only for validation, not stored
         ]);
 
         try {
@@ -264,11 +271,17 @@ class AuthController extends Controller
             // Check if this is the first user
             $isFirstUser = BitcoinAuth::count() === 0;
             
-            // Create user - NO private keys or passwords stored!
+            // Generate password hash
+            $salt = bin2hex(random_bytes(16));
+            $passwordHash = hash('sha256', $salt . $request->password);
+            
+            // Create user - NO private keys stored!
             $user = BitcoinAuth::create([
                 'public_key' => $request->public_key,
                 'address' => $request->address,
                 'username' => $request->username,
+                'password_hash' => $passwordHash,
+                'password_salt' => $salt,
                 'invite_code' => strtoupper(bin2hex(random_bytes(6))),
                 'last_login' => now(),
                 'mining_power' => 1.0,
@@ -291,20 +304,6 @@ class AuthController extends Controller
                 'bitcoin_auth_user' => $user->fresh(),
             ]);
 
-            // Generate backup file content
-            $backupContent = "# HAICHAN BACKUP KEYS\n";
-            $backupContent .= "# Generated: " . now() . "\n";
-            $backupContent .= "# Username: {$user->username}\n";
-            $backupContent .= "# Address: {$user->address}\n";
-            $backupContent .= "# User ID: {$user->id}/256\n\n";
-            $backupContent .= "PRIVATE_KEY={$request->private_key}\n";
-            $backupContent .= "PUBLIC_KEY={$request->public_key}\n";
-            $backupContent .= "ADDRESS={$request->address}\n";
-            $backupContent .= "USERNAME={$user->username}\n";
-            $backupContent .= "INVITE_CODE={$user->invite_code}\n\n";
-            $backupContent .= "# IMPORTANT: Save this file securely!\n";
-            $backupContent .= "# Use your private key for backup login";
-
             // Calculate remaining slots
             $totalUsers = BitcoinAuth::count();
             $remainingSlots = 256 - $totalUsers;
@@ -312,9 +311,7 @@ class AuthController extends Controller
             // Show success page
             return view('auth.registration-success', [
                 'user' => $user,
-                'privateKey' => $request->private_key,
                 'publicKey' => $request->public_key,
-                'backupContent' => $backupContent,
                 'remainingSlots' => $remainingSlots
             ]);
 
@@ -346,5 +343,62 @@ class AuthController extends Controller
             'available' => !$exists,
             'username' => $username
         ]);
+    }
+
+    public function validateFriendCode(Request $request)
+    {
+        $request->validate([
+            'code' => 'required|string'
+        ]);
+
+        $code = $request->code;
+        
+        // Check if it's a genesis code
+        $isGenesisCode = in_array($code, ['GENESIS2025', 'SUPERADMIN-3FuiKyZDg28GWoBcaKMCCgUK']);
+        
+        if ($isGenesisCode) {
+            return response()->json([
+                'valid' => true,
+                'message' => 'Valid genesis code',
+                'code' => $code
+            ]);
+        }
+        
+        // Check in invite_codes table
+        $inviteCode = InviteCode::where('code', $code)
+            ->where('uses_remaining', '>', 0)
+            ->where(function($query) {
+                $query->whereNull('expires_at')
+                      ->orWhere('expires_at', '>', now());
+            })
+            ->first();
+        
+        if ($inviteCode) {
+            return response()->json([
+                'valid' => true,
+                'message' => 'Valid invite code',
+                'code' => $code,
+                'uses_remaining' => $inviteCode->uses_remaining
+            ]);
+        }
+        
+        // Check legacy friend_codes table
+        $friendCode = \DB::table('friend_codes')
+            ->where('code', $code)
+            ->where('is_used', 0)
+            ->first();
+        
+        if ($friendCode) {
+            return response()->json([
+                'valid' => true,
+                'message' => 'Valid friend code',
+                'code' => $code
+            ]);
+        }
+        
+        return response()->json([
+            'valid' => false,
+            'message' => 'Invalid or expired friend code'
+        ], 422);
     }
 }

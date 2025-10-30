@@ -17,6 +17,7 @@ class Personal21e8Achievement extends Model
         'mining_time',
         'points_awarded',
         'found_at',
+        'ip_address',
     ];
 
     protected $casts = [

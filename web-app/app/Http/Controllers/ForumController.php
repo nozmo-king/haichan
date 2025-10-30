@@ -313,9 +313,9 @@ class ForumController extends Controller
         // Special validation for /i/ Images board - images required, no text content
         if ($boardModel->code === 'i') {
             $validated = $request->validate([
-                'title' => 'required|string|max:200|min:3',
-                'content' => 'nullable|max:0', // No content allowed on /i/
-                'image' => 'required|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                'title' => 'nullable|string|max:200',
+                'content' => 'nullable|string|max:5', // Allow minimal content
+                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
                 'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
                 'pow_nonce' => 'required|integer|min:0',
                 'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
@@ -323,10 +323,11 @@ class ForumController extends Controller
                 'post_anonymous' => 'boolean',
             ]);
             
-            // Override content to be empty for /i/ board
-            $validated['content'] = '';
+            // Set defaults for /i/ board
+            $validated['title'] = $validated['title'] ?? '[Image]';
+            $validated['content'] = $validated['content'] ?? '.';
             
-            Log::info('storeThread: /i/ board validation successful - image required, no content.');
+            Log::info('storeThread: /i/ board validation successful - image only mode.');
         } else {
             // Comprehensive input validation - image OR image_hash required
             Log::info('storeThread: Validating request...');
@@ -504,6 +505,10 @@ try {
                     if ($user) {
                         $user->awardMiningPoints($powPoints);
                         Log::info('storeThread: Awarded points to user.', ['user_id' => $user->id, 'points' => $powPoints]);
+                        
+                        // Store points data in session for frontend to pick up
+                        session()->flash('points_awarded', $powPoints);
+                        session()->flash('total_points', $user->fresh()->total_pow_points);
                     }
                 }
             }
@@ -870,6 +875,10 @@ try {
                     $user = \App\Models\BitcoinAuth::find($finalUserId);
                     if ($user) {
                         $user->awardMiningPoints($powPoints);
+                        
+                        // Store points data in session for frontend to pick up
+                        session()->flash('points_awarded', $powPoints);
+                        session()->flash('total_points', $user->fresh()->total_pow_points);
                     }
                 }
 
@@ -900,7 +909,7 @@ try {
                 'trace' => $e->getTraceAsString()
             ]);
 
-            return back()->withErrors(['error' => 'Failed to post reply. Please try again.'])->withInput();
+            return back()->withErrors(['error' => 'Failed to post reply: '.$e->getMessage()])->withInput();
         }
     }
 

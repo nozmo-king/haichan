@@ -1,40 +1,318 @@
 /**
- * HAICHAN - UNIFIED AESTHETIC
- * ONE CONSISTENT DESIGN ACROSS THE ENTIRE SITE
+ * HAICHAN - UNIFIED TAN AESTHETIC
+ * Tan theme with grain and hatching patterns
  */
 
-/* ===== UNIFIED COLOR PALETTE ===== */
 :root {
-    /* ONE color scheme for EVERYTHING */
-    --primary: #2c3e50;
-    --primary-light: #34495e;
-    --accent: #3498db;
-    --accent-hover: #2980b9;
-    --success: #2ecc71;
-    --warning: #f39c12;
-    --danger: #e74c3c;
+    /* Tan Theme Color Palette */
+    --primary-bg: #F5F5DC;
+    --secondary-bg: #DEB887;
+    --card-bg: #F5DEB3;
+    --light-tan: #FAEBD7;
+    --border-color: #CD853F;
+    --text-primary: #8B4513;
+    --text-secondary: #A0522D;
+    --accent-tan: #CD853F;
+    --accent-hover: #B8860B;
+    --dark-tan: #8B7355;
     
-    /* Backgrounds */
-    --bg-page: #ecf0f1;
-    --bg-card: #ffffff;
-    --bg-input: #ffffff;
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
     
-    /* Text */
-    --text-primary: #2c3e50;
-    --text-secondary: #7f8c8d;
-    --text-light: #ffffff;
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
     
-    /* Borders & Shadows */
-    --border: #bdc3c7;
-    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.15);
+    /* Tan Grain & Hatching Patterns */
+    --grain-pattern: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+    --hatch-light: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(139, 69, 19, 0.03) 2px, rgba(139, 69, 19, 0.03) 4px);
+    --hatch-medium: repeating-linear-gradient(135deg, transparent, transparent 1px, rgba(139, 69, 19, 0.05) 1px, rgba(139, 69, 19, 0.05) 3px);
+    --crosshatch: 
+        repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(139, 69, 19, 0.03) 2px, rgba(139, 69, 19, 0.03) 4px),
+        repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(139, 69, 19, 0.03) 2px, rgba(139, 69, 19, 0.03) 4px);
 }
 
-/* ===== UNIFIED BUTTONS ===== */
-button, .btn, input[type="submit"], input[type="button"], 
-.toolbar-btn, .nav-link, .board-box, a[style*="background"] {
-    background: var(--primary) !important;
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Dark themed body matching the dashboard */
+body {
+    margin: 0;
+    background: linear-gradient(135deg, var(--secondary-bg), var(--primary-bg)) !important;
+    background-image: var(--grain-pattern) !important;
+    background-attachment: fixed !important;
+    color: var(--text-primary) !important;
+    padding: 20px;
+    padding-bottom: 60px !important;
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+}
+
+/* Consistent spacing for main content */
+.main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--space-lg);
+}
+
+/* Matching home page styled buttons with grain */
+button, .btn, input[type="submit"], .toolbar-btn, .nav-link, .board-box, a[style*="background"] {
+    background: var(--accent-green) !important;
+    background-image: var(--crosshatch) !important;
+    color: #1A1A1A !important;
+    border: 3px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    padding: 15px 30px !important;
+    margin: 5px !important;
+    font-size: 16px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    text-decoration: none !important;
+    text-shadow: none !important;
+    display: inline-block !important;
+}
+
+button:hover, .btn:hover, .toolbar-btn:hover, .nav-link:hover, .board-box:hover {
+    background: var(--accent-hover) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4) !important;
+}
+
+/* Button text - dark on light buttons */
+button, button *, 
+.btn, .btn *,
+input[type="submit"], input[type="submit"] *,
+.toolbar-btn, .toolbar-btn *,
+.nav-link, .nav-link *,
+.board-box, .board-box *,
+a[style*="background"], a[style*="background"] * {
+    color: #1A1A1A !important;
+}
+
+/* Navigation matching dashboard */
+.header {
+    background: var(--primary-bg) !important;
+    background-image: var(--hatch-medium) !important;
+    border-bottom: 3px solid var(--border-color) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    padding: 20px !important;
+    margin-bottom: 30px !important;
+}
+
+.header h1 a {
+    color: var(--text-primary) !important;
+    font-family: 'Nova Cut', serif !important;
+    font-size: 32px !important;
+    font-weight: normal !important;
+    letter-spacing: 2px !important;
+}
+
+/* Cards matching dashboard home page style */
+.post, .thread, .haichan-form-panel, .thread-item, .post-item, .cp-card {
+    background: #F5F5DC !important;
+    background-image: 
+        repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(139, 69, 19, 0.03) 2px, rgba(139, 69, 19, 0.03) 4px),
+        repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(139, 69, 19, 0.03) 2px, rgba(139, 69, 19, 0.03) 4px) !important;
+    border: 3px solid #9AB87A !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
+    padding: 20px !important;
+    margin-bottom: 30px !important;
+    color: #2F4F2F !important;
+    font-family: 'Courier New', monospace !important;
+}
+
+/* Proper spacing for lists */
+ul, ol {
+    padding-left: var(--space-lg);
+    margin-bottom: var(--space-md);
+}
+
+li {
+    margin-bottom: var(--space-xs);
+}
+
+/* Headings with proper spacing */
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: var(--space-md);
+    margin-top: var(--space-lg);
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+h1 { font-size: 32px; }
+h2 { font-size: 28px; }
+h3 { font-size: 24px; }
+h4 { font-size: 20px; }
+h5 { font-size: 18px; }
+h6 { font-size: 16px; }
+
+/* Paragraph spacing */
+p {
+    margin-bottom: var(--space-md);
+}
+
+/* Forms */
+input[type="text"], 
+input[type="email"], 
+input[type="password"], 
+textarea, 
+select {
+    background: #FFFACD !important;
+    border: 2px solid #9AB87A !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    color: #2F4F2F !important;
+    font-family: 'Courier New', monospace;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: var(--moss-green) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(161, 160, 95, 0.2) !important;
+}
+
+/* Links */
+a {
+    color: var(--asparagus);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--moss-green);
+    text-decoration: underline;
+}
+
+/* Dropdowns */
+.dropdown-menu {
+    background: var(--bg-card) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow) !important;
+    padding: var(--space-sm) !important;
+}
+
+.dropdown-item {
+    padding: var(--space-sm) var(--space-md) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-sm) !important;
+    margin-bottom: var(--space-xs) !important;
+}
+
+.dropdown-item:hover {
+    background: var(--asparagus) !important;
     color: var(--text-light) !important;
+}
+
+/* Image dithering */
+img:not(.no-dither) {
+    filter: contrast(1.15) saturate(0.85);
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm);
+}
+
+/* Override any burlywood/bisque backgrounds */
+[style*="background: burlywood"],
+[style*="background:burlywood"],
+[style*="background: bisque"],
+[style*="background:bisque"],
+[style*="background: var(--content-bg)"] {
+    background: #ffe4c4 !important;
+}
+
+
+/* Grainy texture on entire page */
+body {
+    background: #FFFACD !important;
+    background-image: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 1px,
+            rgba(0,0,0,.04) 1px,
+            rgba(0,0,0,.04) 2px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 1px,
+            rgba(0,0,0,.04) 1px,
+            rgba(0,0,0,.04) 2px
+        ),
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(0,0,0,.02) 2px,
+            rgba(0,0,0,.02) 4px
+        ),
+        repeating-linear-gradient(
+            135deg,
+            transparent,
+            transparent 2px,
+            rgba(0,0,0,.02) 2px,
+            rgba(0,0,0,.02) 4px
+        ),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E") !important;
+    padding-bottom: 60px !important;
+}
+
+/* Green grainy buttons */
+button, .btn, input[type="submit"], .toolbar-btn, .nav-link, .board-box, a[style*="background"] {
+    background: #55c294 !important;
+    background-image: 
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 1px,
+            rgba(0,0,0,.04) 1px,
+            rgba(0,0,0,.04) 2px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 1px,
+            rgba(0,0,0,.04) 1px,
+            rgba(0,0,0,.04) 2px
+        ),
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(0,0,0,.02) 2px,
+            rgba(0,0,0,.02) 4px
+        ),
+        repeating-linear-gradient(
+            135deg,
+            transparent,
+            transparent 2px,
+            rgba(0,0,0,.02) 2px,
+            rgba(0,0,0,.02) 4px
+        ),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E") !important;
+    color: #D4AC7A !important;
     border: none !important;
     border-radius: 6px !important;
     padding: 10px 20px !important;
@@ -42,146 +320,115 @@ button, .btn, input[type="submit"], input[type="button"],
     font-weight: 600 !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
-    box-shadow: var(--shadow) !important;
+    box-shadow: 0 4px 12px rgba(85, 194, 148, 0.3) !important;
     text-decoration: none !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important;
 }
 
-button:hover, .btn:hover, input[type="submit"]:hover, 
-.toolbar-btn:hover, .nav-link:hover, .board-box:hover {
-    background: var(--accent) !important;
-    box-shadow: var(--shadow-hover) !important;
-    transform: translateY(-1px) !important;
+button:hover, .btn:hover, .toolbar-btn:hover, .nav-link:hover, .board-box:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(85, 194, 148, 0.4) !important;
 }
 
-button:active, .btn:active {
-    transform: translateY(0) !important;
+/* Pink button text */
+button, button *, 
+.btn, .btn *,
+input[type="submit"], input[type="submit"] *,
+.toolbar-btn, .toolbar-btn *,
+.nav-link, .nav-link *,
+.board-box, .board-box *,
+a[style*="background"], a[style*="background"] * {
+    color: #D4AC7A !important;
 }
 
-/* Primary/Submit buttons */
-button[type="submit"], .btn-primary {
-    background: var(--accent) !important;
-}
-
-button[type="submit"]:hover, .btn-primary:hover {
-    background: var(--accent-hover) !important;
-}
-
-/* Success buttons */
-.btn-success {
-    background: var(--success) !important;
-}
-
-/* Admin buttons */
-.admin-cp-btn, .btn-gold {
-    background: var(--warning) !important;
-    color: var(--text-primary) !important;
-}
-
-/* Active state */
-.active, .toolbar-btn.active {
-    background: var(--accent) !important;
-}
-
-/* ===== UNIFIED NAVIGATION ===== */
+/* Navigation matching home page */
 .header {
-    background: var(--primary) !important;
-    border-bottom: 3px solid var(--accent) !important;
+    background: var(--bg-card) !important;
+    background-image: 
+        repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+        repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+        repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E") !important;
+    border-bottom: 2px solid var(--accent) !important;
     box-shadow: var(--shadow) !important;
     padding: 15px 20px !important;
 }
 
 .header h1 a {
-    color: var(--accent) !important;
+    color: var(--text-primary) !important;
     font-size: 24px !important;
-    font-weight: 700 !important;
+    font-weight: 300 !important;
+    letter-spacing: 2px !important;
 }
 
-.header h1 a:hover {
-    color: var(--text-light) !important;
-}
-
-/* ===== UNIFIED TOOLBAR ===== */
+/* Toolbar NOT green - dark like dashboard */
 .persistent-toolbar {
-    background: var(--primary) !important;
-    border-top: 3px solid var(--accent) !important;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1) !important;
+    background: var(--primary-bg) !important;
+    background-image: var(--hatch-light) !important;
+    border-top: 3px solid var(--border-color) !important;
+    box-shadow: 0 -8px 32px rgba(0,0,0,0.3) !important;
     height: 55px !important;
     padding: 0 20px !important;
 }
 
 .username-glow {
+    color: var(--accent) !important;
     font-size: 15px !important;
     font-weight: 600 !important;
-    color: var(--accent) !important;
-    cursor: pointer !important;
-}
-
-.username-glow:hover {
-    color: var(--text-light) !important;
+    text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000 !important;
 }
 
 .mining-display {
-    background: rgba(46, 204, 113, 0.1) !important;
-    padding: 8px 16px !important;
-    border-radius: 6px !important;
+    background: rgba(154, 184, 122, 0.1) !important;
     border: 1px solid var(--success) !important;
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
 }
 
 .mining-hashrate, .mining-total {
     color: var(--success) !important;
-    font-weight: 600 !important;
 }
 
-/* ===== UNIFIED CARDS & CONTENT ===== */
+/* Cards matching home page */
 .post, .thread, .haichan-form-panel {
     background: var(--bg-card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 6px !important;
+    background-image: 
+        repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+        repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+        repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E") !important;
+    border: 2px solid var(--accent) !important;
+    border-radius: 8px !important;
     box-shadow: var(--shadow) !important;
     padding: 20px !important;
-    margin: 15px 0 !important;
 }
 
-.post:hover, .thread:hover {
-    box-shadow: var(--shadow-hover) !important;
-}
-
-/* ===== UNIFIED FORMS ===== */
-input[type="text"], 
-input[type="email"], 
-input[type="password"], 
-textarea, 
-select {
-    background: var(--bg-input) !important;
-    border: 2px solid var(--border) !important;
+/* Forms */
+input[type="text"], input[type="email"], input[type="password"], textarea, select {
+    background: var(--bg-page) !important;
+    border: 2px solid var(--accent) !important;
     border-radius: 6px !important;
     padding: 10px 15px !important;
-    font-size: 14px !important;
     color: var(--text-primary) !important;
-    transition: border-color 0.2s ease !important;
 }
 
 input:focus, textarea:focus, select:focus {
+    border-color: var(--success) !important;
     outline: none !important;
-    border-color: var(--accent) !important;
 }
 
-/* ===== UNIFIED BACKGROUNDS ===== */
-body {
-    background: var(--bg-page) !important;
-}
-
-/* ===== UNIFIED DROPDOWNS ===== */
+/* Dropdowns */
 .dropdown-menu {
     background: var(--bg-card) !important;
     border: 2px solid var(--accent) !important;
-    border-radius: 6px !important;
-    box-shadow: var(--shadow-hover) !important;
+    border-radius: 8px !important;
+    box-shadow: var(--shadow) !important;
 }
 
 .dropdown-item {
     padding: 12px 20px !important;
-    transition: background 0.2s ease !important;
     color: var(--text-primary) !important;
 }
 
@@ -190,67 +437,259 @@ body {
     color: var(--text-light) !important;
 }
 
-/* ===== UNIFIED ADMIN INDICATORS ===== */
-.admin-glow {
-    color: var(--warning) !important;
-    font-weight: 700 !important;
+
+button[type="submit"], .btn-primary {
+    background: var(--accent) !important;
 }
 
-.mod-glow {
+.admin-cp-btn, .admin-cp-btn * {
+    background: var(--warning) !important;
+    color: #fafa0b !important;
+}
+
+/* Navigation */
+.header {
+    background: var(--primary) !important;
+    background-image: 
+        repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+        repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+        repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E") !important;
+    border-bottom: 3px solid var(--accent) !important;
+    padding: 15px 20px !important;
+}
+
+.header h1 a {
     color: var(--accent) !important;
-    font-weight: 700 !important;
+    font-size: 24px !important;
 }
 
-/* ===== UNIFIED SCROLLBARS ===== */
-::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+.header h1 a:hover {
+    color: var(--text-light) !important;
 }
 
-::-webkit-scrollbar-track {
-    background: var(--bg-page);
+/* Toolbar */
+.persistent-toolbar {
+    background: var(--primary) !important;
+    background-image: 
+        repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+        repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
+        repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E") !important;
+    border-top: 3px solid var(--accent) !important;
+    height: 55px !important;
+    padding: 0 20px !important;
 }
 
-::-webkit-scrollbar-thumb {
-    background: var(--primary);
-    border-radius: 5px;
+.username-glow {
+    color: var(--accent) !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000 !important;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: var(--accent);
+.mining-display {
+    background: rgba(46,204,113,0.1) !important;
+    border: 1px solid var(--success) !important;
+    border-radius: 6px !important;
+    padding: 8px 16px !important;
 }
 
-/* ===== REMOVE ALL INCONSISTENT STYLES ===== */
-* {
-    box-sizing: border-box;
+.mining-hashrate, .mining-total {
+    color: var(--success) !important;
 }
 
-/* Fix text contrast */
-.persistent-toolbar *, .header * {
-    text-shadow: none !important;
+/* Cards */
+.post, .thread, .haichan-form-panel {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    box-shadow: var(--shadow) !important;
+    padding: 20px !important;
 }
 
-/* Ensure proper spacing */
-body {
-    padding-bottom: 55px !important;
+/* Forms */
+input[type="text"], input[type="email"], input[type="password"], textarea, select {
+    background: var(--bg-card) !important;
+    border: 2px solid var(--border) !important;
+    border-radius: 6px !important;
+    padding: 10px 15px !important;
+    color: var(--text-primary) !important;
 }
 
-/* ===== UNIFIED ANIMATIONS ===== */
-@keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+input:focus, textarea:focus, select:focus {
+    border-color: var(--accent) !important;
+    outline: none !important;
 }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-    .persistent-toolbar {
-        height: auto !important;
-        padding: 10px 15px !important;
-    }
-    
-    button, .btn, .toolbar-btn, .nav-link {
-        padding: 8px 15px !important;
-        font-size: 13px !important;
-    }
+/* Dropdowns */
+.dropdown-menu {
+    background: var(--bg-card) !important;
+    border: 2px solid var(--accent) !important;
+    border-radius: 6px !important;
+    box-shadow: var(--shadow) !important;
 }
 
+.dropdown-item {
+    padding: 12px 20px !important;
+    color: var(--text-primary) !important;
+}
+
+.dropdown-item:hover {
+    background: var(--accent) !important;
+    color: #fafa0b !important;
+}
+
+/* Board boxes specifically */
+a[style*="background"][class="board-box"] {
+    color: #fafa0b !important;
+}
+
+a[style*="background"][class="board-box"] * {
+    color: #fafa0b !important;
+}
+
+/* Force yellow on all interactive elements */
+button div, button span,
+.btn div, .btn span,
+.nav-link div, .nav-link span,
+.toolbar-btn div, .toolbar-btn span,
+.board-box div, .board-box span {
+    color: #fafa0b !important;
+}
+
+/* NUCLEAR OPTION - Override ALL toolbar and header backgrounds */
+.persistent-toolbar,
+.header,
+nav.main,
+.main-navigation {
+    background: var(--primary-bg) !important;
+    background-image: var(--hatch-light) !important;
+    background-color: var(--primary-bg) !important;
+}
+
+/* NUCLEAR OPTION - Force thread backgrounds to be tan with crosshatch */
+.post,
+.thread,
+.thread-item,
+.post-item,
+.haichan-form-panel {
+    background: #F5F5DC !important;
+    background-color: #F5F5DC !important;
+    background-image: 
+        repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(139, 69, 19, 0.03) 2px, rgba(139, 69, 19, 0.03) 4px),
+        repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(139, 69, 19, 0.03) 2px, rgba(139, 69, 19, 0.03) 4px) !important;
+}
+
+/* NUCLEAR OPTION - Force form inputs to be light */
+input[type="text"],
+input[type="email"], 
+input[type="password"],
+textarea,
+select {
+    background: #FFFACD !important;
+    background-color: #FFFACD !important;
+    background-image: none !important;
+}
+
+/* NUCLEAR OPTION - Override EVERYTHING */
+button, button *,
+.btn, .btn *,
+input[type="submit"], input[type="submit"] *,
+input[type="button"], input[type="button"] *,
+.toolbar-btn, .toolbar-btn *,
+.nav-link, .nav-link *,
+.board-box, .board-box *,
+.dropdown-trigger, .dropdown-trigger *,
+a[style*="background"], a[style*="background"] *,
+a[href*="/"], a[href*="/"] * {
+    color: #1A1A1A !important;
+}
+
+/* Override inline styles */
+button[style*="color"],
+.btn[style*="color"],
+.nav-link[style*="color"],
+.board-box[style*="color"] {
+    color: #1A1A1A !important;
+}
+
+/* FORCE NAV BUTTONS TO BE BLACK */
+.header .nav-link,
+.header .nav-link *,
+.header .nav-link:hover,
+.header .nav-link:hover *,
+.main-navigation .nav-link,
+.main-navigation .nav-link *,
+.main-navigation .nav-link:hover,
+.main-navigation .nav-link:hover *,
+.dropdown-trigger,
+.dropdown-trigger *,
+.dropdown-trigger:hover,
+.dropdown-trigger:hover * {
+    color: #000000 !important;
+}
+
+/* FORCE BOARD HEADERS TO BE BLACK WITH GREEN GLOW */
+h1, h2, h3 {
+    font-family: 'Nova Cut', serif !important;
+    color: #000000 !important;
+    text-shadow: 
+        -1px -1px 0 #9AB87A,
+        1px -1px 0 #9AB87A,
+        -1px 1px 0 #9AB87A,
+        1px 1px 0 #9AB87A,
+        0 0 5px #9AB87A,
+        0 0 10px #9AB87A,
+        0 0 15px #9AB87A !important;
+}
+
+/* FORCE THREAD TITLES TO BE BLACK WITH TAN GLOW */
+.thread-link,
+.thread a,
+.thread-title,
+a[href*="/thread/"] {
+    font-family: 'Nova Cut', serif !important;
+    color: #000000 !important;
+    text-shadow: 
+        -1px -1px 0 #D2B48C,
+        1px -1px 0 #D2B48C,
+        -1px 1px 0 #D2B48C,
+        1px 1px 0 #D2B48C,
+        0 0 5px #D2B48C,
+        0 0 10px #D2B48C,
+        0 0 15px #D2B48C !important;
+}
+
+/* FORCE THREAD FORM TEXT TO BE BLACK WITH GREY OUTLINE */
+.haichan-form-panel h3,
+.haichan-form-panel h4,
+.haichan-form-panel label,
+form h3,
+form h4,
+form label {
+    font-family: 'Nova Cut', serif !important;
+    color: #000000 !important;
+    text-shadow: 
+        -1px -1px 0 #808080,
+        1px -1px 0 #808080,
+        -1px 1px 0 #808080,
+        1px 1px 0 #808080,
+        0 0 3px #808080 !important;
+}
+
+/* FORCE CREATE NEW THREAD TEXT TO HAVE BLACK OUTLINE */
+.haichan-form-panel h3 a,
+form h3 a,
+a[href*="/create"] {
+    font-family: 'Nova Cut', serif !important;
+    color: #000000 !important;
+    text-shadow: 
+        -1px -1px 0 #000000,
+        1px -1px 0 #000000,
+        -1px 1px 0 #000000,
+        1px 1px 0 #000000 !important;
+    text-decoration: none !important;
+}

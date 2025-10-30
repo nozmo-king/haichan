@@ -43,7 +43,7 @@ class DoodlePoW {
         this.canvas.style.touchAction = 'none'; // Prevent scrolling on touch
         this.canvas.style.display = 'block'; // Ensure it's visible
         
-        console.log('Canvas setup complete:', this.canvas.width, 'x', this.canvas.height);
+        // Canvas setup complete
     }
     
     clearCanvas() {
@@ -82,7 +82,7 @@ class DoodlePoW {
     }
     
     startDrawing(e) {
-        console.log('Start drawing at:', e.offsetX, e.offsetY);
+        // Start drawing
         this.isDrawing = true;
         this.currentStroke = [{
             x: e.offsetX,
@@ -122,7 +122,7 @@ class DoodlePoW {
             this.currentStroke = [];
             this.updateEntropy(); // Make sure to update entropy after stroke
             
-            console.log('Stroke completed. Total strokes:', this.strokes.length, 'Entropy:', this.entropy);
+            // Stroke completed
             
             // Start mining if we have enough entropy
             if (this.entropy > 50 && !this.miningActive) {
@@ -176,7 +176,7 @@ class DoodlePoW {
     
     updateEntropy() {
         this.entropy = this.calculateEntropy();
-        console.log('Entropy updated:', this.entropy);
+        // Entropy updated
         
         if (this.options.onEntropyUpdate) {
             this.options.onEntropyUpdate(this.entropy);

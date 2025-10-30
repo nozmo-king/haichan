@@ -13,7 +13,22 @@ class BitcoinAuth
 
         // Check if session exists and user ID is valid
         if (! $userId || ! is_numeric($userId)) {
+            // Log for debugging
+            \Log::info('BitcoinAuth failed', [
+                'user_id' => $userId,
+                'path' => $request->path(),
+                'method' => $request->method(),
+                'expects_json' => $request->expectsJson(),
+                'is_ajax' => $request->ajax(),
+                'content_type' => $request->header('Content-Type'),
+            ]);
+            
             session()->flush();
+
+            // Return JSON for AJAX requests
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Session expired. Please log in again.'], 401);
+            }
 
             return redirect('/auth/login')->withErrors(['auth' => 'Session expired. Please log in again.']);
         }
@@ -22,6 +37,11 @@ class BitcoinAuth
         $user = \App\Models\BitcoinAuth::find($userId);
         if (! $user || $user->is_banned) {
             session()->flush();
+
+            // Return JSON for AJAX requests
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Account access denied.'], 401);
+            }
 
             return redirect('/auth/login')->withErrors(['auth' => 'Account access denied.']);
         }

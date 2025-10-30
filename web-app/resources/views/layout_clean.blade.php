@@ -6,6 +6,14 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Proof-of-Work Imageboard')</title>
     
+    <!-- Flash data for points updates -->
+    @if(session('points_awarded'))
+        <meta name="flash-points_awarded" content="{{ session('points_awarded') }}">
+    @endif
+    @if(session('total_points'))
+        <meta name="flash-total_points" content="{{ session('total_points') }}">
+    @endif
+    
     <!-- DNS prefetch and preconnect for performance -->
     <link rel="dns-prefetch" href="//fonts.googleapis.com">
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
@@ -212,7 +220,8 @@
     <!-- Persistent Chat Overlay -->
     <script src="/js/persistent-chat.js?v={{ time() }}"></script>
     
-    <!-- WASM PoW Integration -->
+    <!-- PoW Mining System -->
+    
     <script src="/js/wasm-pow-integration.js" defer></script>
     
 </body>

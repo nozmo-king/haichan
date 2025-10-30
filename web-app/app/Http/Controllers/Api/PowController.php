@@ -9,6 +9,7 @@ use App\Models\PowV1Commit;
 use App\Models\Post;
 use App\Models\Thread;
 use App\Models\User;
+use App\Services\PointCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,13 @@ class PowController extends Controller
     const CHALLENGE_TTL_SECONDS = 60;
     const MAX_VERIFY_TIME_MS = 5;
     const DEFAULT_PREFIX = '21e8';
+
+    protected $pointCalculationService;
+
+    public function __construct(PointCalculationService $pointCalculationService)
+    {
+        $this->pointCalculationService = $pointCalculationService;
+    }
 
     public function getParams(Request $request)
     {
@@ -200,16 +208,42 @@ class PowController extends Controller
             return response()->json(['error' => 'Invalid proof'], 400);
         }
 
-        $thread = Thread::create([
-            'board_id' => 1,
-            'user_id' => $user->id,
-            'title' => $postDraft['title'],
-            'body' => $postDraft['body'],
+        // Calculate and award points
+        $points = $this->pointCalculationService->calculatePoints($challenge->required_prefix_hex, $solvedHash);
+        
+        $thread = DB::transaction(function () use ($user, $postDraft, $challenge, $validated, $solvedHash, $verifyTimeMs, $points) {
+            // Create thread
+            $thread = Thread::create([
+                'board_id' => 1,
+                'user_id' => $user->id,
+                'title' => $postDraft['title'],
+                'body' => $postDraft['body'],
+            ]);
+
+            // Award mining points
+            $user->awardMiningPoints($points);
+            
+            Log::info('Thread PoW points awarded', [
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'thread_id' => $thread->id,
+                'points_awarded' => $points,
+                'total_points' => $user->fresh()->total_pow_points,
+                'hash' => $solvedHash,
+                'pattern' => $challenge->required_prefix_hex
+            ]);
+
+            // Record commit
+            $this->recordCommit($challenge->id, $validated['proof'], true, null, $solvedHash, $verifyTimeMs);
+            
+            return $thread;
+        });
+
+        return response()->json([
+            'thread_id' => $thread->id,
+            'points_awarded' => $points,
+            'total_points' => $user->fresh()->total_pow_points
         ]);
-
-        $this->recordCommit($challenge->id, $validated['proof'], true, null, $solvedHash, $verifyTimeMs);
-
-        return response()->json(['thread_id' => $thread->id]);
     }
 
     public function replyBegin(Request $request)
@@ -292,6 +326,7 @@ class PowController extends Controller
 
     public function replyCommit(Request $request)
     {
+        Log::info('replyCommit method called');
         $validated = $request->validate([
             'op_id' => 'required|uuid',
             'challenge_id' => 'required|uuid',
@@ -381,16 +416,43 @@ class PowController extends Controller
             return response()->json(['error' => 'Invalid proof'], 400);
         }
 
-        $post = Post::create([
-            'thread_id' => $challenge->thread_id,
-            'parent_id' => $challenge->parent_id,
-            'user_id' => $user->id,
-            'body' => $postDraft['body'],
+        // Calculate and award points
+        $points = $this->pointCalculationService->calculatePoints($challenge->required_prefix_hex, $solvedHash);
+        
+        $post = DB::transaction(function () use ($user, $postDraft, $challenge, $validated, $solvedHash, $verifyTimeMs, $points) {
+            // Create post
+            $post = Post::create([
+                'thread_id' => $challenge->thread_id,
+                'parent_id' => $challenge->parent_id,
+                'user_id' => $user->id,
+                'body' => $postDraft['body'],
+            ]);
+
+            // Award mining points
+            $user->awardMiningPoints($points);
+            
+            Log::info('Reply PoW points awarded', [
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'post_id' => $post->id,
+                'thread_id' => $challenge->thread_id,
+                'points_awarded' => $points,
+                'total_points' => $user->fresh()->total_pow_points,
+                'hash' => $solvedHash,
+                'pattern' => $challenge->required_prefix_hex
+            ]);
+
+            // Record commit
+            $this->recordCommit($challenge->id, $validated['proof'], true, null, $solvedHash, $verifyTimeMs);
+            
+            return $post;
+        });
+
+        return response()->json([
+            'post_id' => $post->id,
+            'points_awarded' => $points,
+            'total_points' => $user->fresh()->total_pow_points
         ]);
-
-        $this->recordCommit($challenge->id, $validated['proof'], true, null, $solvedHash, $verifyTimeMs);
-
-        return response()->json(['post_id' => $post->id]);
     }
 
     private function buildCanonicalBytesV1($userPubkeyHex, $scope, $threadId, $parentId, $timestamp, $postBytesHash)

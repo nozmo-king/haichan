@@ -190,6 +190,14 @@ class AdminController extends Controller
         return back()->with('success', 'Thread pinned successfully');
     }
 
+    public function unpinThread($id)
+    {
+        $thread = Thread::findOrFail($id);
+        $thread->update(['sticky' => false]);
+
+        return back()->with('success', 'Thread unpinned successfully');
+    }
+
     public function lockThread($id)
     {
         $thread = Thread::findOrFail($id);

@@ -7,7 +7,7 @@
     <a href="{{ route('forum.index') }}">Forum</a> > {{ $board->code }}
 </div>
 
-<h2>{{ $board->code }} - {{ $board->name }}</h2>
+<h2 style="font-family: 'Nova Cut', serif; font-size: 28px; color: #FF69B4; text-shadow: -1px -1px 0 #C1418A, 1px -1px 0 #C1418A, -1px 1px 0 #C1418A, 1px 1px 0 #C1418A;">{{ $board->code }} - {{ $board->name }}</h2>
 <p>{{ $board->description }}</p>
 
 <div style="margin: 15px 0;">

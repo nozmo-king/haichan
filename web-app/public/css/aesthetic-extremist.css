@@ -29,15 +29,15 @@
     --neutral-10: #000000;          /* Absolute black */
     
     /* Accent system - single focus color */
-    --accent-1: #E8F5E8;            /* Accent background */
-    --accent-2: #C8E6C9;            /* Accent subtle */
-    --accent-3: #A5D6A7;            /* Accent soft */
-    --accent-4: #81C784;            /* Accent medium */
-    --accent-5: #66BB6A;            /* Accent main */
-    --accent-6: #4CAF50;            /* Accent strong */
-    --accent-7: #43A047;            /* Accent dark */
-    --accent-8: #388E3C;            /* Accent darker */
-    --accent-9: #2E7D32;            /* Accent darkest */
+    --accent-1: #F5DEB3;            /* Wheat */
+    --accent-2: #DEB887;            /* BurlyWood */
+    --accent-3: #D2B48C;            /* Tan */
+    --accent-4: #BC8F8F;            /* RosyBrown */
+    --accent-5: #A0522D;            /* Sienna */
+    --accent-6: #8B4513;            /* SaddleBrown */
+    --accent-7: #A52A2A;            /* Brown */
+    --accent-8: #800000;            /* Maroon */
+    --accent-9: #5C4033;            /* Dark Mocha */
     
     /* === TYPOGRAPHY HIERARCHY === */
     /* Single font family - absolute consistency */

@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-WJDKPdYu.css",
+    "file": "assets/app-ByUSB7Wi.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -12,6 +12,11 @@
   "resources/css/grunge-chaos-scoped.css": {
     "file": "assets/grunge-chaos-scoped-PKoTCLkp.css",
     "src": "resources/css/grunge-chaos-scoped.css",
+    "isEntry": true
+  },
+  "resources/css/themes.css": {
+    "file": "assets/themes-D9dIujhp.css",
+    "src": "resources/css/themes.css",
     "isEntry": true
   },
   "resources/js/app.js": {

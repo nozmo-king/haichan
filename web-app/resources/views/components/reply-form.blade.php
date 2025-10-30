@@ -439,5 +439,5 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 @section('scripts')
-<script src="/js/simple-pow.js?v={{ time() }}"></script>
+
 @endsection

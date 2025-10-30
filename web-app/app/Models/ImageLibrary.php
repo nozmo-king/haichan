@@ -101,12 +101,9 @@ class ImageLibrary extends Model
     /**
      * Get ever-shifting library - images ranked by PoW and usage with randomization
      */
-    public static function getShiftingLibrary(int $limit = 100)
+    public static function getImagesByPow(int $limit = 100)
     {
-        // Get images with weighted random selection based on PoW and usage
-        // Use RANDOM() for SQLite instead of RAND() for MySQL
-        return static::selectRaw('*, (total_pow_earned * 2 + usage_count) as weight')
-            ->orderByRaw('weight DESC, RANDOM()')
+        return static::orderBy('total_pow_earned', 'desc')
             ->limit($limit)
             ->get();
     }

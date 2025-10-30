@@ -18,6 +18,7 @@
 - Place anonymous login option on the login page
 - Invert all colors when in anonymous mode
 - BE AN AESTHETIC EXTREMIST. NO TACKY MARGINS OR INCONSISTENT UI. BE A FUCKING JIHADI ABOUT THIS SHIT!!!!
+- amazing.css is the main overriding css file
 
 ## Security and Cryptography
 - SHA256 AND REAL BITCOIN ADDRESSES AND PRIVKEYS
@@ -33,3 +34,10 @@
 
 ## Project Requirements
 - DONT FUCK ME!!! DO WHATS RIGHT. YOU KNOW WHAT THIS IS. A PROOF OF WORK IMAGEBOARD. 256 USERS. EXCLUSIVITY. THE POINTS MUST WORK AND THE POW MUST WORK.
+
+## Development Best Practices
+- Always double check and scan for syntax errors
+- If a script is vestigial or not needed, delete it
+
+## Documentation and API Guidelines
+- Make sure that API stuff is done with precision and that docs are put into each folder indicating which is what.... this applies to everything, not just API calls

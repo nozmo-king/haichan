@@ -23,9 +23,9 @@ class MiningChallengeController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'board_code' => 'nullable|string',
-            'target_type' => 'required|string|in:thread,reply,post,general',
+            'target_type' => 'required|string|in:thread,reply,post,general,chat_message',
             'target_id' => 'nullable|string',
-            'action' => 'required|string|in:bump,create,mine',
+            'action' => 'required|string|in:bump,create,mine,send',
             'difficulty' => 'required|string|in:2,21,21e,21e8,21e80,21e800,21e8000,000021e8,000,111,222,333,444,555,666,777,888,999,aaa,bbb,ccc,ddd,eee,fff,ace,bad,cab,dad,ded,fab,fed,beef,cafe,face,babe,fade,dead,deed,feed,c0de,b00b,1337,pwnd,rekt,epic,Chad,deadbeef',
         ]);
 
@@ -94,6 +94,19 @@ class MiningChallengeController extends Controller
                     ], 422);
                 }
                 $validatedTargetId = $post->id;
+            } elseif ($request->target_type === 'chat_message') {
+                // For chat messages, target_id should be the chat room ID
+                if ($request->has('target_id') && $request->target_id) {
+                    $chatRoom = \App\Models\ChatRoom::find($request->target_id);
+                    if (!$chatRoom) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Invalid chat room',
+                            'errors' => ['target_id' => ['Chat room not found']],
+                        ], 422);
+                    }
+                    $validatedTargetId = $chatRoom->id;
+                }
             }
         }
 

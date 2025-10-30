@@ -254,8 +254,22 @@ class WasmPowMiner {
 class WasmIntegratedMiner {
     constructor() {
         this.wasmMiner = new WasmPowMiner();
-        this.fallbackMiner = window.simplePoW || new SimpleProofOfWork();
+        // Wait for simple-pow.js to load before initializing fallback
+        this.fallbackMiner = null;
+        this.initFallbackMiner();
         console.log('🔗 WASM Integrated Miner ready');
+    }
+    
+    initFallbackMiner() {
+        // Wait for SimpleProofOfWork to be available
+        if (window.simplePoW) {
+            this.fallbackMiner = window.simplePoW;
+        } else if (window.SimpleProofOfWork) {
+            this.fallbackMiner = new window.SimpleProofOfWork();
+        } else {
+            // Retry after a delay
+            setTimeout(() => this.initFallbackMiner(), 100);
+        }
     }
 
     async mineForForm(formType, formData, options = {}) {
@@ -282,6 +296,25 @@ class WasmIntegratedMiner {
 
         // Fallback to JavaScript mining
         console.log('⚠️ Using fallback JS miner...');
+        
+        // Ensure fallback miner is available
+        if (!this.fallbackMiner) {
+            await new Promise(resolve => {
+                const checkMiner = () => {
+                    if (this.fallbackMiner) {
+                        resolve();
+                    } else {
+                        setTimeout(checkMiner, 50);
+                    }
+                };
+                checkMiner();
+            });
+        }
+        
+        if (!this.fallbackMiner) {
+            throw new Error('No mining backend available - simple-pow.js not loaded');
+        }
+        
         return await this.fallbackMiner.acquireProofFor({
             target_type: formType,
             action: 'create',

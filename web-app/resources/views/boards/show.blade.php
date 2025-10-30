@@ -4,7 +4,7 @@
 
 @section('content')
 <div style="background: var(--primary-bg); padding: 30px; border-radius: 12px; border: 2px solid var(--border-color); margin-bottom: 30px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;">
-    <h1 style="font-family: 'Nova Cut', serif; font-size: 28px; color: var(--text-primary); margin: 0 0 10px 0;">
+    <h1 style="font-family: 'Nova Cut', serif; font-size: 28px; color: #FF69B4; margin: 0 0 10px 0; text-shadow: -1px -1px 0 #C1418A, 1px -1px 0 #C1418A, -1px 1px 0 #C1418A, 1px 1px 0 #C1418A;">
         📋 /{{ $board->code }}/ - {{ $board->name }}
     </h1>
     <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 20px 0;">
@@ -25,46 +25,52 @@
 </div>
 
 <!-- New Thread Creation Interface -->
-<div style="background: transparent; margin-bottom: 30px;">
+<div style="background: var(--content-bg); padding: 20px; border-radius: 12px; border: 2px solid var(--border-color); margin-bottom: 30px; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h3 style="font-size: 16px; color: #444B6E; margin: 0;">
-            <a href="/{{ $board->code }}/create" style="color: #444B6E; text-decoration: none;">🧵 Create New Thread</a>
+        <h3 style="font-size: 18px; color: var(--text-primary); margin: 0; font-family: 'Nova Cut', serif;">
+            <a href="/{{ $board->code }}/create" style="color: var(--text-primary); text-decoration: none;">🧵 Create New Thread</a>
         </h3>
-        <button type="button" style="background: transparent; border: 1px solid #d4d4d4; color: #444B6E; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold;" id="thread-form-toggle" onclick="toggleThreadForm()">−</button>
+        <button type="button" style="background: var(--primary-bg); border: 1px solid var(--border-color); color: var(--text-primary); width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s ease;" id="thread-form-toggle" onclick="toggleThreadForm()">−</button>
     </div>
     
     <div id="thread-form-container" style="padding: 0;">
         <form method="POST" action="/{{ $board->code }}" enctype="multipart/form-data" id="new-thread-form" style="display: flex; flex-direction: column; gap: 15px;">
             @csrf
             
+            @if($board->code !== 'i')
             <!-- Subject Field -->
             <div style="display: flex; flex-direction: column; gap: 5px;">
-                <label style="display: block; color: #444B6E; font-weight: 600; font-size: 13px;">
-                    📝 Subject <span style="color: #dc3545;">*</span>
+                <label style="display: block; color: var(--text-primary); font-weight: 600; font-size: 13px;">
+                    📝 Subject <span style="color: var(--accent-red);">*</span>
                 </label>
                 <input type="text" name="title" id="thread-title" required maxlength="200" placeholder="Thread subject..."
-                       style="width: 100%; padding: 8px; border: 1px solid #d4d4d4; border-radius: 4px; background: white; color: #333; font-size: 14px; box-sizing: border-box;">
+                       style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--primary-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box;">
                 <div style="color: #888; font-size: 11px;">Required • 3-200 characters</div>
             </div>
             
             <!-- Content Field -->
             <div style="display: flex; flex-direction: column; gap: 5px;">
-                <label style="display: block; color: #444B6E; font-weight: 600; font-size: 13px;">
-                    💬 Comment <span style="color: #dc3545;">*</span>
+                <label style="display: block; color: var(--text-primary); font-weight: 600; font-size: 13px;">
+                    💬 Comment <span style="color: var(--accent-red);">*</span>
                 </label>
                 <textarea name="content" id="thread-content" required rows="5" placeholder="What's on your mind..."
-                          style="width: 100%; padding: 8px; border: 1px solid #d4d4d4; border-radius: 4px; background: white; color: #333; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+                          style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--primary-bg); color: var(--text-primary); font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
                 <div style="color: #888; font-size: 11px;">Required • 5-5000 characters</div>
             </div>
+            @else
+            <!-- Hidden fields for /i/ board -->
+            <input type="hidden" name="title" value="[Image]">
+            <input type="hidden" name="content" value=".">
+            @endif
             
             <!-- Image Upload -->
             <div style="display: flex; flex-direction: column; gap: 5px;">
-                <label style="display: block; color: #444B6E; font-weight: 600; font-size: 13px;">
-                    🖼️ Image <span style="color: #dc3545;">*</span>
+                <label style="display: block; color: var(--text-primary); font-weight: 600; font-size: 13px;">
+                    🖼️ Image <span style="color: var(--accent-red);">*</span>
                 </label>
                 <input type="file" name="image" id="thread-image" onchange="previewThreadImage(this)"
                        accept="image/*,video/*,.webm,.mp4,.mov,.avi,.svg,.avif,.heic,.heif"
-                       style="width: 100%; padding: 8px; border: 1px dashed #d4d4d4; border-radius: 4px; background: white; color: #333; font-size: 13px; box-sizing: border-box;">
+                       style="width: 100%; padding: 10px; border: 1px dashed var(--border-color); border-radius: 6px; background: var(--primary-bg); color: var(--text-primary); font-size: 13px; box-sizing: border-box;">
                 <div style="color: #888; font-size: 11px;">Required • Max 25MB • Images, Videos, GIFs</div>
                 
                 <!-- Image Preview -->
@@ -99,11 +105,11 @@
             
             <!-- Submit Actions -->
             <div style="display: flex; gap: 10px; padding-top: 10px;">
-                <button type="submit" style="padding: 8px 16px; background: #9AB87A; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: 500;">
+                <button type="submit" style="padding: 10px 20px; background: var(--accent-green); color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: 500; transition: all 0.3s ease;">
                     📤 Post Thread
                 </button>
                 <button type="button" onclick="resetThreadForm()" 
-                        style="background: transparent; color: #444B6E; border: 1px solid #d4d4d4; padding: 8px 16px; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                        style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 6px; font-size: 14px; cursor: pointer; transition: all 0.3s ease;">
                     🔄 Reset
                 </button>
             </div>
@@ -114,9 +120,9 @@
 <hr>
 
 <!-- Threads -->
-<div class="threads-list">
+<div class="threads-list" style="max-width: 900px; margin: 0 auto; padding: 0 15px;">
 @forelse($threads as $thread)
-<div class="post {{ ($thread->user_id && $thread->bitcoinUser && $thread->bitcoinUser->is_admin) ? 'admin-post' : '' }}" data-thread-id="{{ $thread->id }}" data-mine-type="thread" data-board-code="{{ $board->code }}">
+<div class="post {{ ($thread->user_id && $thread->bitcoinUser && $thread->bitcoinUser->is_admin) ? 'admin-post' : '' }}" data-thread-id="{{ $thread->id }}" data-mine-type="thread" data-board-code="{{ $board->code }}" style="background: var(--content-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
     <div class="post-header">
         <span class="post-name">
             @if($thread->user_id && $thread->bitcoinUser)
@@ -153,7 +159,7 @@
     
     <div class="post-content">
         <strong>{{ $thread->title ?: 'No Subject' }}</strong><br>
-        {{ $thread->content }}
+        {!! nl2br(e($thread->content)) !!}
     </div>
     
     <div style="clear: both; font-size: 10px; color: var(--ib-text-muted); margin-top: 8px;">
@@ -281,6 +287,7 @@ async function startMining() {
 }
 
 // Start mining when user starts typing (keep thread creation simple)
+@if($board->code !== 'i')
 document.getElementById('thread-title').addEventListener('input', function() {
     if (this.value.length >= 3 && !currentMiner) {
         startMining();
@@ -292,6 +299,14 @@ document.getElementById('thread-content').addEventListener('input', function() {
         startMining();
     }
 });
+@else
+// For /i/ board, start mining when image is selected
+document.getElementById('thread-image').addEventListener('change', function() {
+    if (this.files.length > 0 && !currentMiner) {
+        startMining();
+    }
+});
+@endif
 
 // Handle form submission
 document.getElementById('new-thread-form').addEventListener('submit', async function(e) {
