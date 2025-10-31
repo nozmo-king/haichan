@@ -121,13 +121,13 @@
                 </div>
             </div>
 
-            <div style="background: #FFF3CD; border: 2px solid #FFC107; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                <div style="color: #856404; font-size: 13px;">
-                    🔒 <strong>Security Notice</strong><br>
-                    • Generate your Bitcoin keys using the button above<br>
-                    • Your private key will NEVER be stored on our servers<br>
-                    • Save your private key - it's your only recovery method<br>
-                    • We cannot recover lost keys
+            <div style="background: #E8F5E8; border: 2px solid #4CAF50; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <div style="color: #2E7D32; font-size: 13px;">
+                    ✨ <strong>Easy Registration</strong><br>
+                    • Just enter your username and password above<br>
+                    • Bitcoin keys will be auto-generated for you<br>
+                    • Download your backup keys after registration<br>
+                    • Save your private key - it's your only recovery method
                 </div>
             </div>
 
@@ -154,7 +154,7 @@
 </div>
 
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Page loaded. Using native browser crypto...');
     
@@ -215,27 +215,53 @@ document.addEventListener('DOMContentLoaded', function() {
         return hexString.substring(0, 40);
     }
 
-    async function generateKeys() {
-        if (keysGenerated) return;
+    function applyDisabledState(message) {
+        submitBtn.textContent = message;
+        submitBtn.disabled = true;
+        submitBtn.style.background = '#999';
+        submitBtn.style.cursor = 'not-allowed';
+    }
 
+    function applyEnabledState() {
+        submitBtn.disabled = false;
+        submitBtn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+        submitBtn.style.cursor = 'pointer';
+        submitBtn.textContent = '🚀 REGISTER FOR HAICHAN';
+    }
+
+    async function updateButtonState() {
         const username = usernameInput.value.trim();
         const password = passwordInput.value.trim();
 
-        console.log('Attempting key generation with username:', username.length, 'chars, password:', password.length, 'chars');
-
         if (username.length < 3 || password.length < 8) {
-            // Update button text to show what's needed
             let buttonText = '🔒 Need: ';
             if (username.length < 3) buttonText += 'Username (3+ chars) ';
             if (password.length < 8) buttonText += 'Password (8+ chars)';
-            submitBtn.textContent = buttonText;
+            applyDisabledState(buttonText.trim());
+
+            if (keysGenerated) {
+                keysGenerated = false;
+                generatedKeysDiv.style.display = 'none';
+                publicKeyInput.value = '';
+                addressInput.value = '';
+            }
             return;
         }
 
-        console.log('Starting key generation...');
-        keysGenerated = true;
+        if (!keysGenerated) {
+            const generated = await generateKeys();
+            if (!generated) {
+                console.warn('Client key generation failed; proceeding with server-side key creation.');
+            }
+        }
 
+        applyEnabledState();
+    }
+
+    async function generateKeys() {
         try {
+            console.log('Starting key generation...');
+
             // Generate a random 32-byte private key
             const privateKeyArray = new Uint8Array(32);
             crypto.getRandomValues(privateKeyArray);
@@ -280,27 +306,34 @@ document.addEventListener('DOMContentLoaded', function() {
             displayPublicKey.textContent = publicKeyHex;
             displayAddress.textContent = bitcoinAddress;
             generatedKeysDiv.style.display = 'block';
+            keysGenerated = true;
             
-            // Enable submit button
-            submitBtn.disabled = false;
-            submitBtn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
-            submitBtn.style.cursor = 'pointer';
-            submitBtn.textContent = '🚀 REGISTER FOR HAICHAN';
-            
-            console.log('Submit button enabled!');
-            
+            console.log('Client keys generated successfully.');
+            return true;
         } catch (error) {
             console.error('Key generation failed:', error);
-            alert('Failed to generate keys. Please try again.');
             keysGenerated = false;
+            generatedPrivateKey = null;
+            publicKeyInput.value = '';
+            addressInput.value = '';
+            generatedKeysDiv.style.display = 'none';
+            return false;
         }
     }
 
-    usernameInput.addEventListener('input', generateKeys);
-    passwordInput.addEventListener('input', generateKeys);
+    usernameInput.addEventListener('input', updateButtonState);
+    passwordInput.addEventListener('input', updateButtonState);
+
+    // Initialize button state on load
+    updateButtonState();
 
     // Download keys functionality
     document.getElementById('download-keys').addEventListener('click', function() {
+        if (!generatedPrivateKey) {
+            alert('Keys are generated on the server after registration. Finish registering and download from the success page.');
+            return;
+        }
+
         const friendCode = document.getElementById('friend_code').value;
         const username = usernameInput.value;
         const publicKey = publicKeyInput.value;
@@ -328,4 +361,3 @@ PRIVATE_KEY=${generatedPrivateKey}\nPUBLIC_KEY=${publicKey}\nADDRESS=${address}\
 
 </body>
 </html>
-

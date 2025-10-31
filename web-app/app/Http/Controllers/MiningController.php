@@ -208,7 +208,7 @@ class MiningController extends Controller
         return view('mining-market-dashboard', compact(
             'user', 'boards', 'totalProofs', 'totalMiners', 
             'recentProofs', 'activeSessions', 'topMiners', 'recentThreads'
-        ));
+        ))->with('board', null);
     }
 
     /**

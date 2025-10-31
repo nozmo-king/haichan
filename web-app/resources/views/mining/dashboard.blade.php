@@ -218,6 +218,7 @@
             text-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
             margin: 10px 0;
         }
+
     </style>
 </head>
 <body>
@@ -225,6 +226,8 @@
     @include('components.info-stats-toolbar')
 
     <div class="mining-arsenal">
+        <!-- ARCHIVED: Recursive 21e8 Mining Toolbar - Removed but code kept for future use -->
+
         <!-- Shooting Range -->
         <div class="panel shooting-range">
             <h2>🎯 SHOOTING RANGE</h2>
@@ -332,8 +335,7 @@
         </div>
     </div>
 
-    <script src="{{ mix('js/app.js') }}"></script>
-    <script>
+    <script nonce="{{ app('csp_nonce') }}">
         // Live SHA256 Hasher
         const hashInput = document.getElementById('hashInput');
         const hashOutput = document.getElementById('hashOutput');
@@ -592,8 +594,8 @@
 
         // Initialize
         addLog('Mining Arsenal loaded and ready.', 'success');
+
     </script>
 
-    @include('components.new-toolbar')
 </body>
 </html>

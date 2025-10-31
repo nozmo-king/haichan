@@ -200,7 +200,7 @@
                     <td>
                         <a href="/{{ $thread->board->code ?? 'gen' }}/{{ $thread->id }}" class="action-btn btn-view">View</a>
                         @if(!$thread->sticky)
-                            <form method="POST" action="/admin/threads/{{ $thread->id }}/pin" style="display: inline;">
+                            <form method="POST" action="{{ route('admin.threads.pin', $thread->id) }}" style="display: inline;">
                                 @csrf
                                 <button type="submit" class="action-btn btn-pin">Pin</button>
                             </form>

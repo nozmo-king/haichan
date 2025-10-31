@@ -95,7 +95,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 let currentBoardCode = '{{ $boardCode ?? "" }}';
 
 // Toggle modal visibility

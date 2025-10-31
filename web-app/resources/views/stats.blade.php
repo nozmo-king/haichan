@@ -3,7 +3,7 @@
 @section('title', 'Statistics - Haichan PoW Imageboard')
 
 @section('content')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script nonce="{{ app('csp_nonce') }}" src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <!-- Header -->
 <div style="background: #F5F5DC; padding: 30px; border-radius: 12px; border: 2px solid #708B75; margin-bottom: 30px; box-shadow: 0 4px 16px rgba(112, 139, 117, 0.1); text-align: center;">
@@ -595,7 +595,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 // Activity Chart
 const activityCtx = document.getElementById('activityChart').getContext('2d');
 const activityChart = new Chart(activityCtx, {

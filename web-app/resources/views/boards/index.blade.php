@@ -1,189 +1,99 @@
 @extends('layout')
 
-@section('title', 'Haichan - Boards')
+@section('title', 'Boards - Haichan')
 
 @section('content')
-<x-board-header 
-    title="Board Directory" 
-    description="Choose a board for anonymous discussion • Mining required to post" 
-/>
 
-<div class="container">
-    <div class="grid grid-3">
+<div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    
+    <!-- Header -->
+    <div style="background: #F5F5DC; border: 3px solid #9AB87A; border-radius: 12px; padding: 25px; margin-bottom: 25px; text-align: center;">
+        <h1 style="font-family: 'Nova Cut', serif; font-size: 36px; color: #9AB87A; margin: 0 0 10px 0;">
+            📋 BOARD DIRECTORY
+        </h1>
+        <p style="color: #6B7A6B; font-size: 14px; margin: 0;">
+            Choose a board for anonymous discussion • Mining required to post
+        </p>
+    </div>
+
+    <!-- Board Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px;">
         @foreach($boards as $board)
-        <article class="board-card interactive-card hover-lift hover-glow" onclick="location.href='{{ $board->url }}'">
-            <header class="board-card-header">
-                <div class="board-code">/{{ $board->code }}/</div>
-                <h3 class="board-title">{{ $board->title }}</h3>
-                <p class="board-description">{{ $board->description }}</p>
-            </header>
+        <div style="background: #F5F5DC; border: 2px solid #9AB87A; border-radius: 8px; overflow: hidden; transition: all 0.3s; cursor: pointer;" 
+             onclick="location.href='/{{ $board->code }}'"
+             onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 16px rgba(0,0,0,0.2)'"
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
             
-            <div class="board-stats">
-                <div class="stat">
-                    <div class="stat-value">{{ number_format($board->threads_count) }}</div>
-                    <div class="stat-label">Threads</div>
+            <!-- Board Header -->
+            <div style="background: #9AB87A; color: white; padding: 20px; position: relative;">
+                <div style="position: absolute; top: 10px; right: 15px; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; border: 1px solid rgba(255,255,255,0.3);">
+                    /{{ $board->code }}/
+                </div>
+                <h3 style="font-size: 20px; font-weight: bold; margin: 0 0 10px 0; color: white;">
+                    {{ $board->name }}
+                </h3>
+                <p style="font-size: 13px; margin: 0; opacity: 0.95; line-height: 1.5; color: white;">
+                    {{ $board->description }}
+                </p>
+            </div>
+            
+            <!-- Board Stats -->
+            <div style="padding: 20px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #9AB87A; margin-bottom: 5px;">
+                        {{ $board->threads()->count() }}
+                    </div>
+                    <div style="font-size: 11px; color: #6B7A6B; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold;">
+                        Threads
+                    </div>
                 </div>
                 
-                <div class="stat">
-                    <div class="stat-value">{{ number_format($board->post_count ?? 0) }}</div>
-                    <div class="stat-label">Posts</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 24px; font-weight: bold; color: #9AB87A; margin-bottom: 5px;">
+                        {{ $board->posts()->count() }}
+                    </div>
+                    <div style="font-size: 11px; color: #6B7A6B; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold;">
+                        Posts
+                    </div>
                 </div>
                 
-                <div class="stat">
-                    <div class="stat-indicator {{ $board->is_active ? 'active' : 'inactive' }}"></div>
-                    <div class="stat-label">Status</div>
+                <div style="text-align: center;">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; margin: 0 auto 5px auto; background: {{ $board->is_active ? '#9AB87A' : '#999' }};"></div>
+                    <div style="font-size: 11px; color: #6B7A6B; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold;">
+                        {{ $board->is_active ? 'Active' : 'Inactive' }}
+                    </div>
                 </div>
             </div>
             
-            <footer class="board-actions">
-                <a href="{{ $board->url }}" class="btn btn-primary btn-small">View Board</a>
-                <a href="{{ $board->url }}/catalog" class="btn btn-ghost btn-small">Catalog</a>
-            </footer>
-        </article>
+            <!-- Board Actions -->
+            <div style="padding: 15px 20px; border-top: 1px solid #D4E3C8; display: flex; gap: 10px;">
+                <a href="/{{ $board->code }}" 
+                   style="flex: 1; padding: 10px; background: #9AB87A; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center; font-size: 13px; transition: all 0.3s;"
+                   onmouseover="this.style.background='#8AA769'"
+                   onmouseout="this.style.background='#9AB87A'">
+                    View Board
+                </a>
+                <a href="/{{ $board->code }}/catalog" 
+                   style="flex: 1; padding: 10px; background: #F5F5DC; color: #9AB87A; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center; font-size: 13px; border: 2px solid #9AB87A; transition: all 0.3s;"
+                   onmouseover="this.style.background='#E5E5CC'"
+                   onmouseout="this.style.background='#F5F5DC'">
+                    Catalog
+                </a>
+            </div>
+        </div>
         @endforeach
     </div>
 
-    @if(count($boards) === 0)
-    <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <h3>No Boards Available</h3>
-        <p class="text-sm">Check back later or contact an administrator to create boards.</p>
+    @if($boards->count() === 0)
+    <div style="text-align: center; padding: 60px 20px; background: #F5F5DC; border: 2px solid #9AB87A; border-radius: 8px;">
+        <div style="font-size: 64px; margin-bottom: 20px;">📭</div>
+        <h3 style="color: #6B7A6B; margin: 0 0 10px 0;">No Boards Available</h3>
+        <p style="color: #6B7A6B; font-size: 13px; margin: 0;">
+            Check back later or contact an administrator to create boards.
+        </p>
     </div>
     @endif
+
 </div>
 
-<style>
-/* BOARD CARDS - SURGICAL PRECISION */
-.board-card {
-    background: var(--neutral-0);
-    border: var(--border-width) solid var(--neutral-4);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-}
-
-.board-card-header {
-    background: var(--accent-5);
-    color: var(--neutral-0);
-    padding: var(--space-4);
-    position: relative;
-}
-
-.board-code {
-    position: absolute;
-    top: var(--space-3);
-    right: var(--space-4);
-    background: rgba(255, 255, 255, 0.2);
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--border-radius);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-medium);
-    border: var(--border-width) solid rgba(255, 255, 255, 0.3);
-}
-
-.board-title {
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-medium);
-    margin: 0 0 var(--space-2) 0;
-    color: var(--neutral-0);
-}
-
-.board-description {
-    font-size: var(--font-size-sm);
-    margin: 0;
-    opacity: 0.9;
-    line-height: var(--line-height-normal);
-    color: var(--neutral-0);
-}
-
-.board-stats {
-    padding: var(--space-4);
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: var(--space-4);
-    flex: 1;
-}
-
-.stat {
-    text-align: center;
-}
-
-.stat-value {
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-medium);
-    color: var(--accent-6);
-    margin-bottom: var(--space-1);
-}
-
-.stat-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    margin: 0 auto var(--space-1) auto;
-}
-
-.stat-indicator.active {
-    background: var(--accent-5);
-}
-
-.stat-indicator.inactive {
-    background: var(--neutral-5);
-}
-
-.stat-label {
-    font-size: var(--font-size-xs);
-    color: var(--neutral-6);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-weight: var(--font-weight-medium);
-}
-
-.board-actions {
-    padding: var(--space-4);
-    border-top: var(--border-width) solid var(--neutral-3);
-    display: flex;
-    gap: var(--space-2);
-}
-
-.board-actions .btn {
-    flex: 1;
-}
-
-/* EMPTY STATE */
-.empty-state {
-    text-align: center;
-    padding: var(--space-8);
-    background: var(--neutral-0);
-    border: var(--border-width) solid var(--neutral-4);
-    border-radius: var(--border-radius);
-}
-
-.empty-icon {
-    font-size: 48px;
-    margin-bottom: var(--space-4);
-}
-
-.empty-state h3 {
-    color: var(--neutral-7);
-    margin-bottom: var(--space-2);
-}
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-    .grid-3 {
-        grid-template-columns: 1fr;
-    }
-    
-    .board-stats {
-        grid-template-columns: 1fr;
-        gap: var(--space-2);
-    }
-    
-    .board-actions {
-        flex-direction: column;
-    }
-}
-</style>
 @endsection

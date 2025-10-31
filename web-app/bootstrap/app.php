@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'validate.friend.code' => \App\Http\Middleware\ValidateFriendCode::class,
             'bitcoin.auth' => \App\Http\Middleware\BitcoinAuth::class,
             'security.headers' => \App\Http\Middleware\SecurityHeaders::class,
+            'admin' => \App\Http\Middleware\AdminRequired::class,
         ]);
         
         // Apply security headers globally

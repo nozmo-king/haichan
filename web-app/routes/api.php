@@ -47,7 +47,29 @@ Route::prefix('user')->middleware(['web'])->group(function () {
 // Legacy mining routes (kept for backward compatibility)
 // Use /api/pow/* routes for new v1 PoW system
 Route::post('/mining/challenges', [MiningChallengeController::class, 'issue']);
+Route::post('/mining/submit-proof', [MiningChallengeController::class, 'submitProof']);
 Route::get('/pow.params', [MiningChallengeController::class, 'getParams']);
+
+// Recursive 21e8 Mining Toolbar API
+Route::get('/mining/21e8-stats', function(Request $request) {
+    $totalProofs = \App\Models\ProofOfWork::where('pattern', 'LIKE', '21e8%')->count();
+    $legendaryHashes = \App\Models\ProofOfWork::where('pattern', '21e8')->count();
+    
+    $userProofs = 0;
+    if (session('bitcoin_auth_id')) {
+        $userProofs = \App\Models\ProofOfWork::where('user_id', session('bitcoin_auth_id'))
+                                            ->where('pattern', 'LIKE', '21e8%')
+                                            ->count();
+    }
+    
+    return response()->json([
+        'success' => true,
+        'total_proofs' => $totalProofs,
+        'legendary_hashes' => $legendaryHashes,
+        'user_proofs' => $userProofs,
+        'last_updated' => now()->toISOString()
+    ]);
+});
 
 // Friend code validation
 Route::post('/friend-codes/validate', function(\Illuminate\Http\Request $request) {
@@ -156,3 +178,96 @@ Route::get('/boards/{board}/thread-order', function($board) {
 
 // Personal 21e8 self-mining endpoint
 Route::post('/self-mining/submit', [SelfMiningController::class, 'submitPersonal21e8']);
+
+// Image Library API endpoints
+Route::get('/image-library/shifting', function() {
+    // Get images prioritizing less-used ones to encourage reuse and prevent wasteful duplicates
+    $images = \App\Models\ImageGallery::orderBy('usage_count', 'asc') // Prioritize less-used images
+        ->orderBy('created_at', 'desc')
+        ->limit(50)
+        ->get()
+        ->map(function($image) {
+            return [
+                'id' => $image->id,
+                'original_name' => $image->original_name,
+                'file_path' => $image->file_path,
+                'total_pow_earned' => $image->total_pow_earned ?? 0,
+                'hash' => $image->hash,
+                'type' => 'gallery',
+                'usage_count' => $image->usage_count
+            ];
+        })
+        ->shuffle()
+        ->take(20);
+    
+    return response()->json(['arrangement' => $images]);
+});
+
+Route::get('/image-library/{id}/full', function($id) {
+    if (str_starts_with($id, 'thread_')) {
+        $threadId = str_replace('thread_', '', $id);
+        $image = \App\Models\Thread::findOrFail($threadId);
+        $imagePath = $image->image_path;
+    } elseif (str_starts_with($id, 'post_')) {
+        $postId = str_replace('post_', '', $id);
+        $image = \App\Models\Post::findOrFail($postId);
+        $imagePath = $image->image_path;
+    } else {
+        abort(404, 'Invalid image ID format');
+    }
+    
+    if (!$imagePath) {
+        abort(404, 'No image found');
+    }
+    
+    // Images are stored in public directory, not storage
+    $path = public_path($imagePath);
+    
+    if (!file_exists($path)) {
+        abort(404, 'Image file not found');
+    }
+    
+    return response()->file($path);
+});
+
+Route::get('/image-library/hash/{hash}', function($hash) {
+    // Try to find in threads first
+    $thread = \App\Models\Thread::whereNotNull('image_path')
+        ->get()
+        ->first(function($t) use ($hash) {
+            return md5($t->image_path) === $hash;
+        });
+    
+    if ($thread) {
+        return response()->json([
+            'found' => true,
+            'image' => [
+                'id' => 'thread_' . $thread->id,
+                'original_name' => basename($thread->image_path),
+                'file_path' => $thread->image_path,
+                'pow_points' => $thread->pow_points ?? 0
+            ]
+        ]);
+    }
+    
+    // Try to find in posts
+    $post = \App\Models\Post::whereNotNull('image_path')
+        ->get()
+        ->first(function($p) use ($hash) {
+            return md5($p->image_path) === $hash;
+        });
+    
+    if ($post) {
+        return response()->json([
+            'found' => true,
+            'image' => [
+                'id' => 'post_' . $post->id,
+                'original_name' => basename($post->image_path),
+                'file_path' => $post->image_path,
+                'pow_points' => $post->pow_points ?? 0
+            ]
+        ]);
+    }
+    
+    return response()->json(['found' => false], 404);
+});

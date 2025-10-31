@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Board;
 use App\Models\Post;
-use App\Models\ProofSubmission;
+use App\Models\ProofOfWork;
 use App\Models\Thread;
 use App\Services\ChallengeVerifier;
 use App\Services\ImageIndexingService;
@@ -106,9 +106,8 @@ class ForumController extends Controller
 
         // Return just PoW score for AJAX requests
         if (request()->get('pow_only')) {
-            $powScore = ProofSubmission::where('target_type', 'thread')
-                ->where('target_id', $threadId)
-                ->sum('difficulty');
+            $powScore = ProofOfWork::where('thread_id', $thread->id)
+                ->sum('points');
 
             return response()->json(['pow_score' => $powScore]);
         }
@@ -150,6 +149,11 @@ class ForumController extends Controller
         $board = Board::where('code', $boardCode)
             ->orWhere('name', $boardCode)
             ->firstOrFail();
+
+        // Use doodle-specific view for /ddl/
+        if ($board->code === 'ddl') {
+            return view('forum.create-doodle', compact('board'));
+        }
 
         return view('forum.create-thread', compact('board'));
     }
@@ -314,20 +318,35 @@ class ForumController extends Controller
         if ($boardModel->code === 'i') {
             $validated = $request->validate([
                 'title' => 'nullable|string|max:200',
-                'content' => 'nullable|string|max:5', // Allow minimal content
-                'image' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
-                'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'image' => 'required_without:image_hash|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                'image_hash' => 'required_without:image|string|size:64|regex:/^[a-f0-9]{64}$/',
                 'pow_nonce' => 'required|integer|min:0',
                 'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
                 'pow_challenge_id' => 'required|string',
                 'post_anonymous' => 'boolean',
             ]);
             
-            // Set defaults for /i/ board
+            // Set defaults for /i/ board - title or default, empty content
             $validated['title'] = $validated['title'] ?? '[Image]';
-            $validated['content'] = $validated['content'] ?? '.';
+            $validated['content'] = ''; // No text content allowed on /i/
             
             Log::info('storeThread: /i/ board validation successful - image only mode.');
+        } elseif ($boardModel->code === 'ddl') {
+            // Special validation for /ddl/ Doodles board - subjects and doodles only
+            $validated = $request->validate([
+                'title' => 'required|string|max:200|min:3',
+                'image' => 'required_without:image_hash|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                'image_hash' => 'required_without:image|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'pow_nonce' => 'required|integer|min:0',
+                'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
+                'pow_challenge_id' => 'required|string',
+                'post_anonymous' => 'boolean',
+            ]);
+            
+            // Set empty content for doodles - only subject (title) and doodle image
+            $validated['content'] = ''; // No text content, just subject and doodle
+            
+            Log::info('storeThread: /ddl/ doodles board validation successful - subject and doodle only mode.');
         } else {
             // Comprehensive input validation - image OR image_hash required
             Log::info('storeThread: Validating request...');
@@ -719,8 +738,8 @@ try {
             if ($boardModel->code === 'i') {
                 $validated = $request->validate([
                     'reply_content' => 'nullable|max:0', // No content allowed on /i/
-                    'image' => 'required|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
-                    'image_hash' => 'nullable|string|size:64|regex:/^[a-f0-9]{64}$/',
+                    'image' => 'required_without:image_hash|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                    'image_hash' => 'required_without:image|string|size:64|regex:/^[a-f0-9]{64}$/',
                     'pow_nonce' => 'required|integer|min:0',
                     'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
                     'pow_challenge_id' => 'required|string',
@@ -731,6 +750,22 @@ try {
                 $validated['reply_content'] = '';
                 
                 Log::info('Reply: /i/ board validation successful - image required, no content.');
+            } elseif ($boardModel->code === 'ddl') {
+                // Special validation for /ddl/ Doodles board - doodles required, no text content
+                $validated = $request->validate([
+                    'reply_content' => 'nullable|max:0', // No text content allowed on /ddl/
+                    'image' => 'required_without:image_hash|file|mimes:jpeg,png,jpg,gif,webp,webm,mp4,mov,avi,svg,bmp,tiff,avif,heic,heif|max:25600',
+                    'image_hash' => 'required_without:image|string|size:64|regex:/^[a-f0-9]{64}$/',
+                    'pow_nonce' => 'required|integer|min:0',
+                    'pow_hash' => 'required|string|size:64|regex:/^[a-f0-9]{64}$/',
+                    'pow_challenge_id' => 'required|string',
+                    'post_anonymous' => 'boolean',
+                ]);
+                
+                // Override content to be empty for doodles board
+                $validated['reply_content'] = '';
+                
+                Log::info('Reply: /ddl/ doodles board validation successful - doodle required, no text content.');
             } else {
                 $validated = $request->validate([
                     'reply_content' => 'required|string|max:5000|min:5',
@@ -888,9 +923,14 @@ try {
                 return $post;
             });
 
-            // Update thread bump score (simplified)
+            // Update thread bump score and dispatch event
+            $powPoints = $this->calculatePoWPoints($validated['pow_hash'], $verificationResult['challenge']->difficulty);
             $thread->increment('posts_count');
+            $thread->increment('bump_score', $powPoints);
             $thread->touch('bumped_at');
+
+            event(new \App\Events\ThreadBumped($thread->fresh()));
+
 
             // Log the created post data for debugging
             Log::info('Reply created successfully with PoW', [

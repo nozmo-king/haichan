@@ -189,7 +189,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 let currentMiner = null;
 let latestProof = null;
 

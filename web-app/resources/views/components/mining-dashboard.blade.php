@@ -108,7 +108,7 @@
     </div>
 </div>
 
-<style>
+<style nonce="{{ app('csp_nonce') }}">
 /* Enhanced Mining Dashboard Styles - New Green & Pink Theme */
 .mining-dashboard-enhanced {
     margin: var(--space-xl) 0;
@@ -545,7 +545,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize enhanced mining dashboard
     if (typeof MiningDashboard === 'undefined') {

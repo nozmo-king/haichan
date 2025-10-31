@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Helpers\FilenameHelper;
 use App\Models\ImageLibrary;
 use App\Services\FilenamePatternService;
+use App\Services\FileValidationService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +23,19 @@ class ImageIndexingService
         ?string $uploaderIp = null
     ): array {
         try {
+            // Comprehensive file validation with security checks
+            $validation = FileValidationService::validateFile($file);
+            if (!$validation['valid']) {
+                Log::error('File validation failed', [
+                    'error' => $validation['error'],
+                    'filename' => $file->getClientOriginalName()
+                ]);
+                return [
+                    'success' => false,
+                    'error' => $validation['error']
+                ];
+            }
+
             // Generate SHA-256 hash of file content
             $fileContent = file_get_contents($file->getPathname());
             $fileHash = hash('sha256', $fileContent);

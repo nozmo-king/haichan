@@ -67,7 +67,7 @@
     </div>
 
     @if(session('download_key'))
-    <script>
+    <script nonce="{{ app('csp_nonce') }}">
     document.addEventListener('DOMContentLoaded', function() {
         const keyContent = atob('{{ session('download_key') }}');
         const filename = '{{ session('download_filename', 'Haichan.keys') }}';

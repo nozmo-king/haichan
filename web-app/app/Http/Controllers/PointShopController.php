@@ -280,6 +280,8 @@ class PointShopController extends Controller
             case 'boost_thread':
                 if (!$thread) return ['success' => false, 'message' => 'Thread not found'];
                 $thread->increment('bump_score', 100);
+                $thread->touch('bumped_at');
+                event(new \App\Events\ThreadBumped($thread->fresh()));
                 return ['success' => true, 'message' => "Thread #{$thread->short_hash} visibility boosted by 100 points!"];
                 
             case 'sticky_thread':

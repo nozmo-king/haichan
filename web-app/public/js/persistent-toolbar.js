@@ -74,7 +74,6 @@ class PersistentToolbar {
             <div class="toolbar-section toolbar-left">
                 <div class="user-display">
                     <a href="#" class="username-glow username-link" id="toolbar-username" title="View Profile">Loading...</a>
-                    <div class="diamond-color" id="toolbar-diamond" title="Personal 21e8 Achievement"></div>
                     <button class="toolbar-btn edit-profile" title="Edit Profile">✏️</button>
                 </div>
             </div>
@@ -239,10 +238,10 @@ class PersistentToolbar {
                 color: #00FF00;
                 font-weight: 700;
                 text-shadow:
-                    -1px -1px 0 #000000,
-                    1px -1px 0 #000000,
-                    -1px 1px 0 #000000,
-                    1px 1px 0 #000000,
+                    -1px -1px 0 #FF69B4,
+                    1px -1px 0 #FF69B4,
+                    -1px 1px 0 #FF69B4,
+                    1px 1px 0 #FF69B4,
                     0 0 5px #00FF00,
                     0 0 10px #00FF00,
                     0 0 15px #00FF00,
@@ -256,16 +255,24 @@ class PersistentToolbar {
             
             .username-link:hover {
                 text-shadow:
-                    0 0 8px #9AB87A,
-                    0 0 16px #9AB87A,
-                    0 0 24px #9AB87A,
-                    0 0 32px #9AB87A !important;
+                    -1px -1px 0 #FF0000,
+                    1px -1px 0 #FF0000,
+                    -1px 1px 0 #FF0000,
+                    1px 1px 0 #FF0000,
+                    0 0 8px #000000,
+                    0 0 16px #000000,
+                    0 0 24px #000000,
+                    0 0 32px #000000 !important;
                 transform: scale(1.05);
             }
             
             @keyframes glow-pulse {
                 from {
                     text-shadow:
+                        -1px -1px 0 #FF69B4,
+                        1px -1px 0 #FF69B4,
+                        -1px 1px 0 #FF69B4,
+                        1px 1px 0 #FF69B4,
                         0 0 5px #9AB87A,
                         0 0 10px #9AB87A,
                         0 0 15px #9AB87A,
@@ -273,6 +280,10 @@ class PersistentToolbar {
                 }
                 to {
                     text-shadow:
+                        -1px -1px 0 #FF69B4,
+                        1px -1px 0 #FF69B4,
+                        -1px 1px 0 #FF69B4,
+                        1px 1px 0 #FF69B4,
                         0 0 2px #9AB87A,
                         0 0 5px #9AB87A,
                         0 0 8px #9AB87A,
@@ -283,6 +294,10 @@ class PersistentToolbar {
             .admin-glow {
                 color: #00ff00 !important;
                 text-shadow:
+                    -1px -1px 0 #FF69B4,
+                    1px -1px 0 #FF69B4,
+                    -1px 1px 0 #FF69B4,
+                    1px 1px 0 #FF69B4,
                     0 0 10px #00ff00,
                     0 0 20px #00ff00,
                     0 0 30px #00ff00,
@@ -302,6 +317,10 @@ class PersistentToolbar {
             @keyframes admin-glow-pulse {
                 from {
                     text-shadow:
+                        -1px -1px 0 #FF69B4,
+                        1px -1px 0 #FF69B4,
+                        -1px 1px 0 #FF69B4,
+                        1px 1px 0 #FF69B4,
                         0 0 10px #00ff00,
                         0 0 20px #00ff00,
                         0 0 30px #00ff00,
@@ -309,6 +328,10 @@ class PersistentToolbar {
                 }
                 to {
                     text-shadow:
+                        -1px -1px 0 #FF69B4,
+                        1px -1px 0 #FF69B4,
+                        -1px 1px 0 #FF69B4,
+                        1px 1px 0 #FF69B4,
                         0 0 5px #00ff00,
                         0 0 10px #00ff00,
                         0 0 15px #00ff00,
@@ -383,12 +406,17 @@ class PersistentToolbar {
                 border-radius: 4px;
                 border: 1px solid #9AB87A;
                 font-family: 'Courier New', monospace;
-                font-size: 11px;
+                font-size: 13px;
                 margin-right: 10px; /* Add some space between mining info and buttons */
             }
             
             .mining-proofs, .mining-points, .mining-hashes {
                 color: #9AB87A;
+                text-shadow:
+                    -1px -1px 0 #000000,
+                    1px -1px 0 #000000,
+                    -1px 1px 0 #000000,
+                    1px 1px 0 #000000;
             }
             
             .mining-separator {
@@ -443,7 +471,7 @@ class PersistentToolbar {
                 border: 1px solid #4ab584;
                 border-radius: 4px;
                 padding: 3px 6px;
-                color: #D4AC7A;
+                color: #9AB87A;
                 font-size: 14px;
                 cursor: pointer;
                 transition: all 0.2s ease;
@@ -453,18 +481,25 @@ class PersistentToolbar {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                font-family: 'Courier New', monospace;
+                font-weight: 600;
+                text-shadow:
+                    -1px -1px 0 #000000,
+                    1px -1px 0 #000000,
+                    -1px 1px 0 #000000,
+                    1px 1px 0 #000000;
             }
             
             .toolbar-btn:hover {
                 background: #4ab584;
                 border-color: #4ab584;
-                color: #fff;
+                color: #9AB87A;
             }
             
             .toolbar-btn.active {
                 background: #55c294;
-                color: white;
-                border-color: #55c294;
+                color: #9AB87A;
+                border-color: #4ab584;
             }
             
             .chat-badge {
@@ -592,7 +627,7 @@ class PersistentToolbar {
                     window.location.href = `/user/${this.currentUserId}`;
                 } else {
                     console.log('🔐 No user ID, redirecting to login');
-                    window.location.href = '/auth/login';
+                    window.location.href = '/';
                 }
             });
         } else {
@@ -714,6 +749,16 @@ class PersistentToolbar {
             
             // Refresh user data to get updated points
             setTimeout(() => this.loadUserData(), 1000);
+        });
+        
+        // Listen for proof submission events from mining page
+        document.addEventListener('proofSubmitted', (event) => {
+            console.log('✅ Proof submitted event:', event.detail);
+            if (event.detail && event.detail.total_points !== undefined) {
+                // Immediately update the display with new points
+                this.updatePointsDisplay(event.detail.total_points, event.detail.points);
+            }
+            this.loadUserData();
         });
     }
     
@@ -883,9 +928,11 @@ class PersistentToolbar {
             this.currentUserId = userData.user_id;
         }
         
-        // Update username with glow effect
+        // Update username with glow effect and achievement emoji
         if (userData.username && this.usernameElement) {
-            this.usernameElement.textContent = userData.display_name || userData.username;
+            const username = userData.display_name || userData.username;
+            const emoji = userData.personal_21e8_emoji ? userData.personal_21e8_emoji + ' ' : '';
+            this.usernameElement.textContent = emoji + username;
             
             // Add admin/mod glow effects
             if (userData.is_admin) {

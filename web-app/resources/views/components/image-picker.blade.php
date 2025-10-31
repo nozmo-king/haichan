@@ -113,7 +113,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 let currentImagePickerField = null;
 
 // Open image library picker modal

@@ -26,10 +26,8 @@
                 overflow: hidden;
                 position: relative;
                 box-shadow: 0 1px 2px rgba(0,0,0,0.1);" 
-         onclick="window.location.href='/{{ $board->code }}/{{ $thread->id }}'"
          data-thread-id="{{ $thread->id }}"
-         onmouseover="this.style.borderColor='#999'; this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.15)'"
-         onmouseout="this.style.borderColor='#ddd'; this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.1)'">
+         data-href="/{{ $board->code }}/{{ $thread->id }}">
         
         <div class="pow-indicator" data-value="{{ $thread->accumulated_points ?? 0 }}"
              style="position: absolute; top: 8px; right: 8px; 
@@ -92,7 +90,7 @@
     <a href="/{{ $board->code }}">Board Index</a>
 </div>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 let catalogPollInterval;
 
 function startCatalogPolling() {
@@ -101,28 +99,43 @@ function startCatalogPolling() {
 }
 
 async function updateCatalogOrder() {
+    console.log('🔄 Catalog: Fetching thread order from API...');
     try {
         const response = await fetch('/api/boards/{{ $board->code }}/thread-order');
         const data = await response.json();
+        console.log('📊 Catalog: API response:', data);
         
-        data.threads.forEach(thread => {
+        let updatesCount = 0;
+        data.threads.forEach((thread, index) => {
+            console.log(`🔍 Processing thread ${thread.id}: accumulated_points = ${thread.accumulated_points}`);
             const threadEl = document.querySelector(`[data-thread-id="${thread.id}"]`);
+            console.log(`🔍 Thread element found:`, !!threadEl);
+            
             if (threadEl) {
                 const powIndicator = threadEl.querySelector('.pow-indicator');
+                console.log(`🔍 PoW indicator found:`, !!powIndicator);
+                
                 if (powIndicator) {
                     const oldValue = parseFloat(powIndicator.dataset.value || 0);
                     const newValue = thread.accumulated_points;
+                    console.log(`📊 Thread ${thread.id}: ${oldValue} vs ${newValue} (equal: ${oldValue === newValue})`);
                     
                     if (newValue !== oldValue) {
+                        console.log(`📊 Updating thread ${thread.id}: ${oldValue} -> ${newValue}`);
                         powIndicator.dataset.value = newValue;
                         powIndicator.textContent = `⚡${newValue.toFixed(1)}`;
+                        updatesCount++;
                         
                         if (newValue > oldValue) {
                             powIndicator.classList.add('pow-increased');
                             setTimeout(() => powIndicator.classList.remove('pow-increased'), 1000);
                         }
                     }
+                } else {
+                    console.log(`❌ No .pow-indicator found in thread ${thread.id}`);
                 }
+            } else {
+                console.log(`❌ No element found with data-thread-id="${thread.id}"`);
             }
         });
         
@@ -146,15 +159,81 @@ async function updateCatalogOrder() {
                 }
             });
         }
+        
+        console.log(`✅ Catalog update complete: ${updatesCount} threads updated`);
     } catch (error) {
-        console.error('Catalog polling error:', error);
+        console.error('❌ Catalog polling error:', error);
     }
 }
 
-document.addEventListener('DOMContentLoaded', startCatalogPolling);
+document.addEventListener('DOMContentLoaded', function() {
+    // Set up click handlers for catalog items
+    document.querySelectorAll('.catalog-thread').forEach(thread => {
+        thread.addEventListener('click', function() {
+            const href = this.dataset.href;
+            if (href) {
+                window.location.href = href;
+            }
+        });
+        
+        // Add hover effects
+        thread.addEventListener('mouseenter', function() {
+            this.style.borderColor = '#999';
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+        });
+        
+        thread.addEventListener('mouseleave', function() {
+            this.style.borderColor = '#ddd';
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
+        });
+    });
+    
+    // Listen for mining events to trigger immediate updates
+    console.log('📊 Catalog: Setting up mining event listeners...');
+    
+    document.addEventListener('proofSubmitted', function(e) {
+        console.log('📊 Catalog: Mining proof submitted, updating immediately', e.detail);
+        updateCatalogOrder();
+    });
+    
+    window.addEventListener('mining:complete', function(e) {
+        console.log('📊 Catalog: Mining completed, updating order', e.detail);
+        setTimeout(() => updateCatalogOrder(), 500);
+    });
+    
+    // Also listen for all mining events to see what's happening
+    window.addEventListener('mining:progress', function(e) {
+        console.log('📊 Catalog: Mining progress detected', e.detail);
+    });
+    
+    // Test function for catalog
+    window.testCatalogUpdate = function() {
+        console.log('🧪 Testing catalog update...');
+        updateCatalogOrder();
+    };
+    
+    // Debug function to check DOM elements
+    window.debugCatalog = function() {
+        console.log('🔍 Checking catalog DOM elements...');
+        const threadElements = document.querySelectorAll('[data-thread-id]');
+        console.log(`Found ${threadElements.length} thread elements:`);
+        threadElements.forEach(el => {
+            const threadId = el.dataset.threadId;
+            const powIndicator = el.querySelector('.pow-indicator');
+            console.log(`  Thread ${threadId}: pow-indicator = ${!!powIndicator}`);
+            if (powIndicator) {
+                console.log(`    Current value: ${powIndicator.dataset.value}, text: ${powIndicator.textContent}`);
+            }
+        });
+    };
+    
+    startCatalogPolling();
+});
 </script>
 
-<style>
+<style nonce="{{ app('csp_nonce') }}">
 .pow-indicator {
     transition: all 0.3s ease;
 }

@@ -2,79 +2,83 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, master ]
   pull_request:
-    branches:
-      - main
+    branches: [ '**' ]
 
 jobs:
-  rust-test:
+  node:
+    name: Node Type-Check, Build, Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          toolchain: stable
-          profile: minimal
-          override: true
-      - name: Run verifier tests
-        run: cd pow/verifier && cargo test
-      - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: Run miner-wasm tests
-        run: cd pow/miner-wasm && wasm-pack test --headless --chrome
-
-  php-test:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run type-check
+      - run: npm run build
+      - run: |
+          npx --yes eslint --version || npm i -D eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin
+          npx --yes prettier --version || npm i -D prettier
+          npm run lint
+  php:
+    name: PHP Tests and Pint
     runs-on: ubuntu-latest
-    services:
-      mysql: 
-        image: mysql:5.7
-        env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: yes
-          MYSQL_DATABASE: testing
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: pdo_mysql, dom, filter, gd, mbstring, openssl, session, simplexml, xml, bcmath, ctype, json, tokenizer
-          ini-values: post_max_size=256M, upload_max_filesize=256M
+          tools: composer
           coverage: none
-      - name: Copy .env.example
-        run: cp .env.example .env
-      - name: Install Composer dependencies
-        run: composer install --no-ansi --no-interaction --no-progress --prefer-dist --optimize-autoloader
-      - name: Generate app key
-        run: php artisan key:generate
-      - name: Run migrations
-        run: php artisan migrate --force
-      - name: Run PHPUnit tests
-        run: php artisan test
-
-  publish-miner-wasm:
-    needs: [rust-test, php-test]
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: cp .env.example .env || true
+      - run: php artisan key:generate || true
+      - run: php artisan test --colors=always
+      - name: Install Pint
+        run: |
+          composer require laravel/pint --dev --no-interaction || true
+      - name: Run Pint (test mode)
+        run: ./vendor/bin/pint --test || (echo "Run Pint locally to fix formatting" && exit 1)
+  rust:
+    name: Rust Verifier Tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    defaults:
+      run:
+        working-directory: pow/verifier
     steps:
-      - uses: actions/checkout@v3
-      - name: Install Rust toolchain
+      - uses: actions/checkout@v4
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - run: cargo test --all --verbose
+  wasm:
+    name: WASM Miner Tests (Headless Chrome)
+    runs-on: ubuntu-latest
+    if: >-
+      contains(join(fromJson('[''push'',''pull_request'']'), ','), github.event_name)
+      && (github.event_name == 'push' || github.event.pull_request != null)
+    paths:
+      - 'pow/**'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust toolchain for wasm
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          profile: minimal
           override: true
+          target: wasm32-unknown-unknown
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: Build miner-wasm
-        run: cd pow/miner-wasm && wasm-pack build --target web
-      - name: Upload miner-wasm artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: miner-wasm
-          path: pow/miner-wasm/pkg
+        run: |
+          curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Run wasm-pack tests
+        working-directory: pow/miner-wasm
+        env:
+          CHROME: chrome
+        run: |
+          wasm-pack test --headless --chrome

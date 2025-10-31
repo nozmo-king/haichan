@@ -3,7 +3,6 @@
 @endphp
 
 <div class="header">
-    <h1><a href="/" style="font-family: 'Nova Cut', serif; color: #9AB87A; text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000;">📻 Haichan ⚡<br><span style="font-size: 12px; color: #9AB87A; text-shadow: -1px -1px 0 #000000, 1px -1px 0 #000000, -1px 1px 0 #000000, 1px 1px 0 #000000;">PoW Imageboard • β版</span></a></h1>
     <nav class="main-navigation">
         <div class="nav-section">
             <!-- Boards Dropdown -->
@@ -24,18 +23,19 @@
         </div>
         
         <div class="nav-section">
-            @if(isset($board))
-                <a href="/{{ $board->code }}" class="nav-link current-board">{{ $board->code }}/</a>
+            @if(isset($board) && $board)
+                <a href="/{{ $board->code }}" class="nav-link current-board">/{{ $board->code }}/</a>
                 <a href="/{{ $board->code }}/catalog" class="nav-link">📑 Catalog</a>
             @endif
             <a href="/mining" class="nav-link">⛏️ Mining</a>
+            <a href="/image-library" class="nav-link">🖼️ Library</a>
             <a href="/shop" class="nav-link">🛒 Shop</a>
             <a href="/chat" class="nav-link">💬 Chat</a>
             <a href="/stats" class="nav-link">📊 Stats</a>
             <a href="/rules" class="nav-link">📜 Rules</a>
             <a href="/faq" class="nav-link">❓ FAQ</a>
             
-            @if(session('bitcoin_auth_user') && session('bitcoin_auth_user')->is_admin)
+            @if(session('bitcoin_auth_user') && (session('bitcoin_auth_user')->id == 1 || session('bitcoin_auth_user')->username == 'jcb'))
                 <a href="/admin" class="nav-link admin-cp-btn">⚙️ Admin CP</a>
             @endif
         </div>
@@ -53,20 +53,6 @@
     text-align: center;
 }
 
-.header h1 {
-    margin: 0;
-    display: inline-block;
-    margin-right: 30px;
-    text-align: center;
-}
-
-.header h1 a {
-    color: #F5F5DC;
-    text-decoration: none;
-    font-size: 18pt;
-    font-weight: bold;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
 
 .main-navigation {
     display: inline-flex;
@@ -85,7 +71,7 @@
 .nav-link {
     background: #F5F5DC !important;
     color: #000000 !important;
-    border: 2px solid #8B4513 !important;
+    border: 1px solid #000000 !important;
     border-radius: 4px !important;
     padding: 4px 8px !important;
     margin: 2px !important;
@@ -101,11 +87,18 @@
 }
 
 .nav-link:hover {
-    background: #FFFACD !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
     color: #000000 !important;
-    border-color: #CD853F !important;
+    border-top: 1px solid #FF69B4 !important;
+    border-bottom: 1px solid #FF69B4 !important;
+    border-left: 1px solid #00FF00 !important;
+    border-right: 1px solid #00FF00 !important;
+    text-shadow:
+        -1px -1px 0 #FF69B4,
+        1px -1px 0 #00FF00,
+        -1px 1px 0 #00FF00,
+        1px 1px 0 #FF69B4 !important;
 }
 
 /* ULTIMATE NUCLEAR override for nav button colors - MUST BE BLACK */
@@ -180,21 +173,27 @@
 
 .dropdown-trigger:hover,
 .dropdown-trigger.active {
-    background: rgba(245, 245, 220, 0.1);
-    border-color: rgba(245, 245, 220, 0.3);
+    border-top: 1px solid #FF69B4 !important;
+    border-bottom: 1px solid #FF69B4 !important;
+    border-left: 1px solid #00FF00 !important;
+    border-right: 1px solid #00FF00 !important;
+    text-shadow:
+        -1px -1px 0 #FF69B4,
+        1px -1px 0 #00FF00,
+        -1px 1px 0 #00FF00,
+        1px 1px 0 #FF69B4 !important;
 }
 
 .dropdown-menu {
     position: absolute;
     top: 100%;
     left: 0;
-    background: var(--primary-bg) !important;
-    background-image: var(--crosshatch) !important;
-    border: 3px solid var(--border-color) !important;
+    background: #F5F5DC !important;
+    border: 3px solid #708B75 !important;
     border-radius: 12px;
     min-width: 280px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    z-index: 1000;
+    z-index: 9999;
     display: none;
     margin-top: 4px;
 }
@@ -312,18 +311,22 @@
 }
 </style>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 // Dropdown functionality
 document.addEventListener('DOMContentLoaded', function() {
     const dropdownTrigger = document.getElementById('boards-dropdown');
     const dropdownMenu = document.getElementById('boards-menu');
     
+    console.log('🔧 Navigation dropdown init:', { dropdownTrigger: !!dropdownTrigger, dropdownMenu: !!dropdownMenu });
+    
     if (dropdownTrigger && dropdownMenu) {
         dropdownTrigger.addEventListener('click', function(e) {
+            console.log('📋 Boards dropdown clicked');
             e.preventDefault();
             e.stopPropagation();
             
             const isOpen = dropdownMenu.classList.contains('show');
+            console.log('📋 Dropdown state:', { isOpen });
             
             // Close all dropdowns first
             document.querySelectorAll('.dropdown-menu').forEach(menu => {
@@ -337,6 +340,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!isOpen) {
                 dropdownMenu.classList.add('show');
                 dropdownTrigger.classList.add('active');
+                console.log('📋 Dropdown opened');
+            } else {
+                console.log('📋 Dropdown closed');
             }
         });
         

@@ -82,7 +82,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('avatar-upload-form');
     const uploadBtn = document.getElementById('upload-btn');

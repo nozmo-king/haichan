@@ -127,7 +127,7 @@
     </div>
 </form>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 class DoodleCanvas {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);

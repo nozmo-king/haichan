@@ -190,7 +190,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 // Load recent activity
 async function loadRecentActivity() {
     try {

@@ -9,7 +9,10 @@
     "dev": "vite",
     "build": "vite build",
     "generate-keypair": "tsx src/crypto/generate-keypair.ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint \"src/**/*.{ts,tsx,js}\"",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier -w \"{src,resources}/**/*.{ts,tsx,js,css,scss,md}\""
   },
   "dependencies": {
     "@noble/secp256k1": "^2.3.0"
@@ -19,8 +22,10 @@
     "autoprefixer": "^10.4.21",
     "axios": "^1.8.2",
     "concurrently": "^9.0.1",
+    "laravel-echo": "^2.2.4",
     "laravel-vite-plugin": "^1.0.0",
     "postcss": "^8.5.6",
+    "pusher-js": "^8.4.0",
     "tailwindcss": "^4.1.13",
     "tsx": "^4.20.5",
     "typescript": "^5.0.0",

@@ -176,4 +176,116 @@ class MiningChallengeController extends Controller
             'suggested_prefix_by_load' => '21e8'
         ]);
     }
+
+    public function submitProof(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'challenge_token' => 'required|string',
+            'client_nonce' => 'required|string',
+            'hash' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid proof submission',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $userId = session('bitcoin_auth_id');
+        if (!$userId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Authentication required',
+            ], 401);
+        }
+
+        $challenge = Challenge::where('token', $request->challenge_token)
+            ->where('user_id', $userId)
+            ->where('expires_at', '>', now())
+            ->whereNull('verified_at')
+            ->first();
+
+        if (!$challenge) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired challenge',
+            ], 422);
+        }
+
+        // Verify the proof
+        $isValid = $this->verifier->verifyProof(
+            $challenge,
+            $request->client_nonce,
+            $request->hash
+        );
+
+        if (!$isValid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid proof',
+            ], 422);
+        }
+
+        // Mark challenge as verified
+        $challenge->update([
+            'verified_at' => now(),
+            'client_nonce' => $request->client_nonce,
+            'client_hash' => $request->hash,
+        ]);
+
+        // Award points to user
+        $user = \App\Models\BitcoinAuth::find($userId);
+        if ($user) {
+            $points = $this->calculatePoints($challenge->difficulty);
+            
+            // Apply level multiplier (10% per level)
+            $levelMultiplier = 1 + ($user->level * 0.1);
+            $actualPoints = $points * $levelMultiplier;
+            
+            $user->total_pow_points += $actualPoints;
+            $user->save();
+
+            Log::info('Points awarded', [
+                'user_id' => $userId,
+                'base_points' => $points,
+                'level' => $user->level,
+                'multiplier' => $levelMultiplier,
+                'actual_points' => $actualPoints,
+                'total_points' => $user->total_pow_points,
+                'difficulty' => $challenge->difficulty,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'points' => $actualPoints,
+                'total_points' => $user->total_pow_points,
+                'hash' => $request->hash,
+                'pattern' => $challenge->difficulty,
+                'user_level' => $user->level,
+                'message' => 'Proof verified and points awarded',
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'User not found',
+        ], 404);
+    }
+
+    private function calculatePoints($difficulty)
+    {
+        $points = [
+            '2' => 0.1,
+            '21' => 0.1,
+            '21e' => 0.5,
+            '21e8' => 100,
+            '21e80' => 1000,
+            '21e800' => 10000,
+            '21e8000' => 100000,
+        ];
+
+        return $points[$difficulty] ?? 0.1;
+    }
 }

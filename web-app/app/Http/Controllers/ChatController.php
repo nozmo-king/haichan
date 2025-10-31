@@ -70,7 +70,7 @@ class ChatController extends Controller
         $user = $this->getBitcoinAuthUser();
         
         if (!$user) {
-            return redirect('/auth/login')->withErrors(['auth' => 'Please log in to access chat']);
+            return redirect('/')->withErrors(['auth' => 'Please log in to access chat']);
         }
         
         // Join user to room if not already joined

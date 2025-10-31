@@ -15,3 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     console.log('🔒 Theme permanently locked to classic');
 });
+
+window.Echo.channel('forum')
+    .listen('ThreadBumped', (e) => {
+        console.log(e);
+    });

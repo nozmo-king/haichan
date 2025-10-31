@@ -19,7 +19,7 @@
     </div>
 </div>
 
-<style>
+<style nonce="{{ app('csp_nonce') }}">
 .toolbar-link {
     color: #fafa0b;
     text-decoration: none;
@@ -40,7 +40,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 document.addEventListener('DOMContentLoaded', function() {
     const hashrateEl = document.getElementById('hashrate');
     const throttleEl = document.getElementById('throttle');

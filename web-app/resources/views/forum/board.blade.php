@@ -3,20 +3,18 @@
 @section('title', $board->code . ' - ' . $board->name)
 
 @section('content')
-<div class="breadcrumb">
-    <a href="{{ route('forum.index') }}">Forum</a> > {{ $board->code }}
+<div style="text-align: center; margin: 20px 0; padding: 15px; background: linear-gradient(135deg, #708B75, #5a7860); border-radius: 8px; box-shadow: 0 2px 8px rgba(112, 139, 117, 0.3);">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #F5F5DC;">/{{ $board->code }}/ - {{ $board->name }}</h1>
+    <p style="font-size: 14px; color: #E6E1D6; margin: 8px 0 0 0;">{{ $board->description }}</p>
+    <p style="font-size: 12px; color: #FAFA0B; margin: 5px 0 0 0;">⚡ Threads with Proof-of-Work mining</p>
 </div>
-
-<h2 style="font-family: 'Nova Cut', serif; font-size: 28px; color: #FF69B4; text-shadow: -1px -1px 0 #C1418A, 1px -1px 0 #C1418A, -1px 1px 0 #C1418A, 1px 1px 0 #C1418A;">{{ $board->code }} - {{ $board->name }}</h2>
-<p>{{ $board->description }}</p>
 
 <div style="margin: 15px 0;">
     <a href="{{ route('forum.create', $board->code) }}" 
        id="create-thread-btn"
        class="emoji-animated-btn"
        style="background: linear-gradient(135deg, #708B75, #5a7860); color: #F5F5DC; padding: 12px 20px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(112, 139, 117, 0.3);"
-       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(112, 139, 117, 0.4)'; if(window.emojiAnimator) window.emojiAnimator.startElementAnimation(this.querySelector('#create-thread-emoji'), ['🌱', '✨', '📝', '🌟'], 120);"
-       onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(112, 139, 117, 0.3)'; if(window.emojiAnimator) window.emojiAnimator.stopElementAnimation(this.querySelector('#create-thread-emoji')); this.querySelector('#create-thread-emoji').textContent='🌱';">
+>
         <span id="create-thread-emoji">🌱</span> Create New Thread
     </a>
 </div>
@@ -34,15 +32,18 @@
             <tr>
                 <td colspan="3">
                     <div class="thread-preview" data-mine-type="thread" data-thread-id="{{ $thread->id }}" data-board-code="{{ $board->code }}">
-                        <div class="thread-header" style="cursor: pointer;" onclick="toggleThread({{ $thread->id }})">
+                        <div class="thread-header" style="cursor: pointer;" data-thread-id="{{ $thread->id }}">
                             <div class="thread-title">
-                                <span class="expand-icon emoji-animated" id="icon-{{ $thread->id }}" style="display: inline-block; transition: transform 0.2s ease; cursor: pointer; margin-right: 6px; font-size: 14px;" 
-                                      onmouseover="this.style.transform='scale(1.2)'; if(this.textContent === '📁') { if(window.emojiAnimator) window.emojiAnimator.startElementAnimation(this, ['📁', '📂', '✨', '📁'], 150); } else { if(window.emojiAnimator) window.emojiAnimator.startElementAnimation(this, ['📂', '📁', '⭐', '📂'], 150); }"
-                                      onmouseout="this.style.transform='scale(1)'; if(window.emojiAnimator) window.emojiAnimator.stopElementAnimation(this);">📁</span>
+                                <span class="expand-icon emoji-animated" id="icon-{{ $thread->id }}" style="display: inline-block; transition: transform 0.2s ease; cursor: pointer; margin-right: 6px; font-size: 14px;">📁</span>
                                 <a href="{{ route('forum.thread', [$board->code, $thread->id]) }}">{{ $thread->title }}</a>
                             </div>
                             <div class="thread-meta">
                                 by {{ $thread->getAuthorDisplayName() }} - {{ $thread->created_at->format('m/d/y H:i') }} | {{ $thread->posts_count }} replies
+                                @if($thread->accumulated_points > 0)
+                                    | <span id="board-thread-points-{{ $thread->id }}" class="pow-points" style="color: #2e7d32; font-weight: bold;">[⚡{{ number_format($thread->accumulated_points, 1) }}]</span>
+                                @else
+                                    <span id="board-thread-points-{{ $thread->id }}" class="pow-points" style="color: #2e7d32; font-weight: bold; display: none;">[⚡0.0]</span>
+                                @endif
                             </div>
                         </div>
                         
@@ -135,7 +136,7 @@
 <div style="margin-top: 30px; text-align: center; padding: 20px; border-top: 1px solid #ddd;">
     {{ $threads->links() }}
 </div>
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 function toggleThread(threadId) {
     const content = document.getElementById('content-' + threadId);
     const icon = document.getElementById('icon-' + threadId);
@@ -171,13 +172,75 @@ document.addEventListener('DOMContentLoaded', function() {
     const controlsDiv = document.createElement('div');
     controlsDiv.style.cssText = 'margin: 10px 0; text-align: center;';
     controlsDiv.innerHTML = `
-        <button onclick="expandAll()" style="margin: 0 5px; padding: 5px 10px; background: #708B75; color: white; border: none; border-radius: 3px; cursor: pointer;">Expand All</button>
-        <button onclick="collapseAll()" style="margin: 0 5px; padding: 5px 10px; background: #9AB87A; color: white; border: none; border-radius: 3px; cursor: pointer;">Collapse All</button>
+        <button id="expand-all-btn" style="margin: 0 5px; padding: 5px 10px; background: #708B75; color: white; border: none; border-radius: 3px; cursor: pointer;">Expand All</button>
+        <button id="collapse-all-btn" style="margin: 0 5px; padding: 5px 10px; background: #9AB87A; color: white; border: none; border-radius: 3px; cursor: pointer;">Collapse All</button>
     `;
     
     const table = document.querySelector('.thread-list');
     table.parentNode.insertBefore(controlsDiv, table);
+    
+    // Add event listeners to buttons
+    document.getElementById('expand-all-btn').addEventListener('click', expandAll);
+    document.getElementById('collapse-all-btn').addEventListener('click', collapseAll);
+    
+    // Add event listeners to thread headers
+    document.querySelectorAll('.thread-header').forEach(header => {
+        header.addEventListener('click', function() {
+            const threadId = this.dataset.threadId;
+            if (threadId) {
+                toggleThread(threadId);
+            }
+        });
+    });
+    
+    // Listen for mining events to update board view
+    document.addEventListener('proofSubmitted', function(e) {
+        console.log('🎯 Board: Mining proof submitted, updating points');
+        updateBoardPoints();
+    });
+    
+    window.addEventListener('mining:complete', function(e) {
+        console.log('🎯 Board: Mining complete, updating points');
+        setTimeout(() => updateBoardPoints(), 500);
+    });
 });
+
+// Function to update board point displays
+async function updateBoardPoints() {
+    console.log('🔄 Board: Updating point displays...');
+    try {
+        const response = await fetch('/api/boards/{{ $board->code }}/thread-order');
+        const data = await response.json();
+        
+        let updateCount = 0;
+        data.threads.forEach(thread => {
+            const pointSpan = document.getElementById(`board-thread-points-${thread.id}`);
+            if (pointSpan) {
+                const newPoints = parseFloat(thread.accumulated_points).toFixed(1);
+                pointSpan.innerHTML = `[⚡${newPoints}]`;
+                pointSpan.style.display = 'inline';
+                
+                // Add animation
+                pointSpan.style.backgroundColor = 'rgba(46, 125, 50, 0.2)';
+                setTimeout(() => {
+                    pointSpan.style.backgroundColor = '';
+                }, 1000);
+                
+                updateCount++;
+            }
+        });
+        
+        console.log(`✅ Board: Updated ${updateCount} thread point displays`);
+    } catch (error) {
+        console.error('❌ Board: Failed to update points:', error);
+    }
+}
+
+// Test function for board
+window.testBoardUpdate = function() {
+    console.log('🧪 Testing board update...');
+    updateBoardPoints();
+};
 
 function expandAll() {
     const contents = document.querySelectorAll('[id^="content-"]');

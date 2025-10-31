@@ -38,6 +38,10 @@ class Personal21e8Achievement extends Model
             '21e800' => ['zeros' => 6, 'points' => 2500, 'name' => '21e800'],
             '21e8000' => ['zeros' => 7, 'points' => 10000, 'name' => '21e8000'],
             '21e80000' => ['zeros' => 8, 'points' => 50000, 'name' => '21e80000'],
+            '21e800000' => ['zeros' => 9, 'points' => 250000, 'name' => '21e800000'],
+            '21e8000000' => ['zeros' => 10, 'points' => 1250000, 'name' => '21e8000000'],
+            '21e80000000' => ['zeros' => 11, 'points' => 6250000, 'name' => '21e80000000'],
+            '21e800000000' => ['zeros' => 12, 'points' => 31250000, 'name' => '21e800000000'],
         ];
     }
 

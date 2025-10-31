@@ -47,21 +47,45 @@ class UserToolbarController extends Controller
             'total_pow_points' => $user->total_pow_points
         ]);
 
-        // Get the user's highest 21e8 achievement level
+        // Get the user's highest 21e8 achievement level and emoji
         $personal21e8Level = null;
-        if ($user->personal_21e8_hash) {
-            $hash = strtolower($user->personal_21e8_hash);
-            // Check from highest to lowest level
-            if (str_starts_with($hash, '21e80000')) {
-                $personal21e8Level = '21e80000';
-            } elseif (str_starts_with($hash, '21e8000')) {
-                $personal21e8Level = '21e8000';
-            } elseif (str_starts_with($hash, '21e800')) {
-                $personal21e8Level = '21e800';
-            } elseif (str_starts_with($hash, '21e80')) {
-                $personal21e8Level = '21e80';
-            } elseif (str_starts_with($hash, '21e8')) {
-                $personal21e8Level = '21e8';
+        $personal21e8Emoji = null;
+        
+        $userAchievements = Personal21e8Achievement::where('user_id', $user->id)
+            ->orderBy('found_at', 'desc')
+            ->get();
+        
+        if ($userAchievements->count() > 0) {
+            // Get the highest achievement (by level difficulty, not just newest)
+            $levels = Personal21e8Achievement::getLevels();
+            $levelOrder = array_keys($levels);
+            
+            $highestLevel = null;
+            $highestLevelIndex = -1;
+            
+            foreach ($userAchievements as $achievement) {
+                $levelIndex = array_search($achievement->level, $levelOrder);
+                if ($levelIndex > $highestLevelIndex) {
+                    $highestLevelIndex = $levelIndex;
+                    $highestLevel = $achievement->level;
+                }
+            }
+            
+            if ($highestLevel) {
+                $personal21e8Level = $highestLevel;
+                // Map levels to emojis for toolbar display
+                $levelEmojis = [
+                    '21e8' => '💎',
+                    '21e80' => '💠', 
+                    '21e800' => '🔷',
+                    '21e8000' => '🔶',
+                    '21e80000' => '♦️',
+                    '21e800000' => '🏆',
+                    '21e8000000' => '👑',
+                    '21e80000000' => '⭐',
+                    '21e800000000' => '🌟',
+                ];
+                $personal21e8Emoji = $levelEmojis[$highestLevel] ?? '💎';
             }
         }
 
@@ -85,6 +109,7 @@ class UserToolbarController extends Controller
             'is_moderator' => $user->is_moderator,
             'total_pow_points' => $user->total_pow_points,
             'personal_21e8_level' => $personal21e8Level,
+            'personal_21e8_emoji' => $personal21e8Emoji,
             'recent_threads_count' => $totalRecentActivity,
             'user_id' => $user->id,
             'level' => $user->level,

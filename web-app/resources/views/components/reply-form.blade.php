@@ -48,7 +48,7 @@
     </form>
 </div>
 
-<style>
+<style nonce="{{ app('csp_nonce') }}">
 /* Clean Reply Form - Minimal & Functional */
 .clean-reply-form {
     background: var(--neutral-0);
@@ -264,7 +264,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 function previewReplyImage(input) {
     const preview = document.getElementById('reply-image-preview');
     const img = document.getElementById('reply-preview-img');

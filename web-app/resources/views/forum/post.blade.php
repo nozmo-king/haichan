@@ -117,7 +117,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 // Reply miner for post {{ $post->id }}
 window.replyMiner{{ $post->id }} = {
     postId: {{ $post->id }},

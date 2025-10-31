@@ -1,26 +1,26 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-ByUSB7Wi.css",
+    "file": "assets/app-tn0RQdqM.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/css/chaos-effects.css": {
-    "file": "assets/chaos-effects-BLnaJKjV.css",
-    "src": "resources/css/chaos-effects.css",
+    "file": "assets/app-tn0RQdqM.css",
+    "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/css/grunge-chaos-scoped.css": {
-    "file": "assets/grunge-chaos-scoped-PKoTCLkp.css",
-    "src": "resources/css/grunge-chaos-scoped.css",
+    "file": "assets/app-tn0RQdqM.css",
+    "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/css/themes.css": {
-    "file": "assets/themes-D9dIujhp.css",
-    "src": "resources/css/themes.css",
+    "file": "assets/app-tn0RQdqM.css",
+    "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BWAmYk0s.js",
+    "file": "assets/app-C7SkISBv.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true

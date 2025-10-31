@@ -134,10 +134,29 @@
                         '21e800' => ['locked' => '🔷', 'unlocked' => '🔷', 'color' => '#9370DB'],
                         '21e8000' => ['locked' => '🔶', 'unlocked' => '🔶', 'color' => '#FF8C00'],
                         '21e80000' => ['locked' => '♦️', 'unlocked' => '♦️', 'color' => '#FFD700'],
+                        '21e800000' => ['locked' => '🏆', 'unlocked' => '🏆', 'color' => '#FF1493'],
+                        '21e8000000' => ['locked' => '👑', 'unlocked' => '👑', 'color' => '#FF69B4'],
+                        '21e80000000' => ['locked' => '⭐', 'unlocked' => '⭐', 'color' => '#00FF00'],
+                        '21e800000000' => ['locked' => '🌟', 'unlocked' => '🌟', 'color' => '#FFFFFF'],
                     ];
                     $levelEmoji = $levelEmojis[$levelName] ?? ['locked' => '💎', 'unlocked' => '🏆', 'color' => '#808080'];
                 @endphp
-                <div style="background: {{ $isUnlocked ? 'linear-gradient(135deg, #FFD700, #FFA500)' : 'linear-gradient(135deg, #f0f0f0, #e0e0e0)' }}; border-radius: 8px; padding: 15px; text-align: center; position: relative; {{ $isUnlocked ? 'box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);' : '' }}">
+                @php
+                    // Enhanced backgrounds for higher tiers
+                    $backgrounds = [
+                        '21e8' => 'linear-gradient(135deg, #00CED1, #00BFFF)',
+                        '21e80' => 'linear-gradient(135deg, #4169E1, #1E90FF)', 
+                        '21e800' => 'linear-gradient(135deg, #9370DB, #8A2BE2)',
+                        '21e8000' => 'linear-gradient(135deg, #FF8C00, #FF4500)',
+                        '21e80000' => 'linear-gradient(135deg, #FFD700, #FFA500)',
+                        '21e800000' => 'linear-gradient(135deg, #FF1493, #DC143C)',
+                        '21e8000000' => 'linear-gradient(135deg, #FF69B4, #FF1493, #8B008B)',
+                        '21e80000000' => 'linear-gradient(135deg, #00FF00, #32CD32, #228B22)',
+                        '21e800000000' => 'linear-gradient(135deg, #FFFFFF, #F0F0F0, #E6E6FA, #DDA0DD)',
+                    ];
+                    $bgStyle = $isUnlocked ? ($backgrounds[$levelName] ?? 'linear-gradient(135deg, #FFD700, #FFA500)') : 'linear-gradient(135deg, #f0f0f0, #e0e0e0)';
+                @endphp
+                <div style="background: {{ $bgStyle }}; border-radius: 8px; padding: 15px; text-align: center; position: relative; {{ $isUnlocked ? 'box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);' : '' }}">
                     @if($isUnlocked)
                         <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.2); color: #fff; padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold;">
                             🔒
@@ -230,7 +249,7 @@
             ← Back to Boards
         </a>
         @if(session('bitcoin_auth_id') && session('bitcoin_auth_id') == $user->id)
-            <a href="{{ route('profile.show') }}" style="color: #708B75; text-decoration: none; font-weight: 600; padding: 10px 20px; border: 2px solid #708B75; border-radius: 6px; transition: all 0.3s ease; margin: 0 10px;"
+            <a href="{{ route('user.profile.edit') }}" style="color: #708B75; text-decoration: none; font-weight: 600; padding: 10px 20px; border: 2px solid #708B75; border-radius: 6px; transition: all 0.3s ease; margin: 0 10px;"
                onmouseover="this.style.background='#708B75'; this.style.color='#F5F5DC';"
                onmouseout="this.style.background='transparent'; this.style.color='#708B75';">
                 Edit Profile
@@ -261,7 +280,7 @@ div[style*="overflow-y: auto"]::-webkit-scrollbar-thumb:hover {
 </style>
 
 @if(session('bitcoin_auth_id') && session('bitcoin_auth_id') == $user->id)
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 // Personal 21e8 Diamonds - Progressive Levels
 const userData = {
     id: {{ $user->id }},

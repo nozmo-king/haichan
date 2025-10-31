@@ -9,8 +9,11 @@
     <h2 style="text-align: center; margin-bottom: 20px;">Join Our Community</h2>
     
     <div style="margin-bottom: 25px; text-align: center;">
-        <p style="color: #666; margin-bottom: 15px;">
-            This is an invite-only community. You need a friend code from an existing member to register.
+        <p style="color: #2E7D32; margin-bottom: 15px; font-weight: bold; font-size: 16px;">
+            ✅ Ready to register! Default friend code is pre-filled.
+        </p>
+        <p style="color: #666; font-size: 13px;">
+            (This is an invite-only community. A friend code is required to register.)
         </p>
     </div>
 
@@ -34,21 +37,22 @@
                 id="friend_code" 
                 name="friend_code" 
                 placeholder="Enter your friend code"
+                value="GENESIS2025"
                 required
                 style="width: 100%; padding: 12px; border: 1px solid #ccc; font-family: 'Courier New', monospace; font-size: 14px; background-color: #fff; box-sizing: border-box;"
             >
-            <p style="margin-top: 8px; font-size: 12px; color: #666; filter: blur(4px); transition: filter 0.3s ease;" onmouseover="this.style.filter='blur(0px)'" onmouseout="this.style.filter='blur(4px)'">
-                Ask an existing member for their friend code (or use GENESIS2025 for testing)
+            <p id="friend-code-hint" style="margin-top: 8px; font-size: 12px; color: #2E7D32; font-weight: bold;">
+                ✅ Default code "GENESIS2025" pre-filled for easy registration
             </p>
         </div>
 
         <div style="margin-bottom: 20px;">
             <button 
                 type="button" 
-                onclick="validateAndRedirect()" 
-                style="width: 100%; background-color: #789922; color: white; padding: 12px; border: none; border-radius: 3px; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace;"
+                id="validate-friend-code-btn"
+                style="width: 100%; background-color: #4CAF50; color: white; padding: 15px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: 'Courier New', monospace; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;"
             >
-                Continue with Friend Code
+                🚀 Continue to Registration
             </button>
         </div>
     </form>
@@ -81,7 +85,7 @@
         
         <button 
             type="button" 
-            onclick="generateTestKeyPair()" 
+            id="generate-keys-btn"
             style="width: 100%; background-color: #666; color: white; padding: 10px; border: none; border-radius: 3px; cursor: pointer; font-family: 'Courier New', monospace; margin-bottom: 15px;"
         >
             Generate Test Key Pair
@@ -93,14 +97,14 @@
                 <label style="display: block; font-size: 12px; font-weight: bold; color: #0056b3;">Private Key (save this!):</label>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <input type="text" id="testPrivateKey" readonly style="flex: 1; font-size: 11px; font-family: 'Courier New', monospace; background-color: #fff; border: 1px solid #9fc3ff; border-radius: 3px; padding: 4px;">
-                    <button type="button" onclick="copyTestPrivateKey()" style="font-size: 11px; background-color: #0056b3; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer;">Copy</button>
+                    <button type="button" id="copy-private-key-btn" style="font-size: 11px; background-color: #0056b3; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer;">Copy</button>
                 </div>
             </div>
             <div style="margin-bottom: 10px;">
                 <label style="display: block; font-size: 12px; font-weight: bold; color: #0056b3;">Public Key:</label>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <input type="text" id="testPublicKey" readonly style="flex: 1; font-size: 11px; font-family: 'Courier New', monospace; background-color: #fff; border: 1px solid #9fc3ff; border-radius: 3px; padding: 4px;">
-                    <button type="button" onclick="copyTestPublicKey()" style="font-size: 11px; background-color: #0056b3; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer;">Copy</button>
+                    <button type="button" id="copy-public-key-btn" style="font-size: 11px; background-color: #0056b3; color: white; padding: 4px 8px; border: none; border-radius: 3px; cursor: pointer;">Copy</button>
                 </div>
             </div>
             <div style="margin-top: 10px; padding: 8px; background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 3px;">
@@ -111,20 +115,28 @@
 </div>
 
 <!-- Load key generation module -->
-<script src="/js/secp256k1-keygen.js"></script>
+<script src="/js/secp256k1-keygen.js" nonce="{{ app('csp_nonce') }}"></script>
 
 <!-- Use Web Crypto API for simple key generation -->
-<script>
-async function validateAndRedirect() {
+<script nonce="{{ app('csp_nonce') }}">
+async function validateAndRedirect(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
     const friendCode = document.getElementById('friend_code').value.trim();
-    
+
     if (!friendCode) {
         showError('Please enter a friend code');
         return;
     }
 
-    // Show loading state
-    const button = event.target;
+    const button = document.getElementById('validate-friend-code-btn');
+    if (!button) {
+        showError('Validation button not found');
+        return;
+    }
+
     const originalText = button.textContent;
     button.textContent = 'Validating...';
     button.disabled = true;
@@ -149,9 +161,9 @@ async function validateAndRedirect() {
             showError(data.message || 'Invalid friend code');
         }
     } catch (error) {
+        console.error('Friend code validation failed:', error);
         showError('Error validating friend code. Please try again.');
     } finally {
-        // Restore button state
         button.textContent = originalText;
         button.disabled = false;
     }
@@ -183,15 +195,21 @@ function showError(message) {
 document.getElementById('friend_code').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
-        validateAndRedirect();
+        validateAndRedirect(e);
     }
 });
 
 // Key generation functions
 async function generateTestKeyPair() {
+    const button = document.getElementById('generate-keys-btn');
+    if (!button) {
+        showNotification('Key generator unavailable.', 'error');
+        return;
+    }
+
+    const originalText = button.textContent;
+
     try {
-        const button = event.target;
-        const originalText = button.textContent;
         button.textContent = 'Generating...';
         button.disabled = true;
 
@@ -224,10 +242,10 @@ async function generateTestKeyPair() {
         showNotification('Test key pair generated! Save the private key securely.', 'success');
     } catch (error) {
         console.error('Key generation error:', error);
-        const button = event.target;
+        showNotification('Error generating key pair: ' + error.message, 'error');
+    } finally {
         button.textContent = originalText;
         button.disabled = false;
-        showNotification('Error generating key pair: ' + error.message, 'error');
     }
 }
 
@@ -264,6 +282,43 @@ function showNotification(message, type) {
         notification.remove();
     }, 4000);
 }
+
+// Set up event listeners when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Friend code validation button
+    const validateBtn = document.getElementById('validate-friend-code-btn');
+    if (validateBtn) {
+        validateBtn.addEventListener('click', validateAndRedirect);
+    }
+    
+    // Key generation button
+    const generateBtn = document.getElementById('generate-keys-btn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', generateTestKeyPair);
+    }
+    
+    // Copy buttons
+    const copyPrivateBtn = document.getElementById('copy-private-key-btn');
+    if (copyPrivateBtn) {
+        copyPrivateBtn.addEventListener('click', copyTestPrivateKey);
+    }
+    
+    const copyPublicBtn = document.getElementById('copy-public-key-btn');
+    if (copyPublicBtn) {
+        copyPublicBtn.addEventListener('click', copyTestPublicKey);
+    }
+    
+    // Friend code hint hover effect
+    const hint = document.getElementById('friend-code-hint');
+    if (hint) {
+        hint.addEventListener('mouseenter', function() {
+            this.style.filter = 'blur(0px)';
+        });
+        hint.addEventListener('mouseleave', function() {
+            this.style.filter = 'blur(4px)';
+        });
+    }
+});
 </script>
 
 <meta name="csrf-token" content="{{ csrf_token() }}">

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9274758983d2023fc5b5326e2eb70d16",
+    "content-hash": "3630504a01cf04bc33e60d3f506b7db2",
     "packages": [
         {
             "name": "bitwasp/bitcoin",
@@ -376,6 +376,61 @@
                 }
             ],
             "time": "2020-12-03T15:47:16+00:00"
+        },
+        {
+            "name": "denpa/php-bitcoinrpc",
+            "version": "v2.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/denpamusic/php-bitcoinrpc.git",
+                "reference": "172c184144cb219c29d692875a9a17791ba6d36c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/denpamusic/php-bitcoinrpc/zipball/172c184144cb219c29d692875a9a17791ba6d36c",
+                "reference": "172c184144cb219c29d692875a9a17791ba6d36c",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "php": ">=8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.5"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/functions.php"
+                ],
+                "psr-4": {
+                    "Denpa\\Bitcoin\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Denis Paavilainen",
+                    "email": "denpa@denpa.pro",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Bitcoin JSON-RPC client based on GuzzleHttp",
+            "homepage": "https://github.com/denpamusic/php-bitcoinrpc",
+            "keywords": [
+                "Guzzle",
+                "api",
+                "bitcoin",
+                "jsonrpc"
+            ],
+            "support": {
+                "issues": "https://github.com/denpamusic/php-bitcoinrpc/issues",
+                "source": "https://github.com/denpamusic/php-bitcoinrpc/tree/v2.2.0"
+            },
+            "time": "2022-05-24T01:14:59+00:00"
         },
         {
             "name": "dflydev/dot-access-data",

@@ -14,15 +14,12 @@ class AdminController extends Controller
 {
     public function index()
     {
-        // Check if user is admin
-        if (! session('bitcoin_auth_user') || ! session('bitcoin_auth_user')->is_admin) {
-            return redirect('/')->with('error', 'Admin access required');
-        }
+        // Admin check is now handled by middleware
 
         $totalUsers = \App\Models\BitcoinAuth::count();
         $remainingSlots = 256 - $totalUsers;
-        $totalProofs = \App\Models\ProofSubmission::count() ?? 0;
-        $networkHashrate = \App\Models\ProofSubmission::where('created_at', '>', now()->subMinutes(5))->count() * 12;
+        $totalProofs = \App\Models\ProofOfWork::count() ?? 0;
+        $networkHashrate = \App\Models\ProofOfWork::where('created_at', '>', now()->subMinutes(5))->count() * 12;
         $totalThreads = \App\Models\Thread::count() ?? 0;
         $totalPosts = \App\Models\Post::count() ?? 0;
         $activeInvites = \App\Models\InviteCode::where('uses_remaining', '>', 0)->count();

@@ -162,7 +162,7 @@
         </button>
     </div>
 
-    <script>
+    <script nonce="{{ app('csp_nonce') }}">
     // Language toggle functionality
     function toggleLanguage() {
         const elements = document.querySelectorAll('.fade-text[data-jp]');
@@ -179,7 +179,7 @@
     }
     </script>
 
-    <style>
+    <style nonce="{{ app('csp_nonce') }}">
     @keyframes strobe {
         0%, 100% { opacity: 1; transform: scale(1); }
         50% { opacity: 0.7; transform: scale(1.05); }
@@ -243,7 +243,7 @@
     </style>
     
     @if(session('download_key'))
-    <script>
+    <script nonce="{{ app('csp_nonce') }}">
     document.addEventListener('DOMContentLoaded', function() {
         const keyContent = atob('{{ session('download_key') }}');
         const filename = '{{ session('download_filename', 'Haichan.keys') }}';

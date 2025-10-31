@@ -92,8 +92,8 @@
     </div>
 </div>
 
-<script src="/js/simple-pow.js"></script>
-<script>
+<script nonce="{{ app('csp_nonce') }}" src="/js/simple-pow.js"></script>
+<script nonce="{{ app('csp_nonce') }}">
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('chat-form');
     const messageInput = document.getElementById('message-input');

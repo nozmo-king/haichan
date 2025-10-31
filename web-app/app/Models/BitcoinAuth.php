@@ -212,15 +212,28 @@ class BitcoinAuth extends Authenticatable
     }
 
     /**
-     * Verify Bitcoin signature
+     * Verify Bitcoin signature using proper secp256k1 cryptography
      */
     public function verifySignature($message, $signature)
     {
-        // In production, use proper secp256k1 signature verification
-        // For now, simplified verification
-        $expectedHash = hash('sha256', $message.$this->public_key);
-
-        return hash('sha256', $signature) === $expectedHash;
+        try {
+            // Use bitwasp/bitcoin library for proper signature verification
+            $bitcoin = \BitWasp\Bitcoin\Bitcoin::getEcAdapter();
+            $publicKey = \BitWasp\Bitcoin\Key\PublicKeyFactory::fromHex($this->public_key);
+            
+            // Create message hash (Bitcoin uses double SHA256 for message signing)
+            $messageHash = hash('sha256', hash('sha256', $message, true), true);
+            
+            // Decode signature (assuming DER format)
+            $signatureObj = \BitWasp\Bitcoin\Crypto\EcAdapter\Signature\SignatureFactory::fromHex($signature);
+            
+            // Verify signature using secp256k1
+            return $bitcoin->verify($messageHash, $publicKey, $signatureObj);
+            
+        } catch (\Exception $e) {
+            \Log::warning('Bitcoin signature verification failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**

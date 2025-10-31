@@ -134,7 +134,7 @@
 }
 </style>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 let currentPoints = {{ $user->total_pow_points }};
 
 async function purchaseItem(itemId) {

@@ -5,7 +5,7 @@
     </button>
 </div>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 // Language toggle functionality only
 function toggleLanguage() {
     const elements = document.querySelectorAll('.fade-text[data-jp]');

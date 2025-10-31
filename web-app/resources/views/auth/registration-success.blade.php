@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Welcome to Haichan - Save Your Keys!</title>
     <link rel="stylesheet" href="/css/haichan.css">
-    <style>
+    <style nonce="{{ app('csp_nonce') }}">
         body {
             background: var(--background);
             font-family: 'Courier New', monospace;
@@ -200,7 +200,7 @@
             </div>
             <div class="credential-line">
                 <span class="credential-label">PUBLIC KEY:</span>
-                <span class="credential-value">{{ $publicKey }}</span>
+                <span class="credential-value">{{ $credentials['public_key'] }}</span>
             </div>
             <div class="credential-line">
                 <span class="credential-label">PRIVATE KEY:</span>
@@ -255,7 +255,7 @@
     
     <textarea id="backup-content" style="display: none;">{{ $backupContent }}</textarea>
     
-    <script>
+    <script nonce="{{ app('csp_nonce') }}">
         // Auto-download backup file on page load
         window.addEventListener('load', function() {
             setTimeout(downloadBackup, 1000);

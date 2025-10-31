@@ -217,7 +217,7 @@
     </div>
 </div>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 function copyCode(code) {
     navigator.clipboard.writeText(code).then(function() {
         showNotification('Friend code copied to clipboard!', 'success');

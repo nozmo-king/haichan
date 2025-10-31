@@ -30,7 +30,7 @@ class BitcoinAuth
                 return response()->json(['error' => 'Session expired. Please log in again.'], 401);
             }
 
-            return redirect('/auth/login')->withErrors(['auth' => 'Session expired. Please log in again.']);
+            return redirect('/')->withErrors(['auth' => 'Session expired. Please log in again.']);
         }
 
         // Verify user still exists and is active
@@ -43,7 +43,7 @@ class BitcoinAuth
                 return response()->json(['error' => 'Account access denied.'], 401);
             }
 
-            return redirect('/auth/login')->withErrors(['auth' => 'Account access denied.']);
+            return redirect('/')->withErrors(['auth' => 'Account access denied.']);
         }
 
         // Keep session user data fresh

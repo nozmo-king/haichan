@@ -99,20 +99,30 @@ Route::get('/preview-landing', function () {
 // Stats page
 Route::get('/stats', [StatsController::class, 'index'])->name('stats');
 
-// Anonymous access route
-Route::get('/anon', function () {
-    try {
-        $boards = \App\Models\Board::getActiveBoards();
+// Image Library
+Route::get('/image-library', [\App\Http\Controllers\ImageLibraryController::class, 'index'])->name('image-library');
+Route::get('/library', [\App\Http\Controllers\ImageLibraryController::class, 'index'])->name('library'); // Alias for convenience
 
-        return view('boards.anon', compact('boards'));
-    } catch (Exception $e) {
-        return response()->json(['error' => $e->getMessage()]);
-    }
-})->name('anon');
+// Shop
+Route::get('/shop', [\App\Http\Controllers\ShopController::class, 'index'])->name('shop');
+Route::post('/shop/purchase/{item}', [\App\Http\Controllers\ShopController::class, 'purchase'])->name('shop.purchase');
+
+// Chat - uses ChatController
+Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+Route::get('/chat/{room:slug}', [\App\Http\Controllers\ChatController::class, 'show'])->name('chat.room');
+
+// Rules
+Route::get('/rules', function() {
+    return view('rules');
+})->name('rules');
+
+// FAQ
+Route::get('/faq', function() {
+    return view('faq');
+})->name('faq');
 
 // Public authentication routes - both mobile and web support
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::get('/auth/login', [AuthController::class, 'showLogin'])->name('auth.login');
 
 // Invite status endpoint for login page
 Route::get('/auth/invite-status', function() {
@@ -130,17 +140,34 @@ Route::get('/auth/invite-status', function() {
 
 // Login routes - supporting both mobile cryptographic and web auth
 Route::post('/login/cryptographic', [AuthController::class, 'cryptographicLogin'])->middleware('throttle:25,1')->name('auth.cryptographic.login');
-Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
-Route::post('/auth/login-backup', [AuthController::class, 'backupLogin'])->middleware('throttle:10,1');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
+Route::post('/login-backup', [AuthController::class, 'backupLogin'])->middleware('throttle:10,1');
+
+// Bitcoin upgrade page (shown after login when user gets upgraded to real Bitcoin address)
+Route::get('/bitcoin-upgrade', function() {
+    // Check if user has upgrade credentials in session
+    if (!session('bitcoin_upgrade_credentials') || !session('bitcoin_upgrade_backup')) {
+        return redirect('/login')->withErrors(['message' => 'No upgrade data found. Please log in again.']);
+    }
+    
+    $credentials = session('bitcoin_upgrade_credentials');
+    $backupContent = session('bitcoin_upgrade_backup');
+    $user = session('bitcoin_auth_user');
+    
+    if (!$user) {
+        return redirect('/login');
+    }
+    
+    return view('auth.bitcoin-upgrade', compact('credentials', 'backupContent', 'user'));
+})->name('bitcoin.upgrade');
 
 
 // Username check API endpoint  
 Route::post('/auth/check-username', [AuthController::class, 'checkUsername'])->middleware('throttle:20,1');
 
 
-// Logout routes - supporting both paths
-Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->middleware('auth');
-Route::post('/auth/logout', [AuthController::class, 'logout'])->name('auth.logout.alt');
+// Logout routes
+Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout')->middleware('bitcoin.auth');
 
 // Registration routes (public)
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
@@ -148,6 +175,7 @@ Route::post('/register/validate-friend-code', [AuthController::class, 'validateF
 Route::post('/api/friend-codes/validate', [AuthController::class, 'validateFriendCode'])->name('api.friend-codes.validate');
 Route::get('/register/{friendCode}', [AuthController::class, 'showRegister'])->name('auth.register');
 Route::post('/register', [AuthController::class, 'register'])->name('auth.register.store');
+
 
 // Image serving routes - public access
 Route::get('/image/thread/{id}', [App\Http\Controllers\ForumController::class, 'serveThreadImage'])->name('thread.image');
@@ -274,64 +302,8 @@ Route::middleware('bitcoin.auth')->group(function () {
             ->where('board', 'gen|tech|biz|film|x|lit|meta|mu|pol|ddl|i|General|Technology|Business|Meta|Film|Random|Literature|Music|Political|Doodles|Images');
     });
 
-    // Point Shop routes (protected)
-    Route::prefix('shop')->name('shop.')->group(function () {
-        Route::get('/', [App\Http\Controllers\PointShopController::class, 'index'])->name('index');
-        Route::post('/purchase', [App\Http\Controllers\PointShopController::class, 'purchase'])->name('purchase');
-    });
-
-    // PoW Chat System routes (protected)
-    Route::prefix('chat')->name('chat.')->group(function () {
-        Route::get('/', [App\Http\Controllers\ChatController::class, 'index'])->name('index');
-        Route::get('/{room}', [App\Http\Controllers\ChatController::class, 'show'])->name('room');
-        Route::post('/{room}/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('send')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-        Route::get('/{room}/messages', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('messages');
-        Route::post('/{room}/join', [App\Http\Controllers\ChatController::class, 'joinRoom'])->name('join');
-        Route::post('/{room}/leave', [App\Http\Controllers\ChatController::class, 'leaveRoom'])->name('leave');
-        Route::delete('/{room}/messages/{message}', [App\Http\Controllers\ChatController::class, 'deleteMessage'])->name('delete-message');
-        Route::get('/{room}/stats', [App\Http\Controllers\ChatController::class, 'getRoomStats'])->name('stats');
-        Route::post('/{room}/set-nickname', [App\Http\Controllers\ChatController::class, 'setNickname'])->name('set-nickname');
-        Route::get('/{room}/users', [App\Http\Controllers\ChatController::class, 'getOnlineUsers'])->name('users');
-        Route::post('/{room}/command', [App\Http\Controllers\ChatController::class, 'executeCommand'])->name('command');
-    });
-
-    // User Profile routes (protected)
-    Route::prefix('profile')->name('profile.')->group(function () {
-        Route::get('/', [App\Http\Controllers\UserProfileController::class, 'show'])->name('show');
-        Route::post('/upload-favicon', [App\Http\Controllers\UserProfileController::class, 'uploadFavicon'])->name('upload-favicon');
-    });
-    
-    // Default avatar generation (public)
-    Route::get('/default-avatar/{hash}.png', [App\Http\Controllers\UserProfileController::class, 'generateIdenticon'])->name('default-avatar');
-
-    // Image Library routes (protected)
-    Route::get('/library', [App\Http\Controllers\ImageLibraryController::class, 'index'])->name('image-library.index');
-    Route::post('/api/image-library/mine', [App\Http\Controllers\ImageLibraryController::class, 'mine']);
-    Route::post('/api/image-library/upload', [App\Http\Controllers\ImageLibraryController::class, 'upload']);
-    Route::get('/api/image-library/{id}/full', [App\Http\Controllers\ImageLibraryController::class, 'fullImage']);
-    Route::get('/api/image-library/{id}/download', [App\Http\Controllers\ImageLibraryController::class, 'download']);
-    Route::get('/api/image-library/hash/{hash}', [App\Http\Controllers\ImageLibraryController::class, 'getByHash']);
-    Route::get('/api/image-library/stats', [App\Http\Controllers\ImageLibraryController::class, 'getStats']);
-    Route::get('/api/image-library/search', [App\Http\Controllers\ImageLibraryController::class, 'search']);
-    Route::get('/api/image-library/shifting', [App\Http\Controllers\ImageLibraryController::class, 'getShiftingArrangement']);
-
-    // User profile routes
-    Route::get('/user/dashboard', [App\Http\Controllers\UserController::class, 'showDashboard'])->name('user.dashboard');
-    Route::get('/user/profile/edit', [App\Http\Controllers\UserController::class, 'showEditProfile'])->name('user.profile.edit');
-    Route::post('/user/profile/update', [App\Http\Controllers\UserController::class, 'updateProfile'])->name('user.profile.update');
-    Route::get('/user/{userId}', [App\Http\Controllers\UserController::class, 'showUserProfile'])->name('user.profile');
-
-    // Static pages
-    Route::get('/rules', function () {
-        return view('static.rules');
-    });
-
-    Route::get('/faq', function () {
-        return view('static.faq');
-    });
-
     // Admin routes (requires Bitcoin auth)
-    Route::prefix('admin')->name('admin.')->group(function () {
+    Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::get('/', [App\Http\Controllers\AdminController::class, 'index'])->name('index');
 
         // User Management
@@ -372,6 +344,26 @@ Route::middleware('bitcoin.auth')->group(function () {
             ],
         ]);
     });
+
+    // User dashboard and profile editing (require auth)
+    Route::get('/user/dashboard', [App\Http\Controllers\UserController::class, 'showDashboard'])->name('user.dashboard');
+    Route::get('/user/profile/edit', [App\Http\Controllers\UserController::class, 'showEditProfile'])->name('user.profile.edit');
+    Route::post('/user/profile/update', [App\Http\Controllers\UserController::class, 'updateProfile'])->name('user.profile.update');
+});
+
+// Public user profile route (no auth required)
+Route::get('/user/{userId}', [App\Http\Controllers\UserController::class, 'showUserProfile'])->name('user.profile');
+
+Route::get('/gallery', [App\Http\Controllers\ImageGalleryController::class, 'index'])->name('image-gallery.index');
+
+Route::get('/session-debug', function () {
+    return response()->json([
+        'session_id' => session()->getId(),
+        'bitcoin_auth_id' => session('bitcoin_auth_id'),
+        'bitcoin_auth_user' => session('bitcoin_auth_user') ? 'EXISTS' : 'NULL',
+        'all_session_keys' => array_keys(session()->all()),
+        'session_data_count' => count(session()->all())
+    ]);
 });
 
 Route::fallback(function () {

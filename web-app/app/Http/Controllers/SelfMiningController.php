@@ -181,6 +181,15 @@ class SelfMiningController extends Controller
 
         }
 
+        // ENFORCE SEQUENTIAL PROGRESSION - Check prerequisites
+        $validationResult = $this->validateLevelProgression($user->id, $level);
+        if (!$validationResult['valid']) {
+            return response()->json([
+                'error' => $validationResult['message'],
+                'required_level' => $validationResult['required_level']
+            ], 400);
+        }
+
         
 
         $points = $this->pointCalculationService->calculatePoints($level);
@@ -279,6 +288,14 @@ class SelfMiningController extends Controller
 
         // Check each level from hardest to easiest
 
+        if (str_starts_with($hash, '21e800000000')) return '21e800000000';
+
+        if (str_starts_with($hash, '21e80000000')) return '21e80000000';
+
+        if (str_starts_with($hash, '21e8000000')) return '21e8000000';
+
+        if (str_starts_with($hash, '21e800000')) return '21e800000';
+
         if (str_starts_with($hash, '21e80000')) return '21e80000';
 
         if (str_starts_with($hash, '21e8000')) return '21e8000';
@@ -319,6 +336,44 @@ class SelfMiningController extends Controller
 
         ]);
 
+    }
+
+    /**
+     * Validate that user has completed prerequisite levels before allowing submission
+     * ENFORCES SEQUENTIAL PROGRESSION: 21e8 -> 21e80 -> 21e800 -> 21e8000 -> 21e80000
+     */
+    private function validateLevelProgression($userId, $targetLevel)
+    {
+        // Get all user's achievements
+        $userAchievements = Personal21e8Achievement::where('user_id', $userId)
+            ->pluck('level')
+            ->toArray();
+
+        // Define the required sequence
+        $sequence = ['21e8', '21e80', '21e800', '21e8000', '21e80000', '21e800000', '21e8000000', '21e80000000', '21e800000000'];
+        $targetIndex = array_search($targetLevel, $sequence);
+
+        if ($targetIndex === false) {
+            return [
+                'valid' => false,
+                'message' => "Invalid level: {$targetLevel}",
+                'required_level' => null
+            ];
+        }
+
+        // Check if all prerequisite levels are completed
+        for ($i = 0; $i < $targetIndex; $i++) {
+            $requiredLevel = $sequence[$i];
+            if (!in_array($requiredLevel, $userAchievements)) {
+                return [
+                    'valid' => false,
+                    'message' => "You must complete {$requiredLevel} before attempting {$targetLevel}. Sequential progression is enforced.",
+                    'required_level' => $requiredLevel
+                ];
+            }
+        }
+
+        return ['valid' => true];
     }
 
 }

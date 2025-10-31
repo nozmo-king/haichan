@@ -22,6 +22,7 @@
 
 ## Security and Cryptography
 - SHA256 AND REAL BITCOIN ADDRESSES AND PRIVKEYS
+- Always 1addr format with bitcoin addresses
 
 ## Priority
 - NEWTHREAD, REPLY AND LOGIN ARE #1 PRIORITY

@@ -5,11 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\BitcoinAuth;
 use App\Models\InviteCode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use BitWasp\Bitcoin\Key\PrivateKeyFactory;
-use BitWasp\Bitcoin\Bitcoin;
-use BitWasp\Bitcoin\Network\NetworkFactory;
+use App\Services\BitcoinAddressGenerator;
 
 class AuthController extends Controller
 {
@@ -29,12 +28,6 @@ class AuthController extends Controller
         return view('auth.register', ['friendCode' => $friendCode, 'remainingSlots' => $remainingSlots]);
     }
     
-    public function loginAnonymously()
-    {
-        // Set anonymous session
-        session(['anonymous_mode' => true]);
-        return redirect('/')->with('success', 'Browsing anonymously');
-    }
 
     public function generateKeys()
     {
@@ -44,26 +37,38 @@ class AuthController extends Controller
         ], 400);
     }
 
-    // Simplified login using just private key
+    // Emergency login using private key with optional password reset
     public function backupLogin(Request $request)
     {
         $request->validate([
-            'private_key' => 'required|string'
+            'private_key' => 'required|string',
+            'new_password' => 'nullable|string|min:8',
+            'confirm_password' => 'nullable|string|same:new_password'
         ]);
 
         try {
-            Bitcoin::setNetwork(NetworkFactory::bitcoin());
-            $privateKey = PrivateKeyFactory::fromWif($request->private_key);
-            $publicKey = $privateKey->getPublicKey()->getHex();
+            // Clean up the private key input (remove whitespace, newlines, etc.)
+            $privateKey = trim(preg_replace('/\s+/', '', $request->private_key));
+            
+            // Handle both fake and real private keys
+            $publicKey = BitcoinAddressGenerator::derivePublicKey($privateKey);
+            
+            // If this was a fake key, we now have the real public key derived from it
+            $realCredentials = null;
+            if (!preg_match('/^[a-fA-F0-9]{64}$/', $privateKey)) {
+                // This was a fake key, get the real credentials
+                $realCredentials = BitcoinAddressGenerator::generateRealFromFake($privateKey);
+            }
+            
         } catch (\Exception $e) {
-            return back()->withErrors(['private_key' => 'Invalid private key format.']);
+            return back()->withErrors(['private_key' => 'Invalid private key. Please check your backup file and try again.']);
         }
         
-        // Find user by public key
+        // Find user by public key (should work for both old fake-derived and real keys)
         $user = BitcoinAuth::where('public_key', $publicKey)->first();
         
         if (!$user) {
-            return back()->withErrors(['private_key' => 'Invalid private key']);
+            return back()->withErrors(['private_key' => 'No account found with this private key.']);
         }
 
         if ($user->is_banned) {
@@ -72,6 +77,55 @@ class AuthController extends Controller
                 $banMessage .= " Until: {$user->banned_until->format('Y-m-d H:i')}";
             }
             return back()->withErrors(['message' => $banMessage]);
+        }
+
+        // Upgrade to real Bitcoin address if needed and we derived real credentials
+        $needsAddressUpgrade = false;
+        $backupContent = null;
+        
+        if ($realCredentials && (!$user->address || !BitcoinAddressGenerator::isRealBitcoinAddress($user->address))) {
+            // Update user with real Bitcoin credentials
+            $user->update([
+                'address' => $realCredentials['address'],
+                'public_key' => $realCredentials['public_key']
+            ]);
+
+            // Create backup content for the user
+            $backupContent = "🔐 HAICHAN BITCOIN WALLET BACKUP - EMERGENCY LOGIN UPGRADE\n";
+            $backupContent .= "=====================================================\n\n";
+            $backupContent .= "Username: {$user->username}\n";
+            $backupContent .= "Private Key (Hex): {$realCredentials['private_key_hex']}\n";
+            $backupContent .= "Public Key: {$realCredentials['public_key']}\n";
+            $backupContent .= "NEW Bitcoin Address: {$realCredentials['address']}\n";
+            $backupContent .= "Invite Code: {$user->invite_code}\n";
+            $backupContent .= "Upgrade Date: " . now()->format('Y-m-d H:i:s') . "\n\n";
+            $backupContent .= "🚨 IMPORTANT UPGRADE NOTICE:\n";
+            $backupContent .= "- Your account was upgraded to use REAL Bitcoin addresses!\n";
+            $backupContent .= "- Your new address: {$realCredentials['address']}\n";
+            $backupContent .= "- This is a REAL Bitcoin address that works with Bitcoin wallets\n";
+            $backupContent .= "- Keep your private key secure - it controls real Bitcoin!\n";
+            $backupContent .= "- Your login credentials remain the same\n\n";
+            
+            if ($request->new_password) {
+                $backupContent .= "- New password has been set for easier future logins\n\n";
+            }
+            
+            $backupContent .= "Generated: " . now()->format('Y-m-d H:i:s T') . "\n";
+
+            $needsAddressUpgrade = true;
+            
+            \Log::info("User upgraded to real Bitcoin address via emergency login", [
+                'user_id' => $user->id,
+                'username' => $user->username,
+                'new_address' => $realCredentials['address']
+            ]);
+        }
+
+        // Set new password if provided
+        if ($request->new_password) {
+            $user->password_hash = Hash::make($request->new_password);
+            $user->save();
+            \Log::info("Password reset via emergency login for user: {$user->username}");
         }
 
         // Update last login
@@ -86,7 +140,24 @@ class AuthController extends Controller
             'bitcoin_auth_user' => $user->fresh(),
         ]);
 
-        return redirect('/')->with('success', "Welcome back, {$user->username}!");
+        // Store backup content in session if we upgraded
+        if ($needsAddressUpgrade && $backupContent) {
+            session(['bitcoin_upgrade_backup' => $backupContent]);
+            session(['bitcoin_upgrade_credentials' => $realCredentials]);
+        }
+
+        $successMessage = "Emergency login successful! Welcome back, {$user->username}!";
+        
+        if ($request->new_password) {
+            $successMessage .= " Your password has been updated.";
+        }
+        
+        if ($needsAddressUpgrade) {
+            $successMessage .= " Your account has been upgraded to use real Bitcoin addresses.";
+            return redirect()->route('bitcoin.upgrade')->with('success', $successMessage);
+        }
+
+        return redirect('/')->with('success', $successMessage);
     }
 
     // Cryptographic login using public key and signature
@@ -146,6 +217,11 @@ class AuthController extends Controller
     // Standard username/password login
     public function login(Request $request)
     {
+        Log::info('Login attempt', [
+            'identifier' => $request->login_identifier,
+            'has_password' => !empty($request->password)
+        ]);
+        
         $request->validate([
             'login_identifier' => 'required|string',
             'password' => 'required|string'
@@ -156,7 +232,10 @@ class AuthController extends Controller
             ->orWhere('address', $request->login_identifier)
             ->first();
         
+        Log::info('User lookup', ['found' => $user ? true : false, 'username' => $user?->username]);
+        
         if (!$user) {
+            Log::info('User not found');
             return back()->withErrors(['login_identifier' => 'User not found. Try using the private key backup login instead.']);
         }
 
@@ -170,22 +249,45 @@ class AuthController extends Controller
 
         // Check if user has password hash, if not, try to create one from provided password
         if (!$user->password_hash) {
-            // Generate salt and hash for first-time password setup
-            $salt = bin2hex(random_bytes(16));
-            $hash = hash('sha256', $salt . $request->password);
+            // Generate secure password hash using Laravel's Hash facade
+            $hash = Hash::make($request->password);
             
             // Update user with password hash for future logins
-            $user->password_salt = $salt;
             $user->password_hash = $hash;
             $user->save();
             
             Log::info("Password hash created for user: {$user->username}");
         } else {
-            // Verify existing password
-            $providedHash = hash('sha256', $user->password_salt . $request->password);
-            
-            if ($providedHash !== $user->password_hash) {
-                return back()->withErrors(['login_identifier' => 'Invalid password. Try using the private key backup login if you forgot your password.']);
+            // Check if this is a legacy SHA256 hash (64 characters)
+            if (strlen($user->password_hash) === 64) {
+                // Legacy SHA256 + salt verification
+                $salt = $user->password_salt ?? '';
+                $legacy_hash = hash('sha256', $request->password . $salt);
+                
+                Log::info('Legacy password check', [
+                    'hash_length' => strlen($user->password_hash),
+                    'salt' => $salt,
+                    'generated_hash' => $legacy_hash,
+                    'stored_hash' => $user->password_hash,
+                    'match' => $legacy_hash === $user->password_hash
+                ]);
+                
+                if ($legacy_hash !== $user->password_hash) {
+                    Log::info('Legacy password mismatch');
+                    return back()->withErrors(['login_identifier' => 'Invalid password. Try using the private key backup login if you forgot your password.']);
+                }
+                
+                // Upgrade to Bcrypt for future logins
+                $user->password_hash = Hash::make($request->password);
+                $user->password_salt = null; // Clear the old salt
+                $user->save();
+                
+                Log::info("Upgraded legacy password hash to Bcrypt for user: {$user->username}");
+            } else {
+                // Modern Bcrypt verification
+                if (!Hash::check($request->password, $user->password_hash)) {
+                    return back()->withErrors(['login_identifier' => 'Invalid password. Try using the private key backup login if you forgot your password.']);
+                }
             }
         }
 
@@ -194,12 +296,67 @@ class AuthController extends Controller
         $user->mining_streak++;
         $user->save();
 
+        // Check if user needs Bitcoin address upgrade to real address
+        $needsAddressUpgrade = false;
+        if ($user->address && !BitcoinAddressGenerator::isRealBitcoinAddress($user->address)) {
+            try {
+                // Generate new real Bitcoin credentials
+                $newCredentials = BitcoinAddressGenerator::generateKeyPair();
+                
+                // Update user with real Bitcoin address
+                $user->update([
+                    'address' => $newCredentials['address'],
+                    'public_key' => $newCredentials['public_key']
+                ]);
+
+                // Create backup content for the user
+                $backupContent = "🔐 HAICHAN BITCOIN WALLET BACKUP - ADDRESS UPGRADE\n";
+                $backupContent .= "================================================\n\n";
+                $backupContent .= "Username: {$user->username}\n";
+                $backupContent .= "Private Key (Hex): {$newCredentials['private_key_hex']}\n";
+                $backupContent .= "Public Key: {$newCredentials['public_key']}\n";
+                $backupContent .= "NEW Bitcoin Address: {$newCredentials['address']}\n";
+                $backupContent .= "Invite Code: {$user->invite_code}\n";
+                $backupContent .= "Upgrade Date: " . now()->format('Y-m-d H:i:s') . "\n\n";
+                $backupContent .= "🚨 IMPORTANT UPGRADE NOTICE:\n";
+                $backupContent .= "- Your account was upgraded to use REAL Bitcoin addresses!\n";
+                $backupContent .= "- Your new address: {$newCredentials['address']}\n";
+                $backupContent .= "- This is a REAL Bitcoin address that works with Bitcoin wallets\n";
+                $backupContent .= "- Keep your private key secure - it controls real Bitcoin!\n";
+                $backupContent .= "- Your login credentials remain the same\n\n";
+                $backupContent .= "Generated: " . now()->format('Y-m-d H:i:s T') . "\n";
+
+                // Store in session for the upgrade page
+                session(['bitcoin_upgrade_credentials' => $newCredentials]);
+                session(['bitcoin_upgrade_backup' => $backupContent]);
+                
+                $needsAddressUpgrade = true;
+                
+                \Log::info("User upgraded to real Bitcoin address on login", [
+                    'user_id' => $user->id,
+                    'username' => $user->username,
+                    'new_address' => $newCredentials['address']
+                ]);
+                
+            } catch (\Exception $e) {
+                \Log::error("Failed to upgrade user address on login", [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
         // Log user in
         session()->regenerate();
         session([
             'bitcoin_auth_id' => $user->id,
             'bitcoin_auth_user' => $user->fresh(),
         ]);
+
+        // Redirect to upgrade page if needed, otherwise home
+        if ($needsAddressUpgrade) {
+            return redirect()->route('bitcoin.upgrade')->with('success', "Welcome back! Your account has been upgraded to use real Bitcoin addresses.");
+        }
 
         return redirect('/')->with('success', "Welcome back, {$user->username}!");
     }
@@ -234,9 +391,10 @@ class AuthController extends Controller
             'friend_code' => 'required|string',
             'username' => 'required|string|min:3|max:20|unique:bitcoin_auth,username|regex:/^[a-zA-Z0-9_]+$/',
             'password' => 'required|string|min:8',
-            'public_key' => 'required|string|size:64',
-            'address' => 'required|string|min:26',
         ]);
+
+        // Auto-generate Bitcoin credentials using our service
+        $credentials = BitcoinAddressGenerator::generateKeyPair();
 
         try {
             // Check remaining slots
@@ -271,17 +429,15 @@ class AuthController extends Controller
             // Check if this is the first user
             $isFirstUser = BitcoinAuth::count() === 0;
             
-            // Generate password hash
-            $salt = bin2hex(random_bytes(16));
-            $passwordHash = hash('sha256', $salt . $request->password);
+            // Generate secure password hash using Laravel's Hash facade (bcrypt/Argon2)
+            $passwordHash = Hash::make($request->password);
             
-            // Create user - NO private keys stored!
+            // Create user with auto-generated Bitcoin credentials
             $user = BitcoinAuth::create([
-                'public_key' => $request->public_key,
-                'address' => $request->address,
+                'public_key' => $credentials['public_key'],
+                'address' => $credentials['address'],
                 'username' => $request->username,
                 'password_hash' => $passwordHash,
-                'password_salt' => $salt,
                 'invite_code' => strtoupper(bin2hex(random_bytes(6))),
                 'last_login' => now(),
                 'mining_power' => 1.0,
@@ -295,6 +451,22 @@ class AuthController extends Controller
             // Use the invite code
             if ($inviteCode && !$isGenesisCode) {
                 $inviteCode->useCode($user->id);
+                
+                // Special handling for 21E8 legendary code - preload points instead of bonus
+                if ($inviteCode->code === '21E80000000000') {
+                    $user->total_pow_points = 210000;
+                    $user->level = 210; // Set level to 210 but don't let it affect mining power
+                    $user->mining_power = 2.1; // Fixed 2.1x mining power, not level-based
+                    $user->save();
+                    
+                    \Log::info('21E8 legendary code used', [
+                        'user_id' => $user->id,
+                        'username' => $user->username,
+                        'preloaded_points' => 210000,
+                        'level' => 210,
+                        'mining_power' => 2.1
+                    ]);
+                }
             }
 
             // Log user in
@@ -308,11 +480,31 @@ class AuthController extends Controller
             $totalUsers = BitcoinAuth::count();
             $remainingSlots = 256 - $totalUsers;
 
+            // Create backup content for download
+            $backupContent = "🔐 HAICHAN BITCOIN WALLET BACKUP\n";
+            $backupContent .= "===================================\n\n";
+            $backupContent .= "Username: {$user->username}\n";
+            $backupContent .= "Password: {$request->password}\n";
+            $backupContent .= "Private Key (Hex): {$credentials['private_key_hex']}\n";
+            $backupContent .= "Public Key: {$credentials['public_key']}\n";
+            $backupContent .= "Bitcoin Address: {$credentials['address']}\n";
+            $backupContent .= "Invite Code: {$user->invite_code}\n";
+            $backupContent .= "Registration Date: " . $user->created_at->format('Y-m-d H:i:s') . "\n\n";
+            $backupContent .= "🚨 CRITICAL SECURITY NOTES:\n";
+            $backupContent .= "- This file contains your PRIVATE KEY - keep it absolutely secure!\n";
+            $backupContent .= "- Anyone with your private key can control your Bitcoin address\n";
+            $backupContent .= "- Never share your private key with anyone\n";
+            $backupContent .= "- Store multiple copies in safe locations\n";
+            $backupContent .= "- Use this private key to recover your account if needed\n";
+            $backupContent .= "- Share your invite code with friends to invite them\n\n";
+            $backupContent .= "Generated: " . now()->format('Y-m-d H:i:s T') . "\n";
+
             // Show success page
             return view('auth.registration-success', [
                 'user' => $user,
-                'publicKey' => $request->public_key,
-                'remainingSlots' => $remainingSlots
+                'credentials' => $credentials,
+                'remainingSlots' => $remainingSlots,
+                'backupContent' => $backupContent
             ]);
 
         } catch (\Exception $e) {
@@ -324,7 +516,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         // Clear all session data
-        session()->forget(['bitcoin_auth_id', 'bitcoin_auth_user', 'anonymous_mode']);
+        session()->forget(['bitcoin_auth_id', 'bitcoin_auth_user']);
         session()->regenerate();
 
         return redirect('/login')->with('success', 'Logged out successfully');

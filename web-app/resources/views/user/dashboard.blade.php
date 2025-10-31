@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/haichan.css">
     @vite(['resources/css/themes.css'])
     <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
-    <style>
+    <style nonce="{{ app('csp_nonce') }}">
         .user-cp-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -227,9 +227,9 @@
             <h3>⛏️ VANITY ADDRESS MINER</h3>
 
             <div style="margin-bottom: 15px;">
-                <label>Target Pattern:</label>
+                <label for="vanity-pattern">Target Pattern:</label>
                 <input type="text" id="vanity-pattern" placeholder="e.g., 1Bob, 1Alice, 1Test"
-                       style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; margin: 5px 0;">
+                       style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; margin: 5px 0;" autocomplete="off">
                 <small style="color: var(--text-secondary);">Case sensitive. Longer patterns take exponentially more time.</small>
             </div>
 
@@ -261,14 +261,14 @@
             <h3>🎭 TRIPCODE GENERATOR</h3>
 
             <div style="margin-bottom: 15px;">
-                <label>Password:</label>
+                <label for="tripcode-password">Password:</label>
                 <input type="password" id="tripcode-password" placeholder="Enter tripcode password"
-                       style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; margin: 5px 0;">
+                       style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; margin: 5px 0;" autocomplete="new-password">
             </div>
 
             <div style="margin-bottom: 15px;">
-                <label>Hash Algorithm:</label>
-                <select id="tripcode-algorithm" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; margin: 5px 0;">
+                <label for="tripcode-algorithm">Hash Algorithm:</label>
+                <select id="tripcode-algorithm" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; margin: 5px 0;" autocomplete="off">
                     <option value="sha256">SHA-256 (Secure)</option>
                     <option value="sha3-256">SHA3-256 (More Secure)</option>
                     <option value="blake2b">BLAKE2b (Fastest)</option>
@@ -314,7 +314,7 @@
 
 </div>
 
-<script>
+<script nonce="{{ app('csp_nonce') }}">
 // Vanity Address Mining
 class VanityMiner {
     constructor() {

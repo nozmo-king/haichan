@@ -415,6 +415,14 @@ class SimpleMouseoverMiner {
         const postId = element.dataset.postId;
         const boardCode = element.dataset.boardCode || 'd';
 
+        // DOODLE BOARD SPECIAL HANDLING - NO TEXT MINING
+        if (boardCode === 'ddl') {
+            console.log('🎨 Doodle board detected - text-based mining disabled');
+            this.showMiningStatusIndicator(element, 'error');
+            this.showMiningActivity('idle', 'Doodle board requires visual canvas mining only');
+            return;
+        }
+
         try {
             let targetType, targetId;
             
@@ -512,10 +520,32 @@ class SimpleMouseoverMiner {
             });
             
             if (response.ok) {
-                console.log('✅ Proof submitted successfully');
+                const data = await response.json();
+                console.log('✅ Proof submitted successfully', data);
+                
+                // Dispatch event with full response data
+                if (data.success) {
+                    document.dispatchEvent(new CustomEvent('proofSubmitted', {
+                        detail: {
+                            points: data.points,
+                            total_points: data.total_points,
+                            hash: data.hash,
+                            pattern: data.pattern,
+                            user_level: data.user_level
+                        }
+                    }));
+                }
+            } else {
+                const errorData = await response.json();
+                document.dispatchEvent(new CustomEvent('miningError', {
+                    detail: { message: errorData.message || 'Failed to submit proof' }
+                }));
             }
         } catch (error) {
             console.log('Failed to submit proof:', error);
+            document.dispatchEvent(new CustomEvent('miningError', {
+                detail: { message: error.message || 'Network error' }
+            }));
         }
     }
 

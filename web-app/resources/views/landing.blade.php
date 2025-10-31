@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HAICHAN - Proof-of-Work Imageboard</title>
+    
+    <!-- Main stylesheet -->
+    <link rel="stylesheet" href="/css/haichan.css">
+    <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
+    
     <style>
         * {
             margin: 0;
@@ -12,7 +17,7 @@
         }
 
         body {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: #1a1a2e;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -29,7 +34,7 @@
             position: absolute;
             width: 3px;
             height: 3px;
-            background: rgba(154, 184, 122, 0.3);
+            background: rgba(154, 184, 122, 0.6);
             border-radius: 50%;
             animation: float 20s infinite;
         }
@@ -130,16 +135,161 @@
         .slot-container:nth-child(6) .slot-reel { animation-delay: 1.5s; }
         .slot-container:nth-child(7) .slot-reel { animation-delay: 1.8s; }
 
+        /* Spectacular HAICHAN header with individual letter animations */
+        .haichan-title {
+            font-family: 'Nova Cut', cursive;
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin: 40px 0;
+            position: relative;
+            z-index: 100;
+        }
+
+        .haichan-letter {
+            display: inline-block;
+            color: #00FF00;
+            text-shadow: 
+                -1px -1px 0 #FF69B4,
+                1px -1px 0 #FF69B4,
+                -1px 1px 0 #FF69B4,
+                1px 1px 0 #FF69B4;
+            margin: 0 2px;
+            animation-duration: 3s;
+            animation-iteration-count: infinite;
+            animation-timing-function: ease-in-out;
+        }
+
+        /* Individual letter glow animations */
+        .haichan-letter:nth-child(1) { animation-name: shimmer-red; }
+        .haichan-letter:nth-child(2) { animation-name: shimmer-orange; animation-delay: 0.2s; }
+        .haichan-letter:nth-child(3) { animation-name: shimmer-yellow; animation-delay: 0.4s; }
+        .haichan-letter:nth-child(4) { animation-name: shimmer-green; animation-delay: 0.6s; }
+        .haichan-letter:nth-child(5) { animation-name: shimmer-blue; animation-delay: 0.8s; }
+        .haichan-letter:nth-child(6) { animation-name: shimmer-indigo; animation-delay: 1.0s; }
+        .haichan-letter:nth-child(7) { animation-name: shimmer-violet; animation-delay: 1.2s; }
+
+        @keyframes shimmer-red {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px #FF0000) drop-shadow(0 0 10px #FF0000) drop-shadow(0 0 15px #FF0000);
+            }
+            25% { 
+                filter: drop-shadow(0 0 10px #FF4500) drop-shadow(0 0 20px #FF4500) drop-shadow(0 0 30px #FF4500);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px #FF69B4) drop-shadow(0 0 25px #FF69B4) drop-shadow(0 0 35px #FF69B4);
+            }
+            75% { 
+                filter: drop-shadow(0 0 10px #DC143C) drop-shadow(0 0 20px #DC143C) drop-shadow(0 0 30px #DC143C);
+            }
+        }
+
+        @keyframes shimmer-orange {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px #FF8C00) drop-shadow(0 0 10px #FF8C00) drop-shadow(0 0 15px #FF8C00);
+            }
+            25% { 
+                filter: drop-shadow(0 0 10px #FFA500) drop-shadow(0 0 20px #FFA500) drop-shadow(0 0 30px #FFA500);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px #FFD700) drop-shadow(0 0 25px #FFD700) drop-shadow(0 0 35px #FFD700);
+            }
+            75% { 
+                filter: drop-shadow(0 0 10px #FF6347) drop-shadow(0 0 20px #FF6347) drop-shadow(0 0 30px #FF6347);
+            }
+        }
+
+        @keyframes shimmer-yellow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px #FFFF00) drop-shadow(0 0 10px #FFFF00) drop-shadow(0 0 15px #FFFF00);
+            }
+            25% { 
+                filter: drop-shadow(0 0 10px #ADFF2F) drop-shadow(0 0 20px #ADFF2F) drop-shadow(0 0 30px #ADFF2F);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px #00FF00) drop-shadow(0 0 25px #00FF00) drop-shadow(0 0 35px #00FF00);
+            }
+            75% { 
+                filter: drop-shadow(0 0 10px #32CD32) drop-shadow(0 0 20px #32CD32) drop-shadow(0 0 30px #32CD32);
+            }
+        }
+
+        @keyframes shimmer-green {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px #00FF7F) drop-shadow(0 0 10px #00FF7F) drop-shadow(0 0 15px #00FF7F);
+            }
+            25% { 
+                filter: drop-shadow(0 0 10px #00CED1) drop-shadow(0 0 20px #00CED1) drop-shadow(0 0 30px #00CED1);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px #20B2AA) drop-shadow(0 0 25px #20B2AA) drop-shadow(0 0 35px #20B2AA);
+            }
+            75% { 
+                filter: drop-shadow(0 0 10px #008B8B) drop-shadow(0 0 20px #008B8B) drop-shadow(0 0 30px #008B8B);
+            }
+        }
+
+        @keyframes shimmer-blue {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px #0000FF) drop-shadow(0 0 10px #0000FF) drop-shadow(0 0 15px #0000FF);
+            }
+            25% { 
+                filter: drop-shadow(0 0 10px #4169E1) drop-shadow(0 0 20px #4169E1) drop-shadow(0 0 30px #4169E1);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px #1E90FF) drop-shadow(0 0 25px #1E90FF) drop-shadow(0 0 35px #1E90FF);
+            }
+            75% { 
+                filter: drop-shadow(0 0 10px #00BFFF) drop-shadow(0 0 20px #00BFFF) drop-shadow(0 0 30px #00BFFF);
+            }
+        }
+
+        @keyframes shimmer-indigo {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px #4B0082) drop-shadow(0 0 10px #4B0082) drop-shadow(0 0 15px #4B0082);
+            }
+            25% { 
+                filter: drop-shadow(0 0 10px #6A5ACD) drop-shadow(0 0 20px #6A5ACD) drop-shadow(0 0 30px #6A5ACD);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px #9370DB) drop-shadow(0 0 25px #9370DB) drop-shadow(0 0 35px #9370DB);
+            }
+            75% { 
+                filter: drop-shadow(0 0 10px #8A2BE2) drop-shadow(0 0 20px #8A2BE2) drop-shadow(0 0 30px #8A2BE2);
+            }
+        }
+
+        @keyframes shimmer-violet {
+            0%, 100% { 
+                filter: drop-shadow(0 0 5px #8B00FF) drop-shadow(0 0 10px #8B00FF) drop-shadow(0 0 15px #8B00FF);
+            }
+            25% { 
+                filter: drop-shadow(0 0 10px #9932CC) drop-shadow(0 0 20px #9932CC) drop-shadow(0 0 30px #9932CC);
+            }
+            50% { 
+                filter: drop-shadow(0 0 15px #DA70D6) drop-shadow(0 0 25px #DA70D6) drop-shadow(0 0 35px #DA70D6);
+            }
+            75% { 
+                filter: drop-shadow(0 0 10px #FF00FF) drop-shadow(0 0 20px #FF00FF) drop-shadow(0 0 30px #FF00FF);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .haichan-title {
+                font-size: 32px;
+                margin: 20px 0;
+            }
+        }
+
         .login-box {
-            background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
+            background: #FFFACD;
             border: 2px solid #708B75;
             border-radius: 16px;
             padding: 40px;
             max-width: 400px;
             margin: 0 auto;
             box-shadow: 
-                0 16px 64px rgba(0, 0, 0, 0.6),
-                inset 0 2px 16px rgba(255, 255, 255, 0.05);
+                0 8px 32px rgba(112, 139, 117, 0.3);
             animation: float-box 6s ease-in-out infinite;
         }
 
@@ -223,7 +373,12 @@
             color: #9AB87A;
             font-size: 24px;
             margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(154, 184, 122, 0.5);
+            text-shadow: 
+                -1px -1px 0 #FF69B4,
+                1px -1px 0 #FF69B4,
+                -1px 1px 0 #FF69B4,
+                1px 1px 0 #FF69B4,
+                0 0 10px rgba(154, 184, 122, 0.5);
         }
 
         .login-box p {
@@ -258,6 +413,7 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 2px;
+            cursor: pointer;
         }
 
         .btn-register:hover {
@@ -480,8 +636,8 @@
         }
     </style>
 </head>
-<body>
-    <script>
+<body class="landing-page">
+    <script nonce="{{ app('csp_nonce') }}">
         for (let i = 0; i < 30; i++) {
             const particle = document.createElement('div');
             particle.className = 'particle';
@@ -570,23 +726,23 @@
             <h2>⛏️ Welcome to Haichan</h2>
             <p>Proof-of-Work Imageboard</p>
             
-            <form action="/auth/login" method="POST" style="margin-bottom: 20px;">
+            <form action="/login" method="POST" style="margin-bottom: 20px;">
                 @csrf
                 <div style="margin-bottom: 15px;">
-                    <label style="display: block; color: #9AB87A; font-size: 12px; margin-bottom: 5px; text-align: left;">Username or Address</label>
+                    <label style="display: block; color: #3D315B; font-size: 12px; margin-bottom: 5px; text-align: left; font-weight: bold;">Username or Address</label>
                     <input type="text" name="login_identifier" required 
-                           style="width: 100%; padding: 12px; background: rgba(42, 42, 62, 0.8); border: 1px solid #708B75; border-radius: 6px; color: #FFFFEE; font-size: 14px; font-family: 'Courier New', monospace;">
+                           style="width: 100%; padding: 12px; background: #F5F5DC; border: 2px solid #708B75; border-radius: 6px; color: #3D315B; font-size: 14px; font-family: 'Courier New', monospace;">
                 </div>
                 
                 <div style="margin-bottom: 20px;">
-                    <label style="display: block; color: #9AB87A; font-size: 12px; margin-bottom: 5px; text-align: left;">Password</label>
+                    <label style="display: block; color: #3D315B; font-size: 12px; margin-bottom: 5px; text-align: left; font-weight: bold;">Password</label>
                     <input type="password" name="password" required 
-                           style="width: 100%; padding: 12px; background: rgba(42, 42, 62, 0.8); border: 1px solid #708B75; border-radius: 6px; color: #FFFFEE; font-size: 14px; font-family: 'Courier New', monospace;">
+                           style="width: 100%; padding: 12px; background: #F5F5DC; border: 2px solid #708B75; border-radius: 6px; color: #3D315B; font-size: 14px; font-family: 'Courier New', monospace;">
                 </div>
                 
                 <div class="login-buttons">
                     <button type="submit" class="btn-login">Login</button>
-                    <div class="key-box" onclick="openPrivkeyModal()">
+                    <div class="key-box" id="privkeyButton">
                         <div class="key-emoji">🔑</div>
                     </div>
                 </div>
@@ -596,7 +752,7 @@
                 <span style="color: #708B75; font-size: 12px;">or</span>
             </div>
 
-            <a href="/register" class="btn-register" style="display: block; width: 100%; padding: 16px; background: linear-gradient(145deg, #444B6E, #3D315B); border: none; border-radius: 8px; color: #FFFFEE; font-size: 16px; font-weight: bold; text-align: center; text-decoration: none; box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.4), -2px -2px 8px rgba(255, 255, 255, 0.1); transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 2px;">
+            <a href="/register" class="btn-register">
                 Register
             </a>
 
@@ -620,18 +776,19 @@
     <!-- Private Key Login Modal -->
     <div id="privkeyModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closePrivkeyModal()">&times;</span>
-            <h3>🔑 Bitcoin Private Key Login</h3>
-            <p>Enter your 64-character Bitcoin private key for backup access. This is a secure alternative to username/password login.</p>
+            <span class="close" id="closePrivkeyButton">&times;</span>
+            <h3>🔑 Emergency Private Key Login</h3>
+            <p>Enter your private key from your backup file for emergency access. This works with any private key format and can upgrade your account to real Bitcoin addresses.</p>
             
-            <form id="privkeyForm" action="/api/backup-login" method="POST">
-                <input type="password" 
+            <form id="privkeyForm" action="/login-backup" method="POST">
+                @csrf
+                <textarea 
                        name="private_key" 
                        class="privkey-input" 
-                       placeholder="Enter your 64-character private key..."
-                       pattern="[a-fA-F0-9]{64}"
-                       maxlength="64"
-                       required>
+                       placeholder="Enter your private key from backup file..."
+                       rows="3"
+                       style="width: 100%; padding: 10px; border: 2px solid #333; border-radius: 6px; background: #1a1a1a; color: #fff; font-family: monospace; resize: vertical; box-sizing: border-box;"
+                       required></textarea>
                 
                 <button type="submit" class="btn-privkey">🚀 Login with Private Key</button>
             </form>
@@ -644,12 +801,23 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ app('csp_nonce') }}">
         function openPrivkeyModal() {
-            document.getElementById('privkeyModal').style.display = 'block';
-            setTimeout(() => {
-                document.querySelector('.privkey-input').focus();
-            }, 100);
+            console.log('Opening private key modal...');
+            const modal = document.getElementById('privkeyModal');
+            if (modal) {
+                modal.style.display = 'block';
+                console.log('Modal opened successfully');
+                setTimeout(() => {
+                    const input = document.querySelector('.privkey-input');
+                    if (input) {
+                        input.focus();
+                        console.log('Input focused');
+                    }
+                }, 100);
+            } else {
+                console.error('Modal element not found!');
+            }
         }
 
         function closePrivkeyModal() {
@@ -657,45 +825,51 @@
             document.getElementById('privkeyForm').reset();
         }
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            const modal = document.getElementById('privkeyModal');
-            if (event.target === modal) {
-                closePrivkeyModal();
+        // Add event listeners when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Open modal button
+            const openButton = document.getElementById('privkeyButton');
+            if (openButton) {
+                openButton.addEventListener('click', openPrivkeyModal);
             }
-        }
 
-        // Handle private key form submission
-        document.getElementById('privkeyForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const submitButton = this.querySelector('.btn-privkey');
-            const originalText = submitButton.textContent;
-            
-            submitButton.textContent = '🔄 Authenticating...';
-            submitButton.disabled = true;
-            
-            try {
-                const response = await fetch('/api/backup-login', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                if (response.ok) {
-                    // Successful login - redirect
-                    window.location.href = '/';
-                } else {
-                    // Handle error
-                    const error = await response.text();
-                    alert('Login failed: Invalid private key');
-                }
-            } catch (error) {
-                alert('Login failed: Network error');
+            // Close modal button
+            const closeButton = document.getElementById('closePrivkeyButton');
+            if (closeButton) {
+                closeButton.addEventListener('click', closePrivkeyModal);
             }
-            
-            submitButton.textContent = originalText;
-            submitButton.disabled = false;
+
+            // Close modal when clicking outside
+            const modal = document.getElementById('privkeyModal');
+            if (modal) {
+                modal.addEventListener('click', function(event) {
+                    if (event.target === modal) {
+                        closePrivkeyModal();
+                    }
+                });
+            }
+
+            // Handle private key form submission
+            const privkeyForm = document.getElementById('privkeyForm');
+            if (privkeyForm) {
+                privkeyForm.addEventListener('submit', function(e) {
+                    const submitButton = this.querySelector('.btn-privkey');
+                    const privateKey = this.querySelector('.privkey-input').value.trim();
+                    
+                    if (!privateKey) {
+                        e.preventDefault();
+                        alert('Please enter your private key');
+                        return;
+                    }
+                    
+                    if (submitButton) {
+                        submitButton.textContent = '🔄 Authenticating...';
+                        submitButton.disabled = true;
+                    }
+                    
+                    // Let the form submit normally - no preventDefault()
+                });
+            }
         });
 
         // Close modal with Escape key
