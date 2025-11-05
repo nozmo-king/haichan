@@ -19,7 +19,8 @@ class ChatController extends Controller
     {
         $this->verifier = $verifier;
         
-        // Disable CSRF verification for sendMessage
+        // Auth is already applied in routes, no need to duplicate here
+        // Disable CSRF verification for sendMessage API endpoint only
         $this->middleware('web')->except(['sendMessage']);
     }
 
@@ -69,7 +70,15 @@ class ChatController extends Controller
     {
         $user = $this->getBitcoinAuthUser();
         
+        Log::info('Chat room access attempt', [
+            'room' => $room->slug,
+            'user_id' => $user?->id,
+            'session_auth_id' => session('bitcoin_auth_id'),
+            'has_user' => (bool) $user
+        ]);
+        
         if (!$user) {
+            Log::warning('Chat access denied - no auth', ['room' => $room->slug]);
             return redirect('/')->withErrors(['auth' => 'Please log in to access chat']);
         }
         
@@ -78,6 +87,12 @@ class ChatController extends Controller
         
         // Get recent messages (simplified)
         $messages = $room->messages()->with('user')->latest()->take(50)->get()->reverse();
+        
+        Log::info('Chat room loaded', [
+            'room' => $room->slug,
+            'user' => $user->username,
+            'message_count' => count($messages)
+        ]);
         
         return view('chat.room', compact('room', 'messages', 'user'));
     }
@@ -105,7 +120,7 @@ class ChatController extends Controller
         
         // Check for commands (skip PoW validation for commands)
         if (str_starts_with($message, '/')) {
-            return $this->handleCommand($request, $room, $user, $validated);
+            return $this->executeCommand($request, $room);
         }
 
         try {
@@ -130,10 +145,8 @@ class ChatController extends Controller
             $pattern = $this->getPatternFromHash($validated['pow_hash']);
             $points = $this->calculatePoints($validated['pow_hash']);
             
-            // Get user's display name from room or generate default
-            $roomUser = $room->users()->where('user_id', $user->id)->first();
-            $displayName = $roomUser?->pivot?->display_name ?? 
-                          ($user->username . ' !' . substr(hash('sha256', $user->address), 0, 6));
+            // Get user's display name with 21e8 diamonds and tripcode
+            $displayName = $room->getUserDisplayName($user);
 
             // Create the message with validated POW
             $message = ChatMessage::create([
@@ -320,6 +333,15 @@ class ChatController extends Controller
                     'display_name' => $user->username ?? $user->address ?? 'Anonymous',
                     'joined_at' => now(),
                     'last_seen_at' => now(),
+                    'total_messages' => 0,
+                    'total_pow_points' => 0,
+                    'is_muted' => false,
+                    'permissions' => 'user',
+                ]);
+            } else {
+                // Update last seen time for existing user
+                $room->users()->updateExistingPivot($user->id, [
+                    'last_seen_at' => now(),
                 ]);
             }
         } catch (\Exception $e) {
@@ -421,22 +443,56 @@ class ChatController extends Controller
      */
     public function getOnlineUsers(ChatRoom $room)
     {
-        $users = $room->users()
-                     ->wherePivot('last_seen_at', '>', now()->subMinutes(5))
-                     ->orderByPivot('last_seen_at', 'desc')
-                     ->get()
-                     ->map(function ($user) {
-                         return [
-                             'id' => $user->id,
-                             'display_name' => $user->pivot->display_name ?? ($user->username . ' !' . substr(hash('sha256', $user->address), 0, 6)),
-                             'last_seen' => $user->pivot->last_seen_at ? $user->pivot->last_seen_at->diffForHumans() : 'just now',
-                         ];
-                     });
-        
-        return response()->json([
-            'success' => true,
-            'users' => $users,
-        ]);
+        try {
+            $user = $this->getBitcoinAuthUser();
+            
+            if (!$user) {
+                Log::warning('Chat users request without auth', ['room' => $room->slug]);
+                return response()->json(['success' => false, 'error' => 'Authentication required'], 401);
+            }
+            
+            Log::info('Getting online users', ['room' => $room->slug, 'user' => $user->username]);
+            
+            // Auto-join user to room if not already joined
+            $this->joinUserToRoom($room, $user);
+            
+            $users = $room->users()
+                         ->wherePivot('last_seen_at', '>', now()->subMinutes(15))
+                         ->orderByPivot('last_seen_at', 'desc')
+                         ->get()
+                         ->map(function ($roomUser) {
+                             return [
+                                 'id' => $roomUser->id,
+                                 'display_name' => $roomUser->pivot->display_name ?? ($roomUser->username . ' !' . substr(hash('sha256', $roomUser->address), 0, 6)),
+                                 'username' => $roomUser->username ?? 'Anonymous',
+                                 'last_seen' => $roomUser->pivot->last_seen_at ? $roomUser->pivot->last_seen_at->diffForHumans() : 'just now',
+                             ];
+                         });
+            
+            Log::info('Found users', ['count' => $users->count()]);
+            
+            return response()->json([
+                'success' => true,
+                'users' => $users,
+                'debug' => [
+                    'room_id' => $room->id,
+                    'current_user' => $user->username,
+                    'total_room_users' => $room->users()->count(),
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting online users', [
+                'room' => $room->slug ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false, 
+                'error' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -585,54 +641,51 @@ class ChatController extends Controller
             return response()->json(['success' => false, 'error' => 'Authentication required'], 401);
         }
         
-        $validated = $request->validate([
-            'command' => 'required|string|max:100',
-        ]);
-        
-        $command = trim($validated['command']);
+        // Handle both 'command' field (from JavaScript) and 'message' field (from sendMessage)
+        $command = null;
+        if ($request->has('command')) {
+            $validated = $request->validate(['command' => 'required|string|max:500']);
+            $command = trim($validated['command']);
+        } elseif ($request->has('message')) {
+            $validated = $request->validate(['message' => 'required|string|max:500']);
+            $command = trim($validated['message']);
+        } else {
+            return response()->json(['success' => false, 'error' => 'No command provided'], 400);
+        }
         
         // Parse /join #roomname command
         if (preg_match('/^\/join #(\w+)$/', $command, $matches)) {
-            $roomSlug = $matches[1];
-            
-            // Special handling for secret admin room
-            if ($roomSlug === 'sadmin') {
-                $adminRoom = ChatRoom::where('slug', 'sadmin')->first();
-                
-                if ($adminRoom && $user->total_pow_points >= 1000) {
-                    $this->joinUserToRoom($adminRoom, $user);
-                    return response()->json([
-                        'success' => true,
-                        'action' => 'redirect',
-                        'url' => route('chat.room', ['room' => $adminRoom])
-                    ]);
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Access denied. Insufficient privileges.'
-                    ]);
-                }
-            }
-            
-            // Regular room join
-            $targetRoom = ChatRoom::where('slug', $roomSlug)
-                                 ->where('is_public', true)
-                                 ->where('is_active', true)
-                                 ->first();
-                                 
-            if ($targetRoom) {
-                $this->joinUserToRoom($targetRoom, $user);
-                return response()->json([
-                    'success' => true,
-                    'action' => 'redirect',
-                    'url' => route('chat.room', ['room' => $targetRoom])
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Room "' . $roomSlug . '" not found or private'
-                ]);
-            }
+            return $this->handleJoinCommand($matches[1], $user);
+        }
+        
+        // Parse /create #roomname [description] command
+        if (preg_match('/^\/create #(\w+)(?:\s+(.+))?$/', $command, $matches)) {
+            return $this->handleCreateCommand($matches[1], $matches[2] ?? '', $user);
+        }
+        
+        // Parse /register #roomname [min_points] command 
+        if (preg_match('/^\/register #(\w+)(?:\s+(\d+))?$/', $command, $matches)) {
+            return $this->handleRegisterCommand($matches[1], intval($matches[2] ?? 100), $user);
+        }
+        
+        // Parse /list command
+        if (preg_match('/^\/list$/', $command)) {
+            return $this->handleListCommand();
+        }
+        
+        // Parse /msg nameserv register username command
+        if (preg_match('/^\/msg nameserv register (\w+)$/', $command, $matches)) {
+            return $this->handleNameservRegister($matches[1], $user);
+        }
+        
+        // Parse /msg nameserv identify username command
+        if (preg_match('/^\/msg nameserv identify (\w+)$/', $command, $matches)) {
+            return $this->handleNameservIdentify($matches[1], $user);
+        }
+        
+        // Parse /mine #roomname command
+        if (preg_match('/^\/mine #(\w+)$/', $command, $matches)) {
+            return $this->handleMineChannel($matches[1], $user);
         }
         
         // /hp command (show total site hashpower)
@@ -756,5 +809,244 @@ class ChatController extends Controller
         if ($points >= 500) return 'Novice 🌱';
         if ($points >= 100) return 'Beginner 🔨';
         return 'Newcomer 👋';
+    }
+    
+    /**
+     * Handle /join #roomname command
+     */
+    private function handleJoinCommand(string $roomSlug, $user)
+    {
+        // Special handling for secret admin room
+        if ($roomSlug === 'sadmin') {
+            $adminRoom = ChatRoom::where('slug', 'sadmin')->first();
+            
+            if ($adminRoom && $user->total_pow_points >= 1000) {
+                $this->joinUserToRoom($adminRoom, $user);
+                return response()->json([
+                    'success' => true,
+                    'action' => 'redirect',
+                    'url' => route('chat.room', ['room' => $adminRoom])
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Access denied. Insufficient privileges.'
+                ]);
+            }
+        }
+        
+        // Find or create room
+        $targetRoom = ChatRoom::where('slug', $roomSlug)->first();
+        
+        if (!$targetRoom) {
+            // Auto-create public rooms when joined
+            $targetRoom = ChatRoom::create([
+                'slug' => $roomSlug,
+                'name' => ucfirst($roomSlug),
+                'description' => 'Auto-created channel',
+                'pow_difficulty' => '21e8',
+                'min_pow_points' => 0,
+                'is_active' => true,
+                'is_public' => true,
+                'max_users' => 100,
+                'message_rate_limit' => 60,
+                'owner_id' => null // No owner for auto-created rooms
+            ]);
+        }
+        
+        // Check if user meets requirements
+        if ($targetRoom->min_pow_points > 0 && $user->total_pow_points < $targetRoom->min_pow_points) {
+            return response()->json([
+                'success' => false,
+                'error' => "Channel #{$roomSlug} requires {$targetRoom->min_pow_points} PoW points. You have {$user->total_pow_points}."
+            ]);
+        }
+        
+        $this->joinUserToRoom($targetRoom, $user);
+        return response()->json([
+            'success' => true,
+            'action' => 'redirect',
+            'url' => route('chat.room', ['room' => $targetRoom])
+        ]);
+    }
+    
+    /**
+     * Handle /create #roomname [description] command
+     */
+    private function handleCreateCommand(string $roomSlug, string $description, $user)
+    {
+        // Check if room already exists
+        if (ChatRoom::where('slug', $roomSlug)->exists()) {
+            return response()->json([
+                'success' => false,
+                'error' => "Channel #{$roomSlug} already exists"
+            ]);
+        }
+        
+        // Create new room
+        $room = ChatRoom::create([
+            'slug' => $roomSlug,
+            'name' => ucfirst($roomSlug),
+            'description' => $description ?: "Created by {$user->username}",
+            'pow_difficulty' => '21e8',
+            'min_pow_points' => 0,
+            'is_active' => true,
+            'is_public' => true,
+            'max_users' => 100,
+            'message_rate_limit' => 60,
+            'owner_id' => $user->id
+        ]);
+        
+        $this->joinUserToRoom($room, $user);
+        
+        return response()->json([
+            'success' => true,
+            'action' => 'system_message',
+            'message' => "✅ Channel #{$roomSlug} created successfully! You are now the owner.",
+            'redirect_url' => route('chat.room', ['room' => $room])
+        ]);
+    }
+    
+    /**
+     * Handle /register #roomname [min_points] command
+     */
+    private function handleRegisterCommand(string $roomSlug, int $minPoints, $user)
+    {
+        $room = ChatRoom::where('slug', $roomSlug)->first();
+        
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'error' => "Channel #{$roomSlug} does not exist"
+            ]);
+        }
+        
+        // Only owners or users with 1000+ points can register channels
+        if ($room->owner_id !== $user->id && $user->total_pow_points < 1000) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Only channel owners or users with 1000+ PoW points can register channels'
+            ]);
+        }
+        
+        // Update room registration
+        $room->update([
+            'owner_id' => $user->id,
+            'min_pow_points' => $minPoints,
+            'is_registered' => true,
+            'registered_at' => now()
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'action' => 'system_message',
+            'message' => "✅ Channel #{$roomSlug} registered successfully! Min PoW points: {$minPoints}"
+        ]);
+    }
+    
+    /**
+     * Handle /list command
+     */
+    private function handleListCommand()
+    {
+        $rooms = ChatRoom::where('is_active', true)
+            ->where('is_public', true)
+            ->withCount('users')
+            ->orderBy('users_count', 'desc')
+            ->take(20)
+            ->get();
+        
+        $list = $rooms->map(function($room) {
+            $status = $room->is_registered ? '🔒' : '🌐';
+            $users = $room->users_count;
+            $points = $room->min_pow_points > 0 ? " ({$room->min_pow_points}+ pts)" : '';
+            return "#{$room->slug} [{$users}]{$points} {$status} {$room->description}";
+        });
+        
+        $message = "📋 **Public Channels:**\n" . $list->join("\n");
+        if ($list->isEmpty()) {
+            $message = "📋 No public channels found. Use /create #channelname to create one!";
+        }
+        
+        return response()->json([
+            'success' => true,
+            'action' => 'system_message',
+            'message' => $message
+        ]);
+    }
+    
+    /**
+     * Handle nameserv nickname registration
+     */
+    private function handleNameservRegister(string $nickname, $user)
+    {
+        // Check if nickname is already taken
+        $existing = \App\Models\BitcoinAuth::where('username', $nickname)->first();
+        if ($existing && $existing->id !== $user->id) {
+            return response()->json([
+                'success' => true,
+                'action' => 'system_message', 
+                'message' => "🤖 <NameServ> Nickname '{$nickname}' is already registered to another user."
+            ]);
+        }
+        
+        // Register/update nickname
+        $user->update(['username' => $nickname]);
+        
+        return response()->json([
+            'success' => true,
+            'action' => 'system_message',
+            'message' => "🤖 <NameServ> Nickname '{$nickname}' has been registered to your Bitcoin address. Your tripcode is !" . substr(hash('sha256', $user->address), 0, 6)
+        ]);
+    }
+    
+    /**
+     * Handle nameserv nickname identification
+     */
+    private function handleNameservIdentify(string $nickname, $user)
+    {
+        if ($user->username === $nickname) {
+            return response()->json([
+                'success' => true,
+                'action' => 'system_message',
+                'message' => "🤖 <NameServ> You are now identified as {$nickname}. Tripcode: !" . substr(hash('sha256', $user->address), 0, 6)
+            ]);
+        } else {
+            return response()->json([
+                'success' => true,
+                'action' => 'system_message',
+                'message' => "🤖 <NameServ> Invalid identification for '{$nickname}'. Use your registered nickname."
+            ]);
+        }
+    }
+    
+    /**
+     * Handle channel mining
+     */
+    private function handleMineChannel(string $roomSlug, $user)
+    {
+        $room = ChatRoom::where('slug', $roomSlug)->first();
+        
+        if (!$room) {
+            return response()->json([
+                'success' => false,
+                'error' => "Channel #{$roomSlug} does not exist"
+            ]);
+        }
+        
+        // Start mining the channel name
+        return response()->json([
+            'success' => true,
+            'action' => 'start_mining',
+            'target' => [
+                'type' => 'channel',
+                'slug' => $roomSlug,
+                'name' => $room->name,
+                'difficulty' => $room->pow_difficulty,
+                'reward' => 'Channel ownership/points'
+            ],
+            'difficulty' => $room->pow_difficulty,
+            'message' => "⛏️ Mining channel #{$roomSlug} with difficulty {$room->pow_difficulty}..."
+        ]);
     }
 }

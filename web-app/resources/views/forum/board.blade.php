@@ -207,7 +207,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Function to update board point displays
 async function updateBoardPoints() {
-    console.log('🔄 Board: Updating point displays...');
     try {
         const response = await fetch('/api/boards/{{ $board->code }}/thread-order');
         const data = await response.json();

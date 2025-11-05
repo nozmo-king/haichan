@@ -30,9 +30,10 @@ class ShopController extends Controller
                 ->toArray();
         }
 
-        return view('shop', [
+        return view('shop.index', [
             'user' => $user,
             'items' => $items,
+            'shopItems' => $this->formatItemsForView($items),
             'userPurchases' => $userPurchases,
         ]);
     }
@@ -168,5 +169,25 @@ class ShopController extends Controller
                 break;
             // Add more item type handlers as needed
         }
+    }
+    
+    private function formatItemsForView($items)
+    {
+        $formatted = [];
+        
+        foreach ($items as $item) {
+            $formatted[$item->id] = [
+                'name' => $item->name,
+                'description' => $item->description,
+                'cost' => $item->price,
+                'icon' => $item->icon ?? '🛒',
+                'category' => $item->category ?? 'utility',
+                'type' => $item->type,
+                'available' => $item->isAvailable(),
+                'level_required' => $item->level_required ?? 0,
+            ];
+        }
+        
+        return $formatted;
     }
 }

@@ -542,21 +542,109 @@ class PersistentChat {
         }
     }
     
-    sendMessage() {
+    async sendMessage() {
         const messageInput = this.element.querySelector('#chat-message-input');
         const message = messageInput.value.trim();
-        const nickname = localStorage.getItem('haichan_chat_nickname') || 'Anonymous';
         
-        if (message && message.length > 0) {
-            this.addMessage(nickname, message, 'user');
-            messageInput.value = '';
-            
-            // In a real implementation, this would send to the server
-            // For now, simulate an echo response
-            setTimeout(() => {
-                this.addMessage('System', `Echo: ${message}`, 'system');
-            }, 1000);
+        if (!message || message.length === 0) {
+            return;
         }
+        
+        // Clear input immediately 
+        messageInput.value = '';
+        
+        try {
+            // Get PoW challenge for chat message
+            const powResult = await this.mineMessage(message);
+            if (!powResult.valid) {
+                this.addSystemMessage('❌ Mining failed - message not sent');
+                return;
+            }
+            
+            // Send to server with PoW
+            const response = await fetch('/chat/general', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    message: message,
+                    pow_nonce: powResult.nonce,
+                    pow_hash: powResult.hash,
+                    pow_challenge_id: powResult.challengeId
+                })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                this.addSystemMessage(`❌ Error: ${error.error || 'Failed to send message'}`);
+                return;
+            }
+            
+            const result = await response.json();
+            if (result.success) {
+                // Message will appear via polling, no need to add locally
+                this.addSystemMessage(`✓ Message sent (${powResult.hash.substring(0,8)}...)`);
+            }
+            
+        } catch (error) {
+            console.error('Chat send error:', error);
+            this.addSystemMessage('❌ Network error - message not sent');
+        }
+    }
+    
+    async mineMessage(message) {
+        // Simple PoW implementation for chat
+        const target = '21e8'; // Chat difficulty
+        let nonce = 0;
+        let hash = '';
+        let challengeId = 'chat_' + Date.now() + '_' + Math.random();
+        
+        this.addSystemMessage('⛏️ Mining message...');
+        
+        return new Promise((resolve) => {
+            const startTime = Date.now();
+            
+            const mine = () => {
+                for (let i = 0; i < 10000; i++) {
+                    nonce++;
+                    const data = message + nonce + challengeId;
+                    hash = this.sha256(data);
+                    
+                    if (hash.startsWith(target)) {
+                        const elapsed = Date.now() - startTime;
+                        this.addSystemMessage(`⚡ Found solution in ${elapsed}ms (nonce: ${nonce})`);
+                        resolve({
+                            valid: true,
+                            nonce: nonce.toString(),
+                            hash: hash,
+                            challengeId: challengeId
+                        });
+                        return;
+                    }
+                }
+                
+                // Continue mining in next tick
+                setTimeout(mine, 0);
+            };
+            
+            mine();
+        });
+    }
+    
+    sha256(text) {
+        // Simple hash for demo - in production use crypto.subtle.digest
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+            const char = text.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return Math.abs(hash).toString(16).padStart(8, '0');
     }
     
     addMessage(author, content, type = 'user') {
@@ -625,13 +713,13 @@ class PersistentChat {
 }
 
 // Initialize when DOM is ready
-// if (document.readyState === 'loading') {
-//     document.addEventListener('DOMContentLoaded', () => {
-//         window.HaichanChat = new PersistentChat();
-//     });
-// } else {
-//     window.HaichanChat = new PersistentChat();
-// }
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.HaichanChat = new PersistentChat();
+    });
+} else {
+    window.HaichanChat = new PersistentChat();
+}
 
 // Export for modules
 if (typeof module !== 'undefined' && module.exports) {

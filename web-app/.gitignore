@@ -46,3 +46,8 @@ Cargo.lock
 *.tmp
 *.temp
 /tmp/
+
+# Serpiente game files
+/serpiente/
+/public/serpiente-assets/
+/resources/views/serpiente/

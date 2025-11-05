@@ -259,6 +259,28 @@ textarea {
 *[data-quote="true"] {
     color: var(--ib-quote) !important;
     font-style: italic;
+    display: block;
+    margin: 2px 0;
+    line-height: 1.4;
+}
+
+.greentext.implying {
+    color: #789922 !important;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Quote links */
+.quote-link {
+    color: #d00 !important;
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.quote-link:hover {
+    text-decoration: underline;
+    color: #f00 !important;
 }
 
 /* Post numbers and IDs */

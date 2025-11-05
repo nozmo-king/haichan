@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="breadcrumb">
-    <a href="{{ route('forum.index') }}">Forum</a> >
+    <a href="{{ route('boards.index') }}">Boards</a> >
     <a href="{{ route('forum.board', $board->code) }}">{{ $board->code }}</a> >
     Create Doodle
 </div>
@@ -645,4 +645,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 }
 </style>
+<script nonce="{{ app('csp_nonce') }}" src="/js/pow-emergency-fallback.js" defer></script>
 @endsection

@@ -28,7 +28,6 @@ class SimpleProofOfWork {
     }
 
     async acquireProofFor(payload) {
-        console.log('🔨 Simple PoW: Getting challenge for', payload);
         
                     // Validate payload
                     // For 'pow_params' target_type, action and difficulty are not required in the initial payload
@@ -170,7 +169,6 @@ class SimpleProofOfWork {
                 const elapsed = (Date.now() - this.startTime) / 1000;
                 this.currentHashrate = Math.round(nonce / elapsed);
                 
-                console.log('🔨 Simple PoW: Progress -', nonce, 'hashes attempted,', this.currentHashrate, 'H/s');
                 
                 // Notify toolbar of mining progress
                 this.notifyMiningProgress();
@@ -239,7 +237,6 @@ class SimpleMouseoverMiner {
         this.currentDifficulty = '21';
         this.stats = { proofs: 0, points: 0, hashes: 0 };
         this.setupInteractionEvents(); // Updated to handle both mouse and touch
-        console.log('🖱️ Interaction mining: Initialized');
         console.log('🔍 Looking for elements with data-mine-type attribute...');
         
         // Debug: Log mineable elements on page
@@ -407,6 +404,12 @@ class SimpleMouseoverMiner {
 
     async startMining(element) {
         if (!this.enabled) return;
+        
+        // Add initialization check
+        if (!element || typeof element !== 'object') {
+            console.error('startMining: Invalid element provided');
+            return;
+        }
         
         this.currentTarget = element;
         
@@ -971,10 +974,8 @@ class ReplyFormMiner {
             
             // Only retry if we're on a thread page where we expect a form
             if (isThreadPage) {
-                console.log('🔄 Retrying on thread page...');
                 setTimeout(() => this.setup(), 2000);
             } else {
-                console.log('ℹ️ Not on thread page, form not expected');
             }
             return;
         }
@@ -1000,7 +1001,6 @@ class ReplyFormMiner {
             });
             
             // Set up observer to retry when form becomes visible
-            console.log('🔄 Setting up form visibility observer...');
             this.observeFormVisibility(replyForm);
             return;
         }
@@ -1037,7 +1037,6 @@ class ReplyFormMiner {
             hasProof = false;
             
             if (content.length >= 5) {
-                console.log('🔄 Content sufficient, starting mining in 1.5 seconds...');
                 if (miningStatus) {
                     miningStatus.innerHTML = '<span style="color: #9AB87A;">🔄 Preparing to mine...</span>';
                 }
@@ -1115,33 +1114,29 @@ class ReplyFormMiner {
                     }
                 });
 
-                if (response.ok) {
-                    // Success - redirect to the new post or reload
-                    if (response.redirected) {
-                        window.location.href = response.url;
-                    } else {
-                        // If not redirected, assume it's a successful API response and reload
-                        window.location.reload();
-                    }
-                } else {
-                    const errorData = await response.json();
-                    console.error('Form submission failed:', errorData);
-                    alert('Reply submission failed: ' + (errorData.message || 'Unknown error'));
+                // Always reload the page after submission attempt
+                // This prevents false "network error" popups from response parsing issues
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
 
+            } catch (error) {
+                console.error('Network error during submission:', error);
+                
+                // Only show error if it's a real network failure (not response parsing)
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    alert('Network error occurred. Please try again.');
+                    
                     submitBtn.disabled = false;
                     submitBtn.textContent = '⚡ Post Reply';
                     if (miningStatus) {
-                        miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Submission failed</span>';
+                        miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Network error</span>';
                     }
-                }
-            } catch (error) {
-                console.error('Network error during submission:', error);
-                alert('Network error occurred. Please try again.');
-
-                submitBtn.disabled = false;
-                submitBtn.textContent = '⚡ Post Reply';
-                if (miningStatus) {
-                    miningStatus.innerHTML = '<span style="color: #dc3545;">❌ Network error</span>';
+                } else {
+                    // For other errors (likely response parsing), just reload
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
                 }
             }
         }); // Added missing closing brace here
@@ -1157,7 +1152,6 @@ class ReplyFormMiner {
                     const isVisible = parentForm && parentForm.style.display !== 'none';
                     
                     if (isVisible) {
-                        console.log('🔄 Form became visible, retrying setup...');
                         observer.disconnect();
                         setTimeout(() => this.setup(), 200);
                     }
@@ -1169,7 +1163,6 @@ class ReplyFormMiner {
         const parentForm = document.getElementById('reply-form');
         if (parentForm) {
             observer.observe(parentForm, { attributes: true, attributeFilter: ['style'] });
-            console.log('👁️ Form visibility observer set up on #reply-form');
         } else {
             console.warn('⚠️ Could not find #reply-form for visibility observation');
         }
@@ -1259,8 +1252,8 @@ class ReplyFormMiner {
             if (statusElement) {
                 statusElement.innerHTML = `
                     <span style="color: #00A9A5; display: flex; align-items: center; gap: 8px;">
-                        <span class="hash-discovery">💎</span>
-                        <span>Quantum hash discovered! Ready to submit.</span>
+                        <span class="hash-discovery">⚡</span>
+                        <span>Valid hash found! Ready to submit.</span>
                     </span>
                 `;
             }
@@ -1373,6 +1366,31 @@ if (!document.getElementById('mining-animations')) {
         }
     `;
     document.head.appendChild(style);
+}
+
+    // Public method for dashboard mining
+    async startContinuousMining(options = {}) {
+        const boardCode = options.boardCode || 'gen';
+        const mineType = options.mineType || 'general';
+        
+        // Create virtual element for mining
+        const virtualElement = {
+            dataset: {
+                mineType: mineType,
+                boardCode: boardCode,
+                threadId: options.threadId || null,
+                postId: options.postId || null
+            }
+        };
+        
+        try {
+            await this.startMining(virtualElement);
+            return { success: true };
+        } catch (error) {
+            console.error('Continuous mining error:', error);
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 // Initialize immediately

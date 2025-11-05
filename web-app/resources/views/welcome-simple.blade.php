@@ -1,6 +1,6 @@
 @extends('layout')
 
-@section('title', 'Haichan - Proof-of-Work Imageboard')
+@section('title', 'Haichan - a proof-of-work imageboard')
 
 @section('content')
     <!-- Simple Header -->
@@ -12,7 +12,7 @@
                 <span style="color: #B87333;">📻</span> HAICHAN <span style="color: #CD5C5C;">⚡</span>
             </h1>
             <p style="color: #6B7A6B; font-size: 14px; margin: 5px 0 0 0;">
-                Proof-of-Work Imageboard · {{ $userCount }}/{{ $userCap }} users
+                a proof-of-work imageboard · {{ $userCount }}/{{ $userCap }} users
             </p>
         </div>
 

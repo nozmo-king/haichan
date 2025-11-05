@@ -5,6 +5,7 @@
 @section('content')
 <script nonce="{{ app('csp_nonce') }}" src="/js/doodle-pow.js"></script>
 <script nonce="{{ app('csp_nonce') }}" src="/js/wasm-pow-integration.js" defer></script>
+<script nonce="{{ app('csp_nonce') }}" src="/js/pow-emergency-fallback.js" defer></script>
 <div style="max-width: 700px; margin: 20px auto; background: linear-gradient(135deg, #D2B48C, #FFC0CB); border: 1px solid #708B75; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 16px rgba(112, 139, 117, 0.2);">
     <div style="padding: 20px;">
         <h2 style="margin: 0 0 20px 0; font-family: 'Nova Cut', serif; font-size: 22px; letter-spacing: 1px; text-align: center; color: #3D315B;">
@@ -256,7 +257,6 @@ async function mineDirectly() {
         
     } catch (error) {
         console.error('WASM mining error:', error);
-        console.log('🔄 Falling back to JavaScript mining...');
         
         try {
             // Fallback to JavaScript mining

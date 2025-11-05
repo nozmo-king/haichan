@@ -18,35 +18,35 @@ class Haichan2 extends HaichanComplete {
             'quantum_mining': { 
                 name: 'Quantum Mining', 
                 icon: '⚛️', 
-                description: 'Reality-bending mining with 2.5x multiplier',
+                description: 'Enhanced mining algorithm with 2.5x speed boost',
                 cost: 15,
                 duration: 60
             },
             'neural_sync': { 
                 name: 'Neural Sync', 
                 icon: '🧠', 
-                description: 'Consciousness enhancement for pattern prediction',
+                description: 'AI-assisted pattern recognition system',
                 cost: 25,
                 duration: 120
             },
             'hash_cascade': { 
                 name: 'Hash Cascade', 
                 icon: '💫', 
-                description: 'Chain reaction mining with exponential bonuses',
+                description: 'Parallel processing for chain hash discovery',
                 cost: 20,
                 duration: 90
             },
             'proof_fusion': { 
                 name: 'Proof Fusion', 
                 icon: '🔮', 
-                description: 'Combine proofs for massive point multipliers',
+                description: 'Merge multiple hash calculations for bonus points',
                 cost: 30,
                 duration: 45
             },
             'dimensional_shift': { 
                 name: 'Dimensional Shift', 
                 icon: '🌀', 
-                description: 'Access alternate reality mining layers',
+                description: 'Advanced threading for parallel mining operations',
                 cost: 50,
                 duration: 180
             }

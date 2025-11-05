@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Personal21e8Achievement;
 
 class ChatRoom extends Model
 {
@@ -13,7 +14,7 @@ class ChatRoom extends Model
 
     protected $fillable = [
         'name',
-        'slug',
+        'slug', 
         'description',
         'pow_difficulty',
         'min_pow_points',
@@ -22,12 +23,17 @@ class ChatRoom extends Model
         'max_users',
         'message_rate_limit',
         'moderators',
+        'owner_id',
+        'is_registered',
+        'registered_at',
     ];
 
     protected $casts = [
         'moderators' => 'array',
         'is_active' => 'boolean',
         'is_public' => 'boolean',
+        'is_registered' => 'boolean',
+        'registered_at' => 'datetime',
     ];
 
     /**
@@ -48,6 +54,11 @@ class ChatRoom extends Model
         return $this->hasMany(ChatMessage::class);
     }
 
+    public function owner()
+    {
+        return $this->belongsTo(BitcoinAuth::class, 'owner_id');
+    }
+    
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(BitcoinAuth::class, 'chat_room_users', 'chat_room_id', 'user_id')
@@ -62,6 +73,66 @@ class ChatRoom extends Model
                         'permissions'
                     ])
                     ->withTimestamps();
+    }
+    
+    public function getUserDisplayName($user)
+    {
+        $roomUser = $this->users()->where('user_id', $user->id)->first();
+        
+        if ($roomUser && $roomUser->pivot && $roomUser->pivot->display_name) {
+            return $roomUser->pivot->display_name;
+        }
+        
+        // Generate display name with 21e8 diamond and tripcode
+        $username = $user->username ?: 'Anon';
+        $tripcode = '!' . substr(hash('sha256', $user->address), 0, 6);
+        
+        // Add 21e8 diamond based on user's highest achievement
+        $diamond = $this->get21e8Diamond($user);
+        
+        return $diamond . $username . ' ' . $tripcode;
+    }
+    
+    public function get21e8Diamond($user)
+    {
+        // Get highest 21e8 achievement level
+        $achievements = Personal21e8Achievement::where('user_id', $user->id)
+            ->orderBy('found_at', 'desc')
+            ->get();
+            
+        if ($achievements->isEmpty()) {
+            return ''; // No diamond
+        }
+        
+        // Find highest level achievement
+        $levels = Personal21e8Achievement::getLevels();
+        $levelOrder = array_keys($levels);
+        
+        $highestLevel = null;
+        $highestIndex = -1;
+        
+        foreach ($achievements as $achievement) {
+            $index = array_search($achievement->level, $levelOrder);
+            if ($index !== false && $index > $highestIndex) {
+                $highestIndex = $index;
+                $highestLevel = $achievement->level;
+            }
+        }
+        
+        // Map levels to diamond symbols
+        $diamonds = [
+            '21e8' => '💎',           // Basic diamond  
+            '21e80' => '💠',          // Diamond with dot
+            '21e800' => '🔷',         // Blue diamond
+            '21e8000' => '🔶',        // Orange diamond
+            '21e80000' => '♦️',       // Diamond suit
+            '21e800000' => '🏆',      // Trophy
+            '21e8000000' => '👑',     // Crown
+            '21e80000000' => '⭐',    // Star
+            '21e800000000' => '🌟',   // Glowing star
+        ];
+        
+        return isset($diamonds[$highestLevel]) ? $diamonds[$highestLevel] . ' ' : '';
     }
 
     public function activeUsers(): BelongsToMany

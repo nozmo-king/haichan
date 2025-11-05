@@ -54,7 +54,6 @@ class WasmPowMiner {
                 }
             };
 
-            console.log('⛏️ Starting WASM mining for thread...', canonParams);
 
             // Get canonical bytes from server API
             const challengeResponse = await this.getChallengeFromServer('thread', canonParams);
@@ -107,7 +106,6 @@ class WasmPowMiner {
                 }
             };
 
-            console.log('⛏️ Starting WASM mining for reply...', canonParams);
 
             const challengeResponse = await this.getChallengeFromServer('reply', canonParams);
             const challengeBytes = this.hexToBytes(challengeResponse.canonical_bytes);
@@ -295,7 +293,6 @@ class WasmIntegratedMiner {
         }
 
         // Fallback to JavaScript mining
-        console.log('⚠️ Using fallback JS miner...');
         
         // Ensure fallback miner is available
         if (!this.fallbackMiner) {

@@ -38,6 +38,14 @@ class PersistentToolbar {
         try {
             this.init();
             this.checkForPointsUpdate();
+            
+            // Initialize theme from storage after toolbar is created
+            setTimeout(() => {
+                if (this.nightDayToggle) {
+                    this.initializeThemeFromStorage();
+                }
+            }, 100);
+            
             console.log('✅ PersistentToolbar constructor completed successfully');
         } catch (error) {
             console.error('❌ Error in PersistentToolbar constructor:', error);
@@ -54,12 +62,10 @@ class PersistentToolbar {
     }
     
     createToolbar() {
-        console.log('🏗️ Creating toolbar element...');
         
         // Remove existing toolbar if present
         const existing = document.getElementById('haichan-persistent-toolbar');
         if (existing) {
-            console.log('♻️ Removing existing toolbar');
             existing.remove();
         }
         
@@ -95,6 +101,9 @@ class PersistentToolbar {
                 <button class="toolbar-btn mini-dash-toggle" title="Toggle Mining Dashboard">
                     📊
                 </button>
+                <button class="toolbar-btn night-day-toggle" title="Toggle Night/Day Mode">
+                    🌙
+                </button>
                 <button class="toolbar-btn anonymous-toggle" title="Toggle Anonymous Mode">
                     🎭
                 </button>
@@ -106,6 +115,7 @@ class PersistentToolbar {
         
         // Cache button references
         this.chatButton = this.element.querySelector('.chat-toggle');
+        this.nightDayToggle = this.element.querySelector('.night-day-toggle');
         this.anonymousToggle = this.element.querySelector('.anonymous-toggle');
         this.usernameElement = this.element.querySelector('#toolbar-username');
         this.diamondElement = this.element.querySelector('#toolbar-diamond');
@@ -113,6 +123,7 @@ class PersistentToolbar {
         
         console.log('🔍 Cached toolbar element references:', {
             chatButton: !!this.chatButton,
+            nightDayToggle: !!this.nightDayToggle,
             anonymousToggle: !!this.anonymousToggle,
             usernameElement: !!this.usernameElement,
             diamondElement: !!this.diamondElement,
@@ -190,14 +201,18 @@ class PersistentToolbar {
                 left: 0;
                 right: 0;
                 height: 48px;
-                background: #F5F5DC;
+                background: var(--primary-bg);
                 background-image: 
                     repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
                     repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(0,0,0,.04) 1px, rgba(0,0,0,.04) 2px),
                     repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
                     repeating-linear-gradient(135deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
                     url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
-                border-top: 2px solid #708B75;
+                border-top: 1px solid var(--border-color);
+                box-shadow: 
+                    0 -2px 4px rgba(0, 255, 159, 0.2),
+                    inset 0 1px 2px rgba(0, 255, 159, 0.1),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -637,10 +652,8 @@ class PersistentToolbar {
         // Edit profile button
         const editBtn = this.element.querySelector('.edit-profile');
         if (editBtn) {
-            console.log('✏️ Binding edit profile button event');
             editBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                console.log('✏️ Edit profile clicked');
                 window.location.href = '/user/profile/edit';
             });
         } else {
@@ -682,6 +695,18 @@ class PersistentToolbar {
             });
         } else {
             console.warn('⚠️ Mini dashboard button not found');
+        }
+        
+        // Night/Day mode toggle
+        if (this.nightDayToggle) {
+            console.log('🌙 Binding night/day toggle button event');
+            this.nightDayToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('🌙 Night/Day mode toggle clicked');
+                this.toggleNightDayMode();
+            });
+        } else {
+            console.warn('⚠️ Night/Day toggle button not found');
         }
         
         // Anonymous mode toggle
@@ -739,12 +764,10 @@ class PersistentToolbar {
         
         // Listen for mining progress events from SimplePow
         window.addEventListener('mining:progress', (event) => {
-            console.log('⛏️ Mining progress event:', event.detail);
             this.updateDisplay();
         });
         
         window.addEventListener('mining:complete', (event) => {
-            console.log('⛏️ Mining complete event:', event.detail);
             this.updateDisplay();
             
             // Refresh user data to get updated points
@@ -778,7 +801,6 @@ class PersistentToolbar {
         
         // Refresh user data every 30 seconds
         setInterval(() => {
-            console.log('🔄 Refreshing user data (30s interval)');
             this.loadUserData();
         }, 30000);
         
@@ -790,11 +812,6 @@ class PersistentToolbar {
         const chat = this.state.getState('chat') || {};
         const ui = this.state.getState('ui') || {};
         
-        console.log('🔄 Updating toolbar display', {
-            mining: mining,
-            chat: chat,
-            ui: ui
-        });
         
         // Update mining display
         const hashesEl = this.element.querySelector('.mining-hashes');
@@ -804,7 +821,6 @@ class PersistentToolbar {
                 ? `Hashes: ${mining.hashrate || 0} H/s` 
                 : 'Hashes: 0 H/s';
                 
-            console.log('⛏️ Setting hash display:', hashText);
             hashesEl.textContent = hashText;
         } else {
             console.warn('⚠️ .mining-hashes element not found');
@@ -842,14 +858,7 @@ class PersistentToolbar {
             totalHashes = window.simplePoW.totalHashes || 0;
             isActive = window.simplePoW.isMining || false;
             
-            console.log('⛏️ SimplePow state:', {
-                hashrate: totalHashrate,
-                totalHashes: totalHashes,
-                isActive: isActive,
-                sessionProofs: window.simplePoW.miningStats?.sessionProofs || 0
-            });
         } else {
-            console.log('⛏️ SimplePow not available');
         }
         
         // Update global state
@@ -1092,7 +1101,7 @@ class PersistentToolbar {
             }
             
             .thread-item {
-                padding: 8px 0;
+                padding: 10px 0;
                 border-bottom: 1px solid var(--border-subtle);
                 font-size: 12px;
             }
@@ -1101,20 +1110,66 @@ class PersistentToolbar {
                 border-bottom: none;
             }
             
+            .thread-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 8px;
+                margin-bottom: 4px;
+            }
+            
             .thread-title {
                 font-weight: 600;
                 color: var(--text-primary);
                 text-decoration: none;
+                flex: 1;
+                line-height: 1.3;
             }
             
             .thread-title:hover {
                 color: var(--accent-primary);
             }
             
+            .relation-badge {
+                font-size: 10px;
+                padding: 2px 6px;
+                border-radius: 12px;
+                font-weight: 600;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            
+            .relation-badge.author {
+                background: #e3f2fd;
+                color: #1976d2;
+            }
+            
+            .relation-badge.replied {
+                background: #f3e5f5;
+                color: #7b1fa2;
+            }
+            
+            .relation-badge.activity {
+                background: #fff3e0;
+                color: #f57c00;
+            }
+            
             .thread-meta {
                 color: var(--text-secondary);
                 font-size: 10px;
-                margin-top: 4px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            
+            .board-info {
+                font-weight: 600;
+                color: var(--accent-primary);
+            }
+            
+            .thread-separator {
+                opacity: 0.6;
             }
         `;
         
@@ -1158,16 +1213,40 @@ class PersistentToolbar {
             return;
         }
         
-        const threadItems = threads.map(thread => `
-            <div class="thread-item">
-                <a href="/boards/${thread.board_code}/threads/${thread.id}" class="thread-title">
-                    ${thread.title}
-                </a>
-                <div class="thread-meta">
-                    /${thread.board_code}/ • ${thread.created_at} • ${thread.reply_count} replies
+        const threadItems = threads.map(thread => {
+            // Determine user's relation to the thread based on API response
+            let relationBadge = '';
+            let relationText = '';
+            
+            if (thread.type === 'created') {
+                relationBadge = '<span class="relation-badge author">📝 Created</span>';
+                relationText = 'You created this thread';
+            } else if (thread.type === 'replied') {
+                relationBadge = '<span class="relation-badge replied">💬 Replied</span>';
+                relationText = 'You replied to this thread';
+            } else {
+                relationBadge = '<span class="relation-badge activity">🔥 Activity</span>';
+                relationText = 'Recent activity';
+            }
+            
+            return `
+                <div class="thread-item">
+                    <div class="thread-header">
+                        <a href="/${thread.board_code}/${thread.id}" class="thread-title" title="${relationText}">
+                            ${thread.title || 'Untitled Thread'}
+                        </a>
+                        ${relationBadge}
+                    </div>
+                    <div class="thread-meta">
+                        <span class="board-info">/${thread.board_code}/</span>
+                        <span class="thread-separator">•</span>
+                        <span class="thread-date">${thread.created_at}</span>
+                        <span class="thread-separator">•</span>
+                        <span class="reply-count">${thread.reply_count || 0} replies</span>
+                    </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
         
         container.innerHTML = threadItems;
     }
@@ -1282,6 +1361,73 @@ class PersistentToolbar {
         const metaTag = document.querySelector(`meta[name="flash-${key}"]`);
         if (metaTag) {
             metaTag.remove();
+        }
+    }
+    
+    toggleNightDayMode() {
+        console.log('🌙 Toggling night/day mode');
+        
+        // Check current mode
+        const isCurrentlyNightMode = document.querySelector('link[href*="serpiente.css"]');
+        
+        if (isCurrentlyNightMode) {
+            // Switch to day mode
+            this.enableDayMode();
+            this.nightDayToggle.textContent = '☀️';
+            localStorage.setItem('forcedTheme', 'day');
+        } else {
+            // Switch to night mode
+            this.enableNightMode();
+            this.nightDayToggle.textContent = '🌙';
+            localStorage.setItem('forcedTheme', 'night');
+        }
+    }
+    
+    enableNightMode() {
+        console.log('🌙 Enabling night mode');
+        
+        // Remove existing night mode stylesheets to avoid duplicates
+        const existingSerpiente = document.querySelector('link[href*="serpiente.css"]');
+        const existingOverride = document.querySelector('link[href*="serpiente-override.css"]');
+        
+        if (existingSerpiente) existingSerpiente.remove();
+        if (existingOverride) existingOverride.remove();
+        
+        // Add night mode stylesheets
+        const serpienteLink = document.createElement('link');
+        serpienteLink.rel = 'stylesheet';
+        serpienteLink.href = '/serpiente-assets/serpiente.css';
+        document.head.appendChild(serpienteLink);
+        
+        const overrideLink = document.createElement('link');
+        overrideLink.rel = 'stylesheet';
+        overrideLink.href = '/serpiente-assets/serpiente-override.css';
+        document.head.appendChild(overrideLink);
+    }
+    
+    enableDayMode() {
+        console.log('☀️ Enabling day mode');
+        
+        // Remove night mode stylesheets
+        const serpienteLink = document.querySelector('link[href*="serpiente.css"]');
+        const overrideLink = document.querySelector('link[href*="serpiente-override.css"]');
+        
+        if (serpienteLink) serpienteLink.remove();
+        if (overrideLink) overrideLink.remove();
+    }
+    
+    initializeThemeFromStorage() {
+        const forcedTheme = localStorage.getItem('forcedTheme');
+        if (forcedTheme === 'night') {
+            this.enableNightMode();
+            this.nightDayToggle.textContent = '🌙';
+        } else if (forcedTheme === 'day') {
+            this.enableDayMode();
+            this.nightDayToggle.textContent = '☀️';
+        } else {
+            // Use default based on time or current state
+            const isCurrentlyNightMode = document.querySelector('link[href*="serpiente.css"]');
+            this.nightDayToggle.textContent = isCurrentlyNightMode ? '🌙' : '☀️';
         }
     }
 }

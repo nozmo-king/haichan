@@ -1,6 +1,6 @@
 @extends('layout')
 
-@section('title', 'Haichan - Proof-of-Work Imageboard')
+@section('title', 'Haichan - a proof-of-work imageboard')
 
 @section('content')
     <!-- Compact Header -->

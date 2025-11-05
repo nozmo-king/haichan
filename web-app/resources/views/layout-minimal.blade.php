@@ -41,13 +41,11 @@
                 // Get all emoji elements
                 const allEmojis = document.querySelectorAll('.haichan-animated-header .haichan-emoji');
                 console.log('🎯 Found emojis:', allEmojis.length);
-                console.log('🎯 Emoji elements:', allEmojis);
                 
                 if (allEmojis.length === 6) {
                     // Left side emojis (first 3)
                     for (let i = 0; i < 3; i++) {
                         let emojiIndex = i;
-                        console.log('🟢 Setting up LEFT emoji', i, allEmojis[i].textContent);
                         setInterval(() => {
                             allEmojis[i].textContent = radioEmojis[emojiIndex % radioEmojis.length];
                             emojiIndex++;

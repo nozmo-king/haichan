@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HAICHAN - Proof-of-Work Imageboard</title>
+    <title>HAICHAN - a proof-of-work imageboard</title>
     
     <!-- Main stylesheet -->
     <link rel="stylesheet" href="/css/haichan.css">
@@ -724,7 +724,7 @@
 
         <div class="login-box">
             <h2>⛏️ Welcome to Haichan</h2>
-            <p>Proof-of-Work Imageboard</p>
+            <p>a proof-of-work imageboard</p>
             
             <form action="/login" method="POST" style="margin-bottom: 20px;">
                 @csrf

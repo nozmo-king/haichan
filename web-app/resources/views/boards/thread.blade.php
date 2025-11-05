@@ -248,7 +248,6 @@ function toggleQuickReply() {
         // Ensure mining is initialized when form opens
         if (window.replyFormMiner && window.replyFormMiner.setup) {
             setTimeout(() => {
-                console.log('🔄 Re-initializing mining on form open...');
                 window.replyFormMiner.setup();
             }, 300);
         }
@@ -411,7 +410,6 @@ window.addEventListener('proofSubmitted', function(e) {
 
 // Handle point updates from various events
 function handlePointUpdate(detail) {
-    console.log('🔄 Processing point update:', detail);
     
     // Find the thread point display using the specific ID
     const threadId = {{ $thread->id ?? 0 }};
@@ -472,11 +470,9 @@ function handlePointUpdate(detail) {
     // Only refresh if this is a real mining event, not a test
     if (detail.hash && detail.hash !== 'test123') {
         setTimeout(() => {
-            console.log('🔄 Auto-refreshing after real mining event');
             refreshPointDisplays();
         }, 1000);
     } else {
-        console.log('⏸️ Skipping auto-refresh for test/manual update');
     }
 }
 
@@ -495,14 +491,12 @@ document.addEventListener('DOMContentLoaded', function() {
 // Function to refresh point displays by fetching latest data
 function refreshPointDisplays() {
     if (manualUpdateActive) {
-        console.log('⏸️ Skipping refresh - manual update active');
         return;
     }
     
     const threadId = {{ $thread->id ?? 0 }};
     const boardCode = '{{ $board->code }}';
     
-    console.log('🔄 Refreshing point displays for thread', threadId, 'on board', boardCode);
     
     // Fetch updated thread data
     fetch(`/api/boards/${boardCode}/thread-order`)
@@ -619,7 +613,6 @@ window.testPointUpdate = function() {
 
 // Direct refresh test
 window.testRefresh = function() {
-    console.log('🔄 Testing refresh...');
     refreshPointDisplays();
 };
 
@@ -666,7 +659,6 @@ window.debugPointUpdates = function() {
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                    console.log('🔄 Point display changed:', {
                         oldValue: mutation.oldValue,
                         newValue: threadPointSpan.textContent,
                         timestamp: new Date().toISOString()
@@ -682,12 +674,10 @@ window.debugPointUpdates = function() {
             characterDataOldValue: true
         });
         
-        console.log('👁️ Now watching for point display changes...');
         
         // Stop watching after 30 seconds
         setTimeout(() => {
             observer.disconnect();
-            console.log('⏹️ Stopped watching point changes');
         }, 30000);
     }
 };
@@ -720,14 +710,10 @@ window.monitorPointChanges = function() {
     const threadPointSpan = document.getElementById(`thread-points-${threadId}`);
     
     if (threadPointSpan) {
-        console.log('👁️ Starting point change monitor...');
-        console.log('👁️ Initial value:', threadPointSpan.textContent);
         
         const observer = new MutationObserver(function(mutations) {
             mutations.forEach(function(mutation) {
                 if (mutation.type === 'childList' || mutation.type === 'characterData') {
-                    console.log('🔄 Point display changed to:', threadPointSpan.textContent);
-                    console.log('🔄 Stack trace:', new Error().stack.split('\n').slice(1, 4));
                 }
             });
         });
@@ -742,7 +728,6 @@ window.monitorPointChanges = function() {
         let lastValue = threadPointSpan.innerHTML;
         setInterval(() => {
             if (threadPointSpan.innerHTML !== lastValue) {
-                console.log('🔄 Point innerHTML changed from', lastValue, 'to', threadPointSpan.innerHTML);
                 lastValue = threadPointSpan.innerHTML;
             }
         }, 1000);
@@ -839,4 +824,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 @section('scripts')
 <script nonce="{{ app('csp_nonce') }}" src="{{ asset('build/assets/thread-bumper.js') }}"></script>
+<script nonce="{{ app('csp_nonce') }}" src="/js/pow-emergency-fallback.js" defer></script>
 @endsection

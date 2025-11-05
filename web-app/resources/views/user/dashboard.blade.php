@@ -136,7 +136,7 @@
             </div>
         </div>
         <div>
-            <a href="/" class="action-btn">← Back to Forum</a>
+            <a href="/" class="action-btn">← Back to Boards</a>
             @if($user->is_admin)
                 <a href="/admin" class="action-btn" style="background: #FF6B35;">Admin Panel</a>
             @endif
@@ -306,7 +306,7 @@
             <a href="/catalog" class="action-btn">Browse The MC</a>
             <a href="/library" class="action-btn">Image Library</a>
             @if($user->is_admin)
-                <a href="/admin/forum" class="action-btn" style="background: #FF6B35;">Moderate Forum</a>
+                <a href="/admin/forum" class="action-btn" style="background: #FF6B35;">Moderate Boards</a>
             @endif
         </div>
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Proof-of-Work Imageboard')</title>
+    <title>@yield('title', 'haichan - a proof-of-work imageboard')</title>
     
     <!-- Flash data for points updates -->
     @if(session('points_awarded'))
@@ -22,6 +22,16 @@
     
     <!-- Single unified stylesheet -->
     <link rel="stylesheet" href="/css/haichan.css">
+    <!-- Dynamic theme based on time -->
+    @php
+        $currentHour = now()->format('H');
+        $isNightMode = ($currentHour >= 7 && $currentHour < 22); // 7am-10pm = night mode
+    @endphp
+    @if($isNightMode)
+        <!-- Serpiente night mode override -->
+        <link rel="stylesheet" href="{{ asset('serpiente-assets/serpiente.css') }}">
+        <link rel="stylesheet" href="{{ asset('serpiente-assets/serpiente-override.css') }}">
+    @endif
     <!-- Load fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&family=UnifrakturMaguntia&display=swap" rel="stylesheet">
     
@@ -62,14 +72,12 @@
                 // Get all emoji elements
                 const allEmojis = document.querySelectorAll('.haichan-animated-header .haichan-emoji');
                 console.log('🎯 Found emojis:', allEmojis.length);
-                console.log('🎯 Emoji elements:', allEmojis);
                 
                 if (allEmojis.length >= 6) {
                     // Left side emojis (first 3)
                     for (let i = 0; i < 3; i++) {
                         if (allEmojis[i]) {
                             let emojiIndex = i;
-                            console.log('🟢 Setting up LEFT emoji', i, allEmojis[i].textContent);
                             
                             // Start cycling immediately 
                             allEmojis[i].textContent = radioEmojis[emojiIndex % radioEmojis.length];
@@ -77,7 +85,6 @@
                             setInterval(() => {
                                 emojiIndex++;
                                 allEmojis[i].textContent = radioEmojis[emojiIndex % radioEmojis.length];
-                                console.log('🔄 Left emoji', i, 'changed to:', allEmojis[i].textContent);
                             }, 1000); // Faster cycling - every 1 second
                         }
                     }
@@ -86,7 +93,6 @@
                     for (let i = 3; i < 6 && i < allEmojis.length; i++) {
                         if (allEmojis[i]) {
                             let emojiIndex = i - 3;
-                            console.log('🔵 Setting up RIGHT emoji', i, allEmojis[i].textContent);
                             
                             // Start cycling immediately
                             allEmojis[i].textContent = lightningEmojis[emojiIndex % lightningEmojis.length];
@@ -94,7 +100,6 @@
                             setInterval(() => {
                                 emojiIndex++;
                                 allEmojis[i].textContent = lightningEmojis[emojiIndex % lightningEmojis.length];
-                                console.log('🔄 Right emoji', i, 'changed to:', allEmojis[i].textContent);
                             }, 800); // Even faster cycling - every 0.8 seconds
                         }
                     }

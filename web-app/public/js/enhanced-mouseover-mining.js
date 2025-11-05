@@ -161,7 +161,7 @@ class EnhancedMouseoverMiner {
         
         // Display mining status with style
         const statusIndicator = this.createStatusIndicator(element);
-        this.updateStatusIndicator(statusIndicator, 'mining', 'Quantum mining initiated...');
+        this.updateStatusIndicator(statusIndicator, 'mining', 'Mining in progress...');
         
         try {
             // Determine target type and ID

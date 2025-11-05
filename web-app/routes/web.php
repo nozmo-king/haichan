@@ -96,20 +96,45 @@ Route::get('/preview-landing', function () {
     return view('landing', compact('userCount', 'userCap', 'totalProofs', 'boardCount'));
 })->name('preview.landing');
 
+Route::get('/serpiente', function () {
+    try {
+        $userCount = \App\Models\BitcoinAuth::count();
+        $userCap = 256;
+        $totalProofs = \App\Models\ProofOfWork::count();
+        $boardCount = \App\Models\Board::count();
+        $globalHashrate = \App\Models\ProofOfWork::where('created_at', '>=', now()->subHour())->count();
+        $totalHashes = \App\Models\ProofOfWork::sum('vanity_score') ?? 0;
+        $activeSessions = \App\Models\BitcoinAuth::where('updated_at', '>=', now()->subMinutes(10))->count();
+        
+        return view('serpiente.landing', compact('userCount', 'userCap', 'totalProofs', 'boardCount', 'globalHashrate', 'totalHashes', 'activeSessions'));
+    } catch (Exception $e) {
+        return response()->json(['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+    }
+});
+
 // Stats page
 Route::get('/stats', [StatsController::class, 'index'])->name('stats');
 
-// Image Library
-Route::get('/image-library', [\App\Http\Controllers\ImageLibraryController::class, 'index'])->name('image-library');
-Route::get('/library', [\App\Http\Controllers\ImageLibraryController::class, 'index'])->name('library'); // Alias for convenience
+// Image Library - requires authentication
+Route::middleware('bitcoin.auth')->group(function() {
+    Route::get('/image-library', [\App\Http\Controllers\ImageLibraryController::class, 'index'])->name('image-library');
+    Route::get('/library', [\App\Http\Controllers\ImageLibraryController::class, 'index'])->name('library'); // Alias for convenience
+});
 
 // Shop
 Route::get('/shop', [\App\Http\Controllers\ShopController::class, 'index'])->name('shop');
 Route::post('/shop/purchase/{item}', [\App\Http\Controllers\ShopController::class, 'purchase'])->name('shop.purchase');
 
-// Chat - uses ChatController
-Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
-Route::get('/chat/{room:slug}', [\App\Http\Controllers\ChatController::class, 'show'])->name('chat.room');
+// Chat - uses ChatController (requires authentication)
+Route::middleware('bitcoin.auth')->group(function() {
+    Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/{room:slug}', [\App\Http\Controllers\ChatController::class, 'show'])->name('chat.room');
+    Route::post('/chat/{room:slug}/send', [\App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send');
+    Route::get('/chat/{room:slug}/messages', [\App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.messages');
+    Route::get('/chat/{room:slug}/users', [\App\Http\Controllers\ChatController::class, 'getOnlineUsers'])->name('chat.users');
+    Route::post('/chat/{room:slug}/set-nickname', [\App\Http\Controllers\ChatController::class, 'setNickname'])->name('chat.nickname');
+    Route::post('/chat/{room:slug}/command', [\App\Http\Controllers\ChatController::class, 'executeCommand'])->name('chat.command');
+});
 
 // Rules
 Route::get('/rules', function() {
@@ -175,6 +200,10 @@ Route::post('/register/validate-friend-code', [AuthController::class, 'validateF
 Route::post('/api/friend-codes/validate', [AuthController::class, 'validateFriendCode'])->name('api.friend-codes.validate');
 Route::get('/register/{friendCode}', [AuthController::class, 'showRegister'])->name('auth.register');
 Route::post('/register', [AuthController::class, 'register'])->name('auth.register.store');
+
+// Friend Codes Management (requires auth) - Note: View exists but may not be actively used
+// Commenting out until controller method is created
+// Route::post('/friend-codes/generate', [AuthController::class, 'generateFriendCode'])->name('friend-codes.generate')->middleware('bitcoin.auth');
 
 
 // Image serving routes - public access
@@ -244,9 +273,6 @@ Route::middleware('bitcoin.auth')->group(function () {
             return response()->json(['error' => $e->getMessage()]);
         }
     })->name('boards.index');
-
-    // Forum routes
-    Route::get('/forum', [App\Http\Controllers\ForumController::class, 'index'])->name('forum.index');
 
     // The MC - shows all threads from all boards
     Route::get('/catalog', [App\Http\Controllers\ForumController::class, 'showTheMC'])->name('the.mc');

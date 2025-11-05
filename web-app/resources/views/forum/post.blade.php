@@ -23,7 +23,7 @@
                 <div class="tui-image-filename">{{ $post->image_filename }}</div>
             </div>
         @endif
-        <div class="tui-post-text">{{ $post->content }}</div>
+        <div class="tui-post-text">{!! App\Helpers\MarkdownHelper::parseContent($post->content) !!}</div>
     </div>
 </div>
 

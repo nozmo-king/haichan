@@ -63,21 +63,21 @@
     </div>
 
     <!-- Image Grid -->
-    @if($images->count() > 0)
+    @if($images && $images->count() > 0)
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
             @foreach($images as $image)
                 <div style="background: var(--content-bg); border: 2px solid var(--border-color); border-radius: 8px; overflow: hidden; transition: transform 0.2s;">
-                    <a href="{{ $image['url'] }}" style="display: block; text-decoration: none;">
+                    <a href="{{ $image->file_path }}" style="display: block; text-decoration: none;">
                         <div style="aspect-ratio: 1; overflow: hidden; background: #f0f0f0; position: relative;">
-                            @if(file_exists(public_path($image['image_path'])))
-                                <img src="{{ $image['image_path'] }}" alt="Image" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                            @if(file_exists(public_path($image->file_path)))
+                                <img src="{{ $image->file_path }}" alt="Image" style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
                             @else
                                 <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">
                                     <span>Image not found</span>
                                 </div>
                             @endif
                             <div style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">
-                                /{{ $image['board_code'] }}/
+                                {{ $image->hash ? substr($image->hash, 0, 8) : 'N/A' }}
                             </div>
                         </div>
                         <div style="padding: 12px;">

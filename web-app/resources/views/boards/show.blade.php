@@ -4,9 +4,21 @@
 
 @section('content')
 <div style="background: var(--primary-bg); padding: 30px; border-radius: 12px; border: 2px solid var(--border-color); margin-bottom: 30px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); text-align: center;">
-    <h1 style="font-family: 'Nova Cut', serif; font-size: 28px; color: #FF69B4; margin: 0 0 10px 0; text-shadow: -1px -1px 0 #C1418A, 1px -1px 0 #C1418A, -1px 1px 0 #C1418A, 1px 1px 0 #C1418A;">
-        📋 /{{ $board->code }}/ - {{ $board->name }}
-    </h1>
+    @php
+        $currentHour = now()->format('H');
+        $isNightMode = ($currentHour >= 7 && $currentHour < 22);
+    @endphp
+    @if($isNightMode)
+        <h1 class="board-title-animated">
+            <span class="serpiente-emoji">🐍</span>
+            /{{ $board->code }}/ - {{ $board->name }}
+            <span class="serpiente-emoji">🐍</span>
+        </h1>
+    @else
+        <h1 style="font-family: 'Nova Cut', serif; font-size: 28px; color: #FF69B4; margin: 0 0 10px 0; text-shadow: -1px -1px 0 #C1418A, 1px -1px 0 #C1418A, -1px 1px 0 #C1418A, 1px 1px 0 #C1418A;">
+            📋 /{{ $board->code }}/ - {{ $board->name }}
+        </h1>
+    @endif
     <p style="color: var(--text-secondary); font-size: 14px; margin: 0 0 20px 0;">
         {{ $board->description }}
     </p>
@@ -476,7 +488,6 @@ function startThreadPolling() {
 
 async function updateThreadOrder() {
     try {
-        console.log('🔄 Fetching thread order updates...');
         const response = await fetch('/api/boards/{{ $board->code }}/thread-order');
         const data = await response.json();
         console.log('📊 Thread data received:', data);

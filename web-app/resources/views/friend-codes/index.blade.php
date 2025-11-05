@@ -121,13 +121,16 @@
                 </div>
             </div>
         @else
-            <p class="text-gray-600 mb-4">You don't have an active friend code. Generate one to invite new users.</p>
+            <p class="text-gray-600 mb-4">Friend code generation is currently managed through the admin panel.</p>
+            <p class="text-sm text-gray-500">Contact an administrator to request a friend code.</p>
+            {{-- Friend code generation form disabled until route is implemented
             <form action="{{ route('friend-codes.generate') }}" method="POST">
                 @csrf
                 <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
                     Generate Friend Code
                 </button>
             </form>
+            --}}
         @endif
     </div>
 

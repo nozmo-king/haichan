@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="breadcrumb">
-    <a href="{{ route('forum.index') }}">Forum</a> > Join Our Community
+    <a href="{{ route('boards.index') }}">Boards</a> > Join Our Community
 </div>
 
 <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFEE; border: 1px solid #ccc; padding: 30px;">

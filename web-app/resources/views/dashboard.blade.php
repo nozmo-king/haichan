@@ -1,6 +1,6 @@
 @extends('layout')
 
-@section('title', 'Haichan - Proof-of-Work Imageboard')
+@section('title', 'Haichan - a proof-of-work imageboard')
 
 @section('content')
 <!-- Hero Section -->
@@ -9,7 +9,7 @@
         ⚡ HAICHAN
     </h1>
     <p style="color: #6B7A6B; font-size: 18px; max-width: 600px; margin: 0 auto 20px auto; font-weight: 500;">
-        The world's first proof-of-work imageboard. Mine, post, discuss.
+        a proof-of-work imageboard. Mine, post, discuss.
     </p>
     <div class="stats-quick" style="display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-top: 20px;">
         <div style="text-align: center;">
@@ -49,7 +49,7 @@
             </a>
             @endforeach
         </div>
-        <a href="{{ route('forum.index') }}" style="background: #708B75; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; display: inline-block;">
+        <a href="{{ route('boards.index') }}" style="background: #708B75; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; display: inline-block;">
             🗂️ Browse All Boards
         </a>
     </div>

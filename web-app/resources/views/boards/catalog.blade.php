@@ -99,7 +99,6 @@ function startCatalogPolling() {
 }
 
 async function updateCatalogOrder() {
-    console.log('🔄 Catalog: Fetching thread order from API...');
     try {
         const response = await fetch('/api/boards/{{ $board->code }}/thread-order');
         const data = await response.json();

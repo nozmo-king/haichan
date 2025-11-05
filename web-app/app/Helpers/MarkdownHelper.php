@@ -13,14 +13,18 @@ class MarkdownHelper
         $content = nl2br($content);
 
         // Apply greentext formatting (lines starting with >)
-        $content = preg_replace('/^&gt;(.+)(<br\s*\/?>)?/m', '<span class="greentext">&gt;$1</span>$2', $content);
+        // Handle both single and multiple line greentexting
+        $content = preg_replace('/^&gt;(.+?)(?=<br|$)/m', '<span class="greentext">&gt;$1</span>', $content);
+        
+        // Handle >implying arrows specifically
+        $content = preg_replace('/&gt;implying/i', '<span class="greentext implying">&gt;implying</span>', $content);
 
         // Quote links (>>123)
         $content = preg_replace('/&gt;&gt;(\d+)/', '<a href="#post$1" class="quote-link">&gt;&gt;$1</a>', $content);
 
-        // YouTube link embedding (decode URLs first)
+        // Convert URLs to clickable links
         $content = html_entity_decode($content);
-        $content = self::embedYouTubeLinks($content);
+        $content = self::linkifyUrls($content);
 
         return $content;
     }
@@ -59,5 +63,27 @@ class MarkdownHelper
         }
 
         return $html;
+    }
+
+    /**
+     * Convert URLs to clickable links
+     */
+    private static function linkifyUrls($text)
+    {
+        // Pattern to match URLs
+        $pattern = '/(?<!href=")(https?:\/\/[^\s<>"]+)/i';
+        
+        return preg_replace_callback($pattern, function ($matches) {
+            $url = $matches[1];
+            
+            // Clean up trailing punctuation
+            $punctuation = '';
+            if (preg_match('/[.,;:!?)]$/', $url)) {
+                $punctuation = substr($url, -1);
+                $url = substr($url, 0, -1);
+            }
+            
+            return '<a href="' . htmlspecialchars($url) . '" target="_blank" rel="noopener noreferrer">' . htmlspecialchars($url) . '</a>' . $punctuation;
+        }, $text);
     }
 }
