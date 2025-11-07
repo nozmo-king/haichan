@@ -1,0 +1,132 @@
+# TRIUMVIRATE - CRITICAL FUNCTION VERIFICATION SCRIPT
+# The three most important functions that MUST work at all times
+# READ THIS EVERY TIME YOU'RE BOOTED UP TO VERIFY CORE FUNCTIONALITY
+
+## 1. REGISTRATION SYSTEM (/register)
+CRITICAL PATH: /register -> AuthController@showRegistrationForm -> AuthController@register
+REQUIREMENTS:
+- Bitcoin address generation using native crypto (NOT broken Bitcoin library)
+- SHA256 proof of work validation 
+- No dummy values or placeholders
+- Real cryptographic keys and addresses
+
+KEY FILES:
+- app/Http/Controllers/AuthController.php:register() method
+- resources/views/auth/register-form.blade.php
+- Uses native PHP hash() and openssl functions
+- Validates Bitcoin address format: 1[A-Za-z0-9]{25,34}
+- Stores in bitcoin_auth table
+
+VERIFICATION CHECKLIST:
+□ Registration form loads without errors
+□ Bitcoin address generation works (no fake addresses)
+□ Proof of work mining completes
+□ User can successfully register with valid credentials
+□ Database entry created in bitcoin_auth table
+□ No error messages about missing Bitcoin libraries
+
+---
+
+## 2. THREAD CREATION (/gen/create, /{board}/create)
+CRITICAL PATH: /{board}/create -> ForumController@create -> ForumController@storeThread
+REQUIREMENTS:
+- Proof of work using SimplePOW (window.powInstance)
+- Images are OPTIONAL (not required)
+- 21e8 difficulty mining
+- Real hash validation, no dummy values
+
+KEY FILES:
+- app/Http/Controllers/ForumController.php:storeThread() method
+- resources/views/forum/create-thread.blade.php
+- public/js/simple-pow.js (SimplePOW class)
+- Uses ChallengeVerifier for PoW validation
+
+VERIFICATION CHECKLIST:
+□ Thread creation form loads
+□ Mining starts when title (3+ chars) and content (5+ chars) entered
+□ Uses window.powInstance.generateProof() not wasmPowMiner
+□ Images are optional (can create threads without images)
+□ PoW fields populated: pow_nonce, pow_hash, pow_challenge_id
+□ Form submits successfully after mining completes
+□ Thread appears in board listing
+
+---
+
+## 3. REPLY SYSTEM (/{board}/thread/{id}/reply)
+CRITICAL PATH: Reply form -> ForumController@storeReply -> ForumController@storeReplyWithNewPoW
+REQUIREMENTS:
+- Proof of work using SimplePOW (window.powInstance) 
+- PoW validation with required fields: pow_nonce, pow_hash, pow_challenge_id
+- Auto-mining when content reaches 5+ characters
+- Real 21e8 hash validation
+
+KEY FILES:  
+- app/Http/Controllers/ForumController.php:storeReplyWithNewPoW() method
+- resources/views/components/reply-form.blade.php  
+- Validates pow_nonce (integer), pow_hash (64 hex), pow_challenge_id (string)
+- Uses ChallengeVerifier class for validation
+
+VERIFICATION CHECKLIST:
+□ Reply form appears on thread pages
+□ Mining triggers when typing 5+ characters  
+□ Uses window.powInstance.generateProof() in reply-form.blade.php
+□ Hidden PoW fields get populated: pow_nonce, pow_hash, pow_challenge_id
+□ Submit button enables after mining completes
+□ Reply posts successfully without PoW validation errors
+□ Reply appears in thread immediately
+
+---
+
+## COMMON ISSUES TO CHECK:
+
+### PoW System Issues:
+- NEVER use wasmPowMiner (doesn't exist) - always use window.powInstance
+- SimplePOW class must be loaded via simple-pow.js
+- Check browser console for "powInstance" availability
+- Difficulty must be '21e8' string, not number
+
+### Database Issues:  
+- bitcoin_auth table for users, NOT users table
+- session('bitcoin_auth_id') for user ID
+- pow_challenges table for PoW validation
+- Ensure proper foreign key relationships
+
+### Validation Errors:
+- "pow nonce field is required" = PoW fields not populated
+- "pow hash field is required" = Mining didn't complete  
+- "pow challenge id field is required" = Challenge not generated
+- Fix by ensuring window.powInstance.generateProof() runs and populates hidden fields
+
+### Authentication Issues:
+- Check session('bitcoin_auth_id') not Auth::id()  
+- Bitcoin address format validation
+- Native crypto functions, not external Bitcoin libraries
+
+---
+
+## EMERGENCY FIXES:
+
+If any function is broken:
+
+1. **Registration broken**: Check AuthController.php uses hash() and openssl, not Bitcoin library
+2. **Thread creation broken**: Verify SimplePOW integration in create-thread.blade.php  
+3. **Replies broken**: Check reply-form.blade.php uses window.powInstance, not wasmPowMiner
+
+## TESTING COMMANDS:
+```bash
+# Check if critical routes exist
+php artisan route:list | grep -E "register|create|reply"
+
+# Check database tables
+php artisan tinker
+>>> \App\Models\BitcoinAuth::count()
+>>> \App\Models\Thread::count()  
+>>> \App\Models\Post::count()
+
+# Check JavaScript console for:
+# - window.powInstance (must exist)
+# - SimplePOW class loading
+# - Mining completion messages
+```
+
+REMEMBER: NO DUMMY VALUES, NO PLACEHOLDERS, NO FAKE DATA. EVERYTHING MUST BE REAL AND FUNCTIONAL.

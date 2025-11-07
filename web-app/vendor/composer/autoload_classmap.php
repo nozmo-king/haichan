@@ -69,6 +69,7 @@ return array(
     'App\\Models\\ChatRoom' => $baseDir . '/app/Models/ChatRoom.php',
     'App\\Models\\FriendCode' => $baseDir . '/app/Models/FriendCode.php',
     'App\\Models\\ImageGallery' => $baseDir . '/app/Models/ImageGallery.php',
+    'App\\Models\\ImageLibrary' => $baseDir . '/app/Models/ImageLibrary.php',
     'App\\Models\\InviteCode' => $baseDir . '/app/Models/InviteCode.php',
     'App\\Models\\MiningSession' => $baseDir . '/app/Models/MiningSession.php',
     'App\\Models\\OpReceipt' => $baseDir . '/app/Models/OpReceipt.php',

@@ -1,6 +1,7 @@
 ## Game Mechanics
 - MOUSEOVER IS HOW MINING IS DICTATED
 - The mini dash is the mini mining dashboard that shows up while traversing a board or thread 
+- thread creation, registration and reply are the three most important functions. every time you're booted up, make sure those work by reading a script called TRIUMVIRATE
 
 ## Mining Requirements
 - Apply a rolling 60-second window of mouse movement as proof of work (PoW) across the entire site
@@ -77,3 +78,6 @@
 
 ## Site Iteration Strategy
 - look at what beautiful garbage the last version of the site was and LEARN FROM IT. MAKE THE EXACT OPPOSITE BUT BETTER AND STRONGER AND COMPATIBLE FOR EXISTING ACCOUNTS, TOTALLY.
+
+## Development Principles
+- NO LAZY CODE. NO PLACEHOLDERS OR <POPULATE THIS LATER>

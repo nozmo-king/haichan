@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>User Control Panel - Haichan</title>
     <link rel="stylesheet" href="/css/haichan.css">
-    @vite(['resources/css/themes.css'])
+    <link rel="stylesheet" href="/css/themes.css">
     <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
     <style nonce="{{ app('csp_nonce') }}">
         .user-cp-grid {
@@ -104,6 +104,147 @@
             font-family: 'Courier New', monospace;
             color: var(--accent-color);
             font-weight: bold;
+        }
+
+        /* === MOBILE RESPONSIVENESS === */
+        @media (max-width: 768px) {
+            .user-cp-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .cp-card {
+                padding: 15px;
+            }
+            
+            .stat-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin-bottom: 15px;
+            }
+            
+            .stat-item {
+                padding: 10px;
+            }
+            
+            .stat-value {
+                font-size: 20px;
+            }
+            
+            .mining-output {
+                height: 100px;
+                font-size: 11px;
+            }
+            
+            .address-display {
+                font-size: 10px;
+                padding: 8px;
+            }
+            
+            .action-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+                margin: 3px;
+                display: inline-block;
+                width: auto;
+            }
+            
+            h1 {
+                font-size: 24px !important;
+            }
+            
+            h3 {
+                font-size: 16px;
+                margin-bottom: 10px;
+            }
+            
+            .message-list {
+                max-height: 150px;
+            }
+            
+            .message-item {
+                padding: 8px;
+                font-size: 12px;
+            }
+            
+            /* Make inputs full width on mobile */
+            select, input[type="password"] {
+                width: 100% !important;
+                padding: 10px !important;
+                font-size: 14px !important;
+                margin: 8px 0 !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px !important;
+            }
+            
+            .user-cp-grid {
+                gap: 10px;
+            }
+            
+            .cp-card {
+                padding: 12px;
+                margin-bottom: 15px;
+            }
+            
+            .stat-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            
+            .stat-item {
+                padding: 8px;
+            }
+            
+            .stat-value {
+                font-size: 18px;
+            }
+            
+            .stat-label {
+                font-size: 10px;
+            }
+            
+            .mining-output {
+                height: 80px;
+                font-size: 10px;
+                padding: 8px;
+            }
+            
+            .address-display {
+                font-size: 9px;
+                padding: 6px;
+            }
+            
+            .action-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+                margin: 2px;
+            }
+            
+            h1 {
+                font-size: 20px !important;
+            }
+            
+            h3 {
+                font-size: 14px;
+            }
+            
+            /* Header adjustments */
+            div[style*="display: flex; justify-content: space-between"] {
+                flex-direction: column !important;
+                gap: 10px;
+            }
+            
+            /* Stack header buttons vertically on very small screens */
+            div[style*="display: flex; justify-content: space-between"] > div:last-child {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px;
+            }
         }
     </style>
 </head>
@@ -222,15 +363,20 @@
             </div>
         </div>
 
-        <!-- Vanity Bitcoin Address Mining -->
+        <!-- 21e8 Vanity Hash Mining -->
         <div class="cp-card">
-            <h3>⛏️ VANITY ADDRESS MINER</h3>
+            <h3>💎 21E8 DIAMOND MINER</h3>
 
             <div style="margin-bottom: 15px;">
-                <label for="vanity-pattern">Target Pattern:</label>
-                <input type="text" id="vanity-pattern" placeholder="e.g., 1Bob, 1Alice, 1Test"
-                       style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; margin: 5px 0;" autocomplete="off">
-                <small style="color: var(--text-secondary);">Case sensitive. Longer patterns take exponentially more time.</small>
+                <label for="vanity-pattern">Target 21e8 Pattern:</label>
+                <select id="vanity-pattern" style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; margin: 5px 0;" autocomplete="off">
+                    <option value="21e8">21e8 💎 Basic Diamond</option>
+                    <option value="21e80">21e80 💠 Enhanced Diamond</option>
+                    <option value="21e800">21e800 🔷 Blue Diamond</option>
+                    <option value="21e8000">21e8000 🔶 Orange Diamond</option>
+                    <option value="21e80000">21e80000 ♦️ Diamond Suit</option>
+                </select>
+                <small style="color: var(--text-secondary);">Higher levels exponentially harder. Each level gives a different diamond color in chat.</small>
             </div>
 
             <div style="margin-bottom: 15px;">
@@ -240,19 +386,19 @@
 
             <div id="vanity-stats" style="display: none; margin-bottom: 10px; font-size: 12px;">
                 <div>Attempts: <span id="vanity-attempts">0</span></div>
-                <div>Rate: <span id="vanity-rate">0</span> addr/sec</div>
+                <div>Rate: <span id="vanity-rate">0</span> hash/sec</div>
                 <div>Estimated Time: <span id="vanity-eta">Unknown</span></div>
             </div>
 
             <div class="mining-output" id="vanity-output">
-                Ready to mine vanity addresses...
+                Ready to mine 21e8 diamond hashes...
             </div>
 
             <div id="vanity-result" style="display: none;">
-                <h4 style="color: var(--success-color);">✅ Address Found!</h4>
-                <div><strong>Address:</strong> <span id="result-address" class="address-display"></span></div>
-                <div><strong>Private Key:</strong> <span id="result-private-key" class="address-display"></span></div>
-                <button id="save-vanity-address" class="action-btn" style="background: #4CAF50;">Save to Account</button>
+                <h4 style="color: var(--success-color);">💎 21e8 Hash Found!</h4>
+                <div><strong>Hash:</strong> <span id="result-address" class="address-display"></span></div>
+                <div><strong>Nonce:</strong> <span id="result-private-key" class="address-display"></span></div>
+                <button id="save-vanity-address" class="action-btn" style="background: #4CAF50;">Save 21e8 Hash</button>
             </div>
         </div>
 
@@ -346,44 +492,51 @@ class VanityMiner {
     }
 
     async mine(pattern) {
+        let batchSize = 1000;
+        
         while (this.mining) {
-            // Generate random private key
-            const privateKey = this.generateRandomHex(64);
-
-            // Generate public key (simplified)
-            const publicKey = await this.sha256(privateKey);
-
-            // Generate Bitcoin address
-            const address = await this.generateAddress(publicKey);
-
-            this.attempts++;
-
-            if (address.startsWith(pattern)) {
-                this.found(address, privateKey);
-                break;
+            // Mine in batches to prevent UI blocking
+            for (let i = 0; i < batchSize && this.mining; i++) {
+                // Generate random data to hash (nonce + timestamp + random)
+                const nonce = this.generateRandomHex(32);
+                const timestamp = Date.now().toString(16);
+                const random = Math.random().toString(16);
+                const data = nonce + timestamp + random;
+                
+                // Create hash with SHA256
+                const hash = await this.sha256(data);
+                
+                this.attempts++;
+                
+                // Check if hash starts with target pattern
+                if (hash.startsWith(pattern)) {
+                    this.found(hash, nonce);
+                    return;
+                }
             }
-
-            // Update stats every 100 attempts
-            if (this.attempts % 100 === 0) {
+            
+            // Update stats and yield to UI
+            if (this.attempts % 1000 === 0) {
                 this.updateStats();
             }
-
-            // Yield to prevent UI blocking
-            if (this.attempts % 1000 === 0) {
-                await new Promise(resolve => setTimeout(resolve, 1));
-            }
+            await new Promise(resolve => setTimeout(resolve, 1));
         }
     }
 
-    found(address, privateKey) {
+    found(hash, nonce) {
         this.mining = false;
         document.getElementById('start-vanity-mining').style.display = 'inline-block';
         document.getElementById('stop-vanity-mining').style.display = 'none';
 
-        this.log(`✅ FOUND! Address: ${address}`);
+        const pattern = document.getElementById('vanity-pattern').value;
+        const elapsed = (Date.now() - this.startTime) / 1000;
+        
+        this.log(`🎉 SUCCESS! Found ${pattern} hash!`);
+        this.log(`💎 Hash: ${hash}`);
+        this.log(`⏱️ Time: ${elapsed.toFixed(1)}s with ${this.attempts.toLocaleString()} attempts`);
 
-        document.getElementById('result-address').textContent = address;
-        document.getElementById('result-private-key').textContent = privateKey;
+        document.getElementById('result-address').textContent = hash;
+        document.getElementById('result-private-key').textContent = nonce;
         document.getElementById('vanity-result').style.display = 'block';
     }
 
@@ -402,9 +555,17 @@ class VanityMiner {
         document.getElementById('vanity-attempts').textContent = this.attempts.toLocaleString();
         document.getElementById('vanity-rate').textContent = rate.toFixed(1);
 
-        // Estimate time for completion
+        // Estimate time for completion based on 21e8 difficulty
         const pattern = document.getElementById('vanity-pattern').value;
-        const difficulty = Math.pow(58, pattern.length - 1);
+        let difficulty;
+        switch(pattern) {
+            case '21e8': difficulty = 16 * 16 * 16 * 16; break; // 65,536
+            case '21e80': difficulty = 16 * 16 * 16 * 16 * 16; break; // ~1M
+            case '21e800': difficulty = 16 * 16 * 16 * 16 * 16 * 16; break; // ~16M
+            case '21e8000': difficulty = 16 * 16 * 16 * 16 * 16 * 16 * 16; break; // ~268M
+            case '21e80000': difficulty = 16 * 16 * 16 * 16 * 16 * 16 * 16 * 16; break; // ~4.3B
+            default: difficulty = 65536;
+        }
         const eta = difficulty / rate / 2; // Average case
 
         document.getElementById('vanity-eta').textContent = this.formatTime(eta);
@@ -437,21 +598,41 @@ class VanityMiner {
         return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    async generateAddress(publicKey) {
-        // Simplified Bitcoin address generation
-        const hash = await this.sha256(publicKey);
-        const addressBytes = hash.substring(0, 40);
-
-        // Base58 encode (simplified)
-        const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
-        let result = '1'; // Bitcoin addresses start with 1
-
-        for (let i = 0; i < 25; i++) {
-            const index = parseInt(addressBytes.substring(i*2, i*2+2), 16) % 58;
-            result += chars[index];
+    async save21e8Hash() {
+        const hash = document.getElementById('result-address').textContent;
+        const nonce = document.getElementById('result-private-key').textContent;
+        const pattern = document.getElementById('vanity-pattern').value;
+        
+        try {
+            const response = await fetch('/api/self-mining/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    hash: hash,
+                    nonce: nonce,
+                    target: pattern,
+                    time: (Date.now() - this.startTime) / 1000,
+                    hashes: this.attempts
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.log(`✅ Hash saved successfully! You earned ${result.points || 0} points.`);
+                document.getElementById('save-vanity-address').textContent = 'Hash Saved!';
+                document.getElementById('save-vanity-address').disabled = true;
+                document.getElementById('save-vanity-address').style.background = '#9E9E9E';
+            } else {
+                this.log(`❌ Failed to save hash: ${result.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            this.log(`❌ Error saving hash: ${error.message}`);
         }
-
-        return result.substring(0, 26);
     }
 }
 
@@ -509,8 +690,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const vanityMiner = new VanityMiner();
     const tripcodeGen = new TripcodeGenerator();
 
-    document.getElementById('start-vanity-mining').onclick = () => vanityMiner.start();
-    document.getElementById('stop-vanity-mining').onclick = () => vanityMiner.stop();
+    document.getElementById('start-vanity-mining').onclick = () => {
+        const btn = document.getElementById('start-vanity-mining');
+        btn.textContent = '⏳ Starting...';
+        setTimeout(() => vanityMiner.start(), 100);
+    };
+    document.getElementById('stop-vanity-mining').onclick = () => {
+        console.log('⏹️ Stop mining button clicked');
+        vanityMiner.stop();
+    };
+    document.getElementById('save-vanity-address').onclick = () => {
+        console.log('💾 Save hash button clicked');
+        vanityMiner.save21e8Hash();
+    };
     document.getElementById('generate-tripcode').onclick = () => tripcodeGen.generate();
 
     // Auto-refresh messages every 30 seconds

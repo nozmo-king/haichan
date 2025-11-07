@@ -188,9 +188,9 @@ const miningStatus = document.getElementById('mining-status');
 let isMining = false;
 let currentProof = null;
 
-// WASM-powered mining function
+// SimplePOW mining function
 async function mineDirectly() {
-    if (isMining) return;
+    if (isMining || !window.powInstance) return;
     
     const title = titleInput.value.trim();
     const content = contentInput.value.trim();
@@ -226,10 +226,11 @@ async function mineDirectly() {
             refs: []
         };
         
-        // Use WASM miner
-        currentProof = await window.wasmPowMiner.mineForForm('thread', formData, {
+        // Use SimplePOW instance
+        currentProof = await window.powInstance.generateProof({
             difficulty: '21e8',
-            useWasm: true
+            target_type: 'thread',
+            content: formData.title + '\n' + formData.body
         });
         
         console.log('✅ WASM mining complete:', currentProof);
@@ -262,9 +263,10 @@ async function mineDirectly() {
             // Fallback to JavaScript mining
             miningStatus.innerHTML = '<span style="color: var(--color-orange-500);">🔄 Using fallback miner...</span>';
             
-            currentProof = await window.wasmPowMiner.mineForForm('thread', formData, {
+            currentProof = await window.powInstance.generateProof({
                 difficulty: '21e8',
-                useWasm: false
+                target_type: 'thread',
+                content: formData.title + '\n' + formData.body
             });
             
             // Fill hidden fields  

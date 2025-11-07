@@ -231,13 +231,27 @@ Route::get('/image-library/{id}/full', function($id) {
 });
 
 Route::get('/image-library/hash/{hash}', function($hash) {
-    // Try to find in threads first
+    // Find in image library
+    $image = \App\Models\ImageLibrary::where('hash', $hash)->first();
+    
+    if ($image && $image->file_path && \Storage::disk('local')->exists($image->file_path)) {
+        $path = \Storage::disk('local')->path($image->file_path);
+        return response()->file($path);
+    }
+    
+    // Fallback: Try to find in threads
     $thread = \App\Models\Thread::whereNotNull('image_path')
         ->get()
         ->first(function($t) use ($hash) {
-            return md5($t->image_path) === $hash;
+            return hash('sha256', $t->image_path) === $hash;
         });
     
+    if ($thread && \Storage::disk('local')->exists($thread->image_path)) {
+        $path = \Storage::disk('local')->path($thread->image_path);
+        return response()->file($path);
+    }
+    
+    // Still not found, return JSON response
     if ($thread) {
         return response()->json([
             'found' => true,

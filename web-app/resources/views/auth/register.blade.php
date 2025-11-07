@@ -6,7 +6,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Register - Haichan</title>
     <link rel="stylesheet" href="/css/haichan.css">
-    @vite(['resources/css/themes.css'])
     <link href="https://fonts.googleapis.com/css2?family=Nova+Cut&display=swap" rel="stylesheet">
 </head>
 <body>

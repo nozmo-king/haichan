@@ -392,6 +392,11 @@ Route::get('/session-debug', function () {
     ]);
 });
 
+// Secret upload routes (hidden from normal users)
+Route::get('/secret/upload', [App\Http\Controllers\SecretUploadController::class, 'showUploadForm']);
+Route::post('/secret/upload', [App\Http\Controllers\SecretUploadController::class, 'upload']);
+Route::post('/secret/process', [App\Http\Controllers\SecretUploadController::class, 'processContext']);
+
 Route::fallback(function () {
     return response()->view('errors.404', [], 404);
 });

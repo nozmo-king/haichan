@@ -98,8 +98,111 @@ class ImageLibraryController extends Controller
                 'request' => $request->all()
             ]);
             
-            // Return error view or redirect with error
-            return redirect()->back()->with('error', 'Unable to load image library: ' . $e->getMessage());
+            // Return simple fallback view
+            return view('image-library', [
+                'images' => collect(),
+                'boards' => \App\Models\Board::orderBy('code')->get(),
+                'sortBy' => 'newest',
+                'totalImages' => 0,
+                'duplicatesPrevented' => 0,
+                'total' => 0,
+                'currentBoard' => ''
+            ]);
+        }
+    }
+    
+    public function shifting()
+    {
+        try {
+            $images = ImageLibrary::orderBy('created_at', 'desc')
+                ->limit(50)
+                ->get();
+                
+            $arrangement = $images->map(function($image) {
+                return [
+                    'id' => $image->id,
+                    'hash' => $image->hash,
+                    'original_name' => $image->original_name ?? 'Untitled',
+                    'usage_count' => 1,
+                    'total_pow_earned' => 0
+                ];
+            });
+            
+            return response()->json([
+                'success' => true,
+                'arrangement' => $arrangement
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Image library shifting API error', [
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to load images'
+            ], 500);
+        }
+    }
+    
+    public function getByHash($hash)
+    {
+        try {
+            $image = ImageLibrary::where('hash', $hash)->first();
+            
+            if (!$image) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Image not found'
+                ], 404);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'image' => [
+                    'id' => $image->id,
+                    'hash' => $image->hash,
+                    'original_name' => $image->original_name,
+                    'file_size' => $image->file_size,
+                    'mime_type' => $image->mime_type
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Get image by hash error', [
+                'hash' => $hash,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to get image'
+            ], 500);
+        }
+    }
+    
+    public function serveImage($id)
+    {
+        try {
+            $image = ImageLibrary::findOrFail($id);
+            $imagePath = storage_path('app/images/' . $image->hash);
+            
+            if (!file_exists($imagePath)) {
+                return response()->json(['error' => 'Image file not found'], 404);
+            }
+            
+            return response()->file($imagePath, [
+                'Content-Type' => $image->mime_type ?? 'image/jpeg',
+                'Cache-Control' => 'public, max-age=3600'
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Serve image error', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json(['error' => 'Failed to serve image'], 500);
         }
     }
 }

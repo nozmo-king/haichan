@@ -341,6 +341,17 @@
     
     <!-- Persistent Toolbar -->
     <script nonce="{{ app('csp_nonce') }}" src="/js/persistent-toolbar.js?v={{ time() }}"></script>
+    <script nonce="{{ app('csp_nonce') }}" src="/js/thread-reply-persistence.js?v={{ time() }}"></script>
+    
+    <script nonce="{{ app('csp_nonce') }}">
+        // Initialize thread reply persistence system
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.ThreadReplyPersistence) {
+                window.replyPersistence = new ThreadReplyPersistence();
+                console.log('✅ Reply persistence system initialized');
+            }
+        });
+    </script>
     
 </body>
 </html>

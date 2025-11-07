@@ -243,12 +243,18 @@ startBtn.addEventListener('click', () => {
     log('⛏️ Mining started!', '#00ff00');
     log('Using SHA-256 proof-of-work algorithm...', '#888');
     
-    if (window.simplePoW) {
-        log('✅ Mining system active', '#00ff00');
-        startContinuousMining();
-    } else {
-        log('⚠️ Mining service not found - ensure PoW scripts are loaded', '#ff9900');
+    // Wait for mining system to be available
+    function waitForMiningSystem() {
+        if (window.simplePoW) {
+            log('✅ Mining system active', '#00ff00');
+            startContinuousMining();
+        } else {
+            log('⏳ Waiting for mining system to initialize...', '#ff9900');
+            setTimeout(waitForMiningSystem, 1000);
+        }
     }
+    
+    waitForMiningSystem();
 });
 
 stopBtn.addEventListener('click', () => {

@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function mineReply() {
-        if (isReplyMining || !window.wasmPowMiner) return;
+        if (isReplyMining || !window.powInstance) return;
         
         const content = replyContent?.value?.trim() || '';
         if (content.length < 5) return;
@@ -350,21 +350,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 replySubmitBtn.textContent = 'Mining...';
             }
             
-            const formData = {
-                title: '',
-                body: content,
-                attachments: [],
-                refs: []
-            };
-            
-            const threadId = getThreadIdFromPage();
-            const parentId = getParentIdFromForm();
-            
-            const proof = await window.wasmPowMiner.mineForForm('reply', formData, {
+            const proof = await window.powInstance.generateProof({
                 difficulty: '21e8',
-                threadId: threadId,
-                parentId: parentId,
-                useWasm: true
+                target_type: 'reply',
+                target_id: getThreadIdFromPage(),
+                content: content
             });
             
             // Fill hidden fields

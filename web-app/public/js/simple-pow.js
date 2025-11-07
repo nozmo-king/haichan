@@ -1368,8 +1368,8 @@ if (!document.getElementById('mining-animations')) {
     document.head.appendChild(style);
 }
 
-    // Public method for dashboard mining
-    async startContinuousMining(options = {}) {
+// Public method for dashboard mining
+async function startContinuousMining(options = {}) {
         const boardCode = options.boardCode || 'gen';
         const mineType = options.mineType || 'general';
         
@@ -1390,7 +1390,6 @@ if (!document.getElementById('mining-animations')) {
             console.error('Continuous mining error:', error);
             return { success: false, error: error.message };
         }
-    }
 }
 
 // Initialize immediately
@@ -1546,6 +1545,21 @@ window.MiningDiagnostics = {
         console.log('🔧 Common mining issues fixed - try mining again');
     }
 };
+
+// Initialize global instance
+if (!window.simplePoW) {
+    window.simplePoW = new SimpleProofOfWork();
+}
+
+// Create alias for compatibility with forms
+window.powInstance = window.simplePoW;
+
+// Add generateProof method alias
+if (window.powInstance && !window.powInstance.generateProof) {
+    window.powInstance.generateProof = async function(options) {
+        return await this.acquireProofFor(options);
+    };
+}
 
 console.log('🔨 Simple PoW: Ready with reply form mining, mouseover mining and toolbar');
 console.log('🔍 Run MiningDiagnostics.checkSystem() to debug mining issues');

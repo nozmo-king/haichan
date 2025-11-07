@@ -396,7 +396,10 @@ document.getElementById('new-thread-form').addEventListener('submit', async func
 function toggleThreadForm() {
     const container = document.getElementById('thread-form-container');
     const toggle = document.getElementById('thread-form-toggle');
-    if (!container || !toggle) return;
+    if (!container || !toggle) {
+        alert('❌ Thread form elements not found');
+        return;
+    }
 
     if (container.style.display === 'none' || container.dataset.state === 'collapsed') {
         container.style.display = 'block';

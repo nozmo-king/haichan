@@ -619,6 +619,7 @@ class ComposerStaticInit9fb926fc7a4f5caa2cadeabf69aff728
         'App\\Models\\ChatRoom' => __DIR__ . '/../..' . '/app/Models/ChatRoom.php',
         'App\\Models\\FriendCode' => __DIR__ . '/../..' . '/app/Models/FriendCode.php',
         'App\\Models\\ImageGallery' => __DIR__ . '/../..' . '/app/Models/ImageGallery.php',
+        'App\\Models\\ImageLibrary' => __DIR__ . '/../..' . '/app/Models/ImageLibrary.php',
         'App\\Models\\InviteCode' => __DIR__ . '/../..' . '/app/Models/InviteCode.php',
         'App\\Models\\MiningSession' => __DIR__ . '/../..' . '/app/Models/MiningSession.php',
         'App\\Models\\OpReceipt' => __DIR__ . '/../..' . '/app/Models/OpReceipt.php',
